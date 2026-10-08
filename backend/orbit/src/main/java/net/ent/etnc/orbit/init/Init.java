@@ -1,39 +1,40 @@
 package net.ent.etnc.orbit.init;
 
-import net.ent.etnc.orbit.models.entities.User;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
-import net.ent.etnc.orbit.services.UserService;
+import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
 @Component
 public class Init implements CommandLineRunner {
 
-    private User admin;
-    private UserService userService;
+    private Personnel admin;
+    private PersonnelService personnelService;
 
-    public Init(UserService userService) {
-        this.userService = userService;
+    public Init(PersonnelService personnelService) {
+        this.personnelService = personnelService;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        if (userService.count() > 0) return;
+        if (personnelService.count() > 0) return;
         initUsers();
     }
 
     private void initUsers() throws ServiceException {
-        admin = userService.create(buildUser("admin", "admin1234", Role.ADMIN));
+        admin = personnelService.create(buildUser("ADM001", "Admin", "Orbit", "admin", "admin1234", Role.ADMIN));
     }
 
-    private User buildUser(String username, String password, Role role) {
+    private Personnel buildUser(String nid, String nom, String prenom, String username, String password, Role role) {
 
-        User u = new User();
-        u.setUsername(username);
-        u.setPassword(password);
+        Personnel u = new Personnel();
+        u.setNid(nid);
+        u.setNom(nom);
+        u.setPrenom(prenom);
+        u.setLogin(username);
+        u.setMotDePasse(password);
         u.setRole(role);
         u.setActive(true);
 

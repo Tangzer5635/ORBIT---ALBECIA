@@ -1,9 +1,9 @@
 package net.ent.etnc.orbit.services.impl;
 
-import net.ent.etnc.orbit.models.entities.User;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
-import net.ent.etnc.orbit.repositories.UserRepository;
-import net.ent.etnc.orbit.services.UserService;
+import net.ent.etnc.orbit.repositories.PersonnelRepository;
+import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,34 +16,34 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
-public class UserServiceImpl extends AbstractService<User, UserRepository> implements UserService {
+public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRepository> implements PersonnelService {
 
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        super(userRepository);
+    public PersonnelServiceImpl(PersonnelRepository personnelRepository, PasswordEncoder passwordEncoder) {
+        super(personnelRepository);
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
-    public User create(User entity) throws ServiceException {
+    public Personnel create(Personnel entity) throws ServiceException {
         if (entity.getPassword() == null || entity.getPassword().isBlank()) {throw new ServiceException("RG-U03", "Le mot de passe est obligatoire");}
-        entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+        entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
         return super.create(entity);
     }
 
     @Override
     @Transactional
-    public User update(User entity) throws ServiceException {
+    public Personnel update(Personnel entity) throws ServiceException {
         if (entity.getPassword() == null || entity.getPassword().isBlank()) {
             String currentPassword = repository.findById(entity.getId())
-                    .map(User::getPassword)
+                    .map(Personnel::getPassword)
                     .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
-            entity.setPassword(currentPassword);
+            entity.setMotDePasse(currentPassword);
         } else {
-            entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+            entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
         }
         return super.update(entity);
     }
@@ -51,7 +51,7 @@ public class UserServiceImpl extends AbstractService<User, UserRepository> imple
     @Override
     @Transactional
     public void deleteById(Long id) throws ServiceException {
-        User user = repository.findById(id)
+        Personnel user = repository.findById(id)
                 .orElseThrow(() ->
                         new ServiceException("Utilisateur introuvable")
                 );
@@ -67,13 +67,13 @@ public class UserServiceImpl extends AbstractService<User, UserRepository> imple
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<User> findByUsername(String username) {
+    public Optional<Personnel> findByUsername(String username) {
         return repository.findByUsername(username);
     }
 
     @Override
-    public User deactivate(Long id) throws ServiceException {
-        User user = repository.findById(id)
+    public Personnel deactivate(Long id) throws ServiceException {
+        Personnel user = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
         if (user.getRole() == Role.ADMIN) {
             throw new ServiceException("RG-U05", "Impossible de désactiver un administrateur.");
@@ -84,13 +84,13 @@ public class UserServiceImpl extends AbstractService<User, UserRepository> imple
 
     @Override
     @Transactional
-    public User changeRole(Long id, Role role) throws ServiceException {
-        User user = repository.findById(id)
+    public Personnel changeRole(Long id, Role role) throws ServiceException {
+        Personnel user = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            User currentUser = auth.getPrincipal() instanceof User ? (User) auth.getPrincipal() : null;
+            Personnel currentUser = auth.getPrincipal() instanceof Personnel ? (Personnel) auth.getPrincipal() : null;
             if (currentUser != null && currentUser.getId().equals(user.getId())) {
                 throw new ServiceException("RG-U05", "Impossible de changer son propre rôle");
             }

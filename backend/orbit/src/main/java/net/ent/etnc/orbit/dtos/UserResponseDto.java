@@ -13,10 +13,8 @@ import net.ent.etnc.orbit.models.enums.Role;
 public class UserResponseDto {
 
     private Long id;
-    @NotBlank(message = "username doit contenir des caractères lisibles")
-    private String username;
-    @NotBlank(message = "email doit contenir des caractères lisibles")
-    private String email;
+    @NotBlank(message = "login doit contenir des caractères lisibles")
+    private String login;
     @NotNull(message = "Le rôle est obligatoire")
     private Role role;
     private boolean active;

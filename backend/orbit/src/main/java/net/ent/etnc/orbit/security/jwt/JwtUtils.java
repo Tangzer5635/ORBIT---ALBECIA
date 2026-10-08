@@ -4,7 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import net.ent.etnc.orbit.models.entities.User;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +31,7 @@ public class JwtUtils {
     /**
      * Génère un access token signé contenant l'email et le rôle de l'utilisateur.
      */
-    public String generateJwtToken(User user) {
+    public String generateJwtToken(Personnel user) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.builder()
                 .subject(user.getUsername())

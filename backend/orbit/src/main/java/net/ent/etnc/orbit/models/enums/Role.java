@@ -7,9 +7,11 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 public enum Role {
-    USER("User"),
-    SUPER_USER("Super User", USER),
-    ADMIN("Admin", SUPER_USER);
+    STAGIAIRE("Stagiaire"),
+    FORMATEUR("Formateur"),
+    ROLE_TECHNIQUE("Technicien", true),
+    GESTIONNAIRE("Gestionnaire", ROLE_TECHNIQUE),
+    ADMINISTRATEUR("Administrateur", GESTIONNAIRE);
 
     @Getter
     private final String libelle;

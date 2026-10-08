@@ -11,9 +11,16 @@ import net.ent.etnc.orbit.models.enums.Role;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserRequestDto {
-    @NotBlank(message = "username doit contenir des caractères lisibles")
-    private String username;
-    private String password;
+
+    @NotBlank(message = "nid doit contenir des caractères lisibles")
+    private String nid;
+    @NotBlank(message = "nom doit contenir des caractères lisibles")
+    private String nom;
+    @NotBlank(message = "prenom doit contenir des caractères lisibles")
+    private String prenom;
+    @NotBlank(message = "login doit contenir des caractères lisibles")
+    private String login;
+    private String motDePasse;
     @NotNull(message = "Le rôle est obligatoire")
     private Role role;
     private Boolean active;
