@@ -1,0 +1,135 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
+
+:root {
+    --bg: #110f1f;
+    --card: #1c1a36;
+    --field: #252347;
+    --field-focus: #2d2a56;
+    --accent: #8c6ff7;
+    --accent-hover: #9d85f9;
+    --text: #ffffff;
+    --text-muted: #a69ed3;
+    --error: #ff7a8a;
+    --radius-card: 28px;
+    --radius-field: 14px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    font-family: "Outfit", system-ui, sans-serif;
+    color: var(--text);
+}
+
+/* Page */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 16px;
+    background: linear-gradient(180deg, #17142b 0%, var(--bg) 100%);
+}
+
+/* Carte */
+.login-card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--card);
+    border-radius: var(--radius-card);
+    padding: 40px 30px 32px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* Logo (optionnel) */
+.login-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 28px;
+    color: var(--accent);
+}
+
+/* Titre + sous-titre */
+.login-title {
+    margin: 0;
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.login-subtitle {
+    margin: 6px 0 28px;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+/* Formulaire */
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-form label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.login-form input {
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    margin-bottom: 18px;
+    background: var(--field);
+    border: 1px solid transparent;
+    border-radius: var(--radius-field);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.login-form input:focus {
+    background: var(--field-focus);
+    border-color: var(--accent);
+}
+
+/* Message d'erreur */
+.error-message {
+    margin: -6px 0 14px;
+    font-size: 0.875rem;
+    color: var(--error);
+}
+
+/* Bouton */
+.login-button {
+    margin-top: 8px;
+    height: 44px;
+    border: none;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #1a1433;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+}
+
+.login-button:hover {
+    background: var(--accent-hover);
+}
+
+.login-button:active {
+    transform: scale(0.99);
+}
+
+.login-button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
