@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: template_auth_sb
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orbit
+    username: postgres
+    password: azerty+35
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  #      jakarta:
+  #        persistence:
+  #          validation:
+  #            mode: none
+  jackson:
+    default-property-inclusion: non_null
+
+app:
+  jwt:
+    secret: orbit_albecia_secret_key_is_very_long_and_complex
+    expiration-ms: 3600000
+    refresh-expiration-ms: 14400000
