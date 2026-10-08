@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.LoginRequest;
 import net.ent.etnc.orbit.dtos.TokenResponse;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
-import net.ent.etnc.orbit.models.entities.User;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.security.jwt.JwtUtils;
 import net.ent.etnc.orbit.security.services.UserDetailsServiceImpl;
 import net.ent.etnc.orbit.services.RefreshTokenService;
@@ -79,7 +79,7 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
-        User user = (User) authentication.getPrincipal();
+        Personnel user = (Personnel) authentication.getPrincipal();
         String accessToken = jwtUtils.generateJwtToken(user);
         String rawRefreshToken = refreshTokenService.createRefreshToken(user.getUsername());
 
@@ -95,7 +95,7 @@ public class AuthController {
             throw new ServiceException("RG-SEC10", "Cookie de refresh manquant");
         }
         RefreshTokenService.RotateResult result = refreshTokenService.rotateRefreshToken(rawToken);
-        User user = (User) userDetailsService.loadUserByUsername(result.username());
+        Personnel user = (Personnel) userDetailsService.loadUserByUsername(result.username());
         if (!user.isEnabled()) {
             refreshTokenService.revokeAllForUser(user.getUsername());
             throw new ServiceException("RG-SEC04", "Compte désactivé");
