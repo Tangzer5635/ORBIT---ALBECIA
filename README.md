@@ -14,13 +14,13 @@ Application web de gestion du parc informatique et des salles de formation.
 
 ```
 main          → version stable (démos, rendus)
- └── dev      → intégration du travail de l'équipe
+ └── develop  → intégration du travail de l'équipe
       ├── dev/tanguy
       ├── dev/paulux
       └── dev/besnard
 ```
 
-`main` et `dev` sont protégées : on n'y pousse jamais directement, tout passe par une Pull Request.
+`main` et `develop` sont protégées : on n'y pousse jamais directement, tout passe par une Pull Request.
 
 ## Workflow au quotidien
 
@@ -30,7 +30,7 @@ main          → version stable (démos, rendus)
    ```
 2. Récupérer le travail des autres avant de commencer :
    ```
-   git pull origin dev
+   git pull origin develop
    ```
 3. Coder, puis enregistrer :
    ```
@@ -38,8 +38,8 @@ main          → version stable (démos, rendus)
    git commit -m "feat(backend): ajout de l'entité Salle"
    git push
    ```
-4. Quand un morceau fonctionne : ouvrir une **Pull Request `dev/<prenom>` → `dev`** sur GitHub.
-5. Après relecture, la PR est fusionnée dans `dev`. `dev` est fusionnée dans `main` à chaque jalon.
+4. Quand un morceau fonctionne : ouvrir une **Pull Request `dev/<prenom>` → `develop`** sur GitHub.
+5. Après relecture, la PR est fusionnée dans `develop`. `develop` est fusionnée dans `main` à chaque jalon.
 
 **Règle d'or : des petites PR, souvent.** Une branche qui reste des semaines sans être fusionnée accumule les conflits.
 
