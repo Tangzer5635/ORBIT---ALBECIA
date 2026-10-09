@@ -1,9 +1,8 @@
 package net.ent.etnc.orbit.controllers;
 
-import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
-import net.ent.etnc.orbit.models.entities.Batiment;
-import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
 import net.ent.etnc.orbit.dtos.assemblers.BatimentAssembler;
+import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
 import net.ent.etnc.orbit.services.BatimentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -51,18 +50,6 @@ public class BatimentController {
                 batimentAssembler.toDto(
                         batimentService.create(
                                 batimentAssembler.toEntity(batimentDto))));
-    }
-
-    @PutMapping("/{id}/")
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<BatimentResponseDto> put(@PathVariable Long id, @RequestBody BatimentRequestDto batimentDto) {
-        if (!batimentService.existsById(id)) return ResponseEntity.notFound().build();
-        Batiment batiment = batimentAssembler.toEntity(batimentDto);
-        batiment.setId(id);
-        return ResponseEntity.ok(
-                batimentAssembler.toDto(
-                        batimentService.update(
-                                batiment)));
     }
 
     @DeleteMapping("/{id}/")

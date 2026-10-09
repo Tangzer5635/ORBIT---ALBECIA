@@ -42,6 +42,4 @@ public class Master extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "date_creation", nullable = false)
     private LocalDateTime dateCreation;
 
-
-
 }

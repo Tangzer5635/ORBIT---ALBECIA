@@ -9,8 +9,8 @@ import java.util.Set;
 public enum Role {
     STAGIAIRE("Stagiaire"),
     FORMATEUR("Formateur"),
-    ROLE_TECHNIQUE("Technicien", true),
-    GESTIONNAIRE("Gestionnaire", ROLE_TECHNIQUE),
+    TECHNIQUE("Technicien", true),
+    GESTIONNAIRE("Gestionnaire", TECHNIQUE),
     ADMINISTRATEUR("Administrateur", GESTIONNAIRE);
 
     @Getter
