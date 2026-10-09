@@ -1,8 +1,8 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
-import net.ent.etnc.orbit.dtos.UserRequestDto;
-import net.ent.etnc.orbit.dtos.UserResponseDto;
+import net.ent.etnc.orbit.dtos.requestDTO.UserRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.services.PersonnelService;

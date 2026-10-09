@@ -1,7 +1,7 @@
 package net.ent.etnc.orbit.dtos.assemblers;
 
-import net.ent.etnc.orbit.dtos.UserRequestDto;
-import net.ent.etnc.orbit.dtos.UserResponseDto;
+import net.ent.etnc.orbit.dtos.requestDTO.UserRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import org.springframework.stereotype.Component;
 

@@ -55,8 +55,8 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
                 .orElseThrow(() ->
                         new ServiceException("Utilisateur introuvable")
                 );
-        if (user.getRole() == Role.ADMIN) {
-            long nombreAdmins = repository.countByRole(Role.ADMIN);
+        if (user.getRole() == Role.ADMINISTRATEUR) {
+            long nombreAdmins = repository.countByRole(Role.ADMINISTRATEUR);
             if (nombreAdmins <= 1) {
                 throw new ServiceException("Impossible de supprimer le dernier administrateur.");
             }
@@ -75,7 +75,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     public Personnel deactivate(Long id) throws ServiceException {
         Personnel user = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
-        if (user.getRole() == Role.ADMIN) {
+        if (user.getRole() == Role.ADMINISTRATEUR) {
             throw new ServiceException("RG-U05", "Impossible de désactiver un administrateur.");
         }
         user.setActive(false);

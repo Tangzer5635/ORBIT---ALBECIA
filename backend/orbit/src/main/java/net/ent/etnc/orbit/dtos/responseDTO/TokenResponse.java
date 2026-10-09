@@ -1,4 +1,4 @@
-package net.ent.etnc.orbit.dtos;
+package net.ent.etnc.orbit.dtos.responseDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
