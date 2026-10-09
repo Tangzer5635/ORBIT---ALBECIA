@@ -1,4 +1,4 @@
-package net.ent.etnc.orbit.dtos;
+package net.ent.etnc.orbit.dtos.requestDTO;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
