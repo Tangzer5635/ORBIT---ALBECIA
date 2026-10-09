@@ -64,6 +64,12 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
                     foreignKey = @ForeignKey(name = "fk_salle_personnel_personnel")))
     private List<Personnel> personnels =  new ArrayList<>();
 
+    @Valid
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "salle_id",
+            foreignKey = @ForeignKey(name = "fk_materiel_salle"))
+    private List<Materiel> materiels = new ArrayList<>();
+
     @Getter @Setter
     @Column(name = "suspendu", nullable = false)
     private boolean suspendu;
@@ -99,8 +105,20 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
     public void addPoste(Poste poste) {
         postes.add(poste);
     }
+
     public void removePoste(Poste poste) {
         postes.remove(poste);
     }
 
+    public List<Materiel> getMateriels() {
+        return Collections.unmodifiableList(materiels);
+    }
+
+    public void addMateriel(Materiel materiel) {
+        materiels.add(materiel);
+    }
+
+    public void removeMateriel(Materiel materiel) {
+        materiels.remove(materiel);
+    }
 }

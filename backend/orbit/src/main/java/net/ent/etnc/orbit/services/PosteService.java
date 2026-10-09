@@ -5,4 +5,6 @@ import net.ent.etnc.orbit.services.commons.Service;
 
 public interface PosteService extends Service<Poste, Long> {
 
+    boolean contientMateriel(Long idMateriel);
+
 }

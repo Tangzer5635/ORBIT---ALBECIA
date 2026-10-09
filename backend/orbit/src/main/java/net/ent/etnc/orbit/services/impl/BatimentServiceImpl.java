@@ -1,6 +1,6 @@
 package net.ent.etnc.orbit.services.impl;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
@@ -20,6 +20,19 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
     public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService) {
         super(batimentRepository);
         this.salleService = salleService;
+    }
+
+    @Override
+    @Transactional
+    public Salle creerSalle(Long idBatiment, Salle salle) {
+        Batiment batiment = repository.findById(idBatiment)
+                .orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
+        if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
+            throw new ServiceException("Une salle " + salle.getNumSalle() + " existe déjà dans ce bâtiment");
+
+        Salle creee = salleService.create(salle);
+        batiment.addSalle(creee);
+        return creee;
     }
 
     @Override

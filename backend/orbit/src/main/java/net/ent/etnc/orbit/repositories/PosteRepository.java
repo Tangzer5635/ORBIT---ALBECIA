@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PosteRepository extends BaseRepository<Poste> {
 
+    boolean existsByMateriels_Id(Long idMateriel);
+
 }

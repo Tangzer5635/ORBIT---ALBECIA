@@ -1,28 +1,37 @@
 package net.ent.etnc.orbit.controllers;
 
-import net.ent.etnc.orbit.models.entities.Materiel;
-import net.ent.etnc.orbit.services.MaterielService;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
+import net.ent.etnc.orbit.services.SalleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/affectermateriel")
 public class AffecterMaterielController {
 
-    private MaterielService materielService;
+    private final SalleService salleService;
+    private final SalleAssembler salleAssembler;
 
-    public AffecterMaterielController(MaterielService materielService) {
-        this.materielService = materielService;
+    @Autowired
+    public AffecterMaterielController(SalleService salleService, SalleAssembler salleAssembler) {
+        this.salleService = salleService;
+        this.salleAssembler = salleAssembler;
     }
 
-    //TODO AFFECTER UN MATERIAL A UNE SALLE
-//    @PostMapping
-//    @PreAuthorize("hasRole('GESTIONNAIRE')")
-//    public ResponseEntity<MaterielAffectDto> affecterAUneSalle(@Valid @RequestBody MaterielAffectDto materielAffectDto){
-//        return ResponseEntity.ok(
-//
-//        )
-//    }
+    @PostMapping("/salles/{idSalle}/materiels/{idMateriel}/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> affecterASalle(@PathVariable Long idSalle, @PathVariable Long idMateriel) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.affecterMateriel(idSalle, idMateriel)));
+    }
+
+    @DeleteMapping("/salles/{idSalle}/materiels/{idMateriel}/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<Void> remettreEnStock(@PathVariable Long idSalle, @PathVariable Long idMateriel) {
+        salleService.remettreEnStock(idSalle, idMateriel);
+        return ResponseEntity.noContent().build();
+    }
 }
