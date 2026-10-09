@@ -73,13 +73,6 @@ public class MaterielController {
         materielService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
-//TODO AFFECTER UN MATERIAL A UNE SALLE
-//    @PostMapping
-//    @PreAuthorize("hasRole('GESTIONNAIRE')")
-//    public ResponseEntity<MaterielAffectDto> affecterAUneSalle(@Valid @RequestBody MaterielAffectDto materielAffectDto){
-//        return ResponseEntity.ok(
-//
-//        )
-//    }
+
 
 }

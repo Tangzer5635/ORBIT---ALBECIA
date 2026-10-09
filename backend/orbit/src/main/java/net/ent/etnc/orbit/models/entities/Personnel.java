@@ -37,7 +37,7 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     @NotNull(message = "nom ne doit pas être null")
     @NotEmpty(message = "nom ne doit pas être vide")
     @NotBlank(message = "nom doit contenir des caractères lisibles")
-    @Length(min = 1, max = 50, message = "nom doit avoir entre 3 et 50 caractères")
+    @Length(min = 1, max = 50, message = "nom doit avoir entre 1 et 50 caractères")
     @Column(name = "nom", length = 50, nullable = false)
     private String nom;
 
@@ -46,8 +46,8 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     @NotNull(message = "prenom ne doit pas être null")
     @NotEmpty(message = "prenom ne doit pas être vide")
     @NotBlank(message = "prenom doit contenir des caractères lisibles")
-    @Length(min = 1, max = 30, message = "prenom doit avoir entre 3 et 30 caractères")
-    @Column(name = "prenom", length = 50, nullable = false)
+    @Length(min = 1, max = 30, message = "prenom doit avoir entre 1 et 30 caractères")
+    @Column(name = "prenom", length = 30, nullable = false)
     private String prenom;
 
     @Getter

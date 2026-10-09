@@ -25,3 +25,5 @@ app:
     secret: orbit_albecia_secret_key_is_very_long_and_complex
     expiration-ms: 3600000
     refresh-expiration-ms: 14400000
+server:
+  port: 8080
