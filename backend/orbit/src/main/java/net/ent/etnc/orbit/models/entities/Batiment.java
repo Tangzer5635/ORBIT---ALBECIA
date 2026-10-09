@@ -14,8 +14,8 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Table(name = "BATIMENT",
-        uniqueConstraints = @UniqueConstraint(name = "uk_BATIMENT_numBatiment", columnNames = {"numBatiment"}))
+@Table(name = "batiment",
+        uniqueConstraints = @UniqueConstraint(name = "uk_batiment_num_batiment", columnNames = {"num_batiment"}))
 @EqualsAndHashCode(callSuper = false, of = {"numBatiment"})
 @ToString(callSuper = true, of = {"numBatiment"})
 public class Batiment extends AbstractPersistableWithIdSetter<Long> {
@@ -30,8 +30,8 @@ public class Batiment extends AbstractPersistableWithIdSetter<Long> {
 
     @Valid
     @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BATIMENT_id",
-            foreignKey = @ForeignKey(name = "fk_SALLE_BATIMENT"))
+    @JoinColumn(name = "batiment_id",
+            foreignKey = @ForeignKey(name = "fk_salle_batiment"))
     private List<Salle> salles = new ArrayList<>();
 
     public List<Salle> getSalles() {

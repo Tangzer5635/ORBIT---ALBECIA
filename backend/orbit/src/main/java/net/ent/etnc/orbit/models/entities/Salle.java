@@ -15,13 +15,16 @@ import java.util.Collections;
 import java.util.List;
 
 @Entity
-@Table(name = "SALLE",
-        uniqueConstraints = @UniqueConstraint(name = "uk_SALLE_BATIMENT_ID_numSalle", columnNames = {"BATIMENT_ID, numSalle"}))
-@EqualsAndHashCode(callSuper = false, of = {"BATIMENT_ID, numSalle"})
+@Table(name = "salle",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_salle_batiment_id_num_salle",
+                columnNames = {"batiment_id", "num_salle"}
+        ))
+@EqualsAndHashCode(callSuper = false, of = {"numSalle"})
 @ToString(callSuper = true, of = {"numSalle", "etage", "type"})
 public class Salle extends AbstractPersistableWithIdSetter<Long> {
-    
-    @Getter 
+
+    @Getter
     @Setter
     @NotNull(message = "numSalle ne doit pas être null")
     @NotEmpty(message = "numSalle ne doit pas être vide")
@@ -46,31 +49,35 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "type",length = 20, nullable = false)
     private TypeSalle type;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "personnel_id", nullable = false, foreignKey = @ForeignKey(name = "fk_SALLE_gestionnaire"))
-    private Personnel personnel;
+    @Getter
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gestionnaire_id", foreignKey = @ForeignKey(name = "fk_salle_gestionnaire"))
+    private Personnel gestionnaire;
 
     @Valid
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "SALLE_PERSONNEL",
+    @JoinTable(name = "salle_personnel",
             joinColumns = @JoinColumn(name = "salle_id",
-                    foreignKey = @ForeignKey(name = "fk_SALLE_PERSONNEL_salle")),
+                    foreignKey = @ForeignKey(name = "fk_salle_personnel_salle")),
             inverseJoinColumns = @JoinColumn(name = "personnel_id",
-                    foreignKey = @ForeignKey(name = "fk_SALLE_PERSONNEL_personnel")))
+                    foreignKey = @ForeignKey(name = "fk_salle_personnel_personnel")))
     private List<Personnel> personnels =  new ArrayList<>();
 
     @Getter @Setter
-    @Column(length = 50, nullable = false)
+    @Column(name = "suspendu", nullable = false)
     private boolean suspendu;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "master_id", nullable = false, foreignKey = @ForeignKey(name = "fk_SALLE_master"))
+    @Getter
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "master_id", foreignKey = @ForeignKey(name = "fk_salle_master"))
     private Master master;
 
     @Valid
     @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SALLE_id",
-            foreignKey = @ForeignKey(name = "fk_POSTE_SALLE"))
+    @JoinColumn(name = "salle_id",
+            foreignKey = @ForeignKey(name = "fk_poste_salle"))
     private List<Poste> postes = new ArrayList<>();
 
     public List<Personnel> getPersonnels() {

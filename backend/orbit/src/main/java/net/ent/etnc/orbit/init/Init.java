@@ -5,6 +5,7 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.MaterielService;
@@ -61,8 +62,8 @@ public class Init implements CommandLineRunner {
     }
 
     private void initMateriels() throws ServiceException {
-        matos1 = materielService.create(buildMateriel("A1B2C3", "LBC1234", LocalDate.of(2026,1,20), LocalDate.of(2025,1,10)));
-        matos2 = materielService.create(buildMateriel("Z9Y8X7", "AZE9876", LocalDate.of(2026,7,20), LocalDate.of(2026,1,13)));
+        matos1 = materielService.create(buildMateriel("A1B2C3", "LBC1234", LocalDate.of(2026,1,20), LocalDate.of(2025,1,10), TypeMateriel.UC));
+        matos2 = materielService.create(buildMateriel("Z9Y8X7", "AZE9876", LocalDate.of(2026,7,20), LocalDate.of(2026,1,13), TypeMateriel.Ecran));
     }
 
     private void initSalles() throws ServiceException {
@@ -86,12 +87,13 @@ public class Init implements CommandLineRunner {
         return u;
     }
 
-    private Materiel buildMateriel(String numSerie, String modele, LocalDate dateFinGarantie, LocalDate dateAcquisition) {
+    private Materiel buildMateriel(String numSerie, String modele, LocalDate dateFinGarantie, LocalDate dateAcquisition, TypeMateriel type) {
         Materiel m = new Materiel();
         m.setNumSerie(numSerie);
         m.setModele(modele);
         m.setDateFinGarantie(dateFinGarantie);
         m.setDateAcquisition(dateAcquisition);
+        m.setType(type);
         return m;
     }
 
