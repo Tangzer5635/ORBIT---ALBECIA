@@ -1,8 +1,10 @@
 package net.ent.etnc.orbit.init;
 
+import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -10,6 +12,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 public class Init implements CommandLineRunner {
@@ -20,12 +23,16 @@ public class Init implements CommandLineRunner {
 
     private Materiel matos1;
     private Materiel matos2;
+
+    private Batiment bat1;
     private PersonnelService personnelService;
     private MaterielService materielService;
+    private BatimentService batimentService;
 
-    public Init(PersonnelService personnelService, MaterielService materielService) {
+    public Init(PersonnelService personnelService, MaterielService materielService, BatimentService batimentService) {
         this.personnelService = personnelService;
         this.materielService = materielService;
+        this.batimentService = batimentService;
     }
 
     @Override
@@ -33,6 +40,7 @@ public class Init implements CommandLineRunner {
         if (personnelService.count() > 0) return;
         initUsers();
         initMateriels();
+        initBatiments();
     }
 
     private void initUsers() throws ServiceException {
@@ -44,6 +52,10 @@ public class Init implements CommandLineRunner {
     private void initMateriels() throws ServiceException {
         matos1 = materielService.create(buildMateriel("A1B2C3", "LBC1234", LocalDate.of(2026,1,20), LocalDate.of(2025,1,10)));
         matos2 = materielService.create(buildMateriel("Z9Y8X7", "AZE9876", LocalDate.of(2026,7,20), LocalDate.of(2026,1,13)));
+    }
+
+    private void initBatiments() throws ServiceException {
+        bat1 = batimentService.create(buildBatiment("201"));
     }
 
     private Personnel buildUser(String nid, String nom, String prenom, String username, String password, Role role) {
@@ -65,5 +77,11 @@ public class Init implements CommandLineRunner {
         m.setDateFinGarantie(dateFinGarantie);
         m.setDateAcquisition(dateAcquisition);
         return m;
+    }
+
+    private Batiment buildBatiment(String numBatiment) {
+        Batiment b = new Batiment();
+        b.setNumBatiment(numBatiment);
+        return b;
     }
 }
