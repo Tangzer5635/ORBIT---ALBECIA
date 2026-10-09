@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.dtos.assemblers;
 import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
+import net.ent.etnc.orbit.models.entities.Salle;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class BatimentAssembler {
         return BatimentResponseDto.builder()
                 .id(batiment.getId())
                 .numBatiment(batiment.getNumBatiment())
-                .sallesId(batiment.getSalles().stream().map(s -> s.getId()))
+                .sallesId(batiment.getSalles().stream().map(Salle::getId).toList())
                 .build();
     }
 

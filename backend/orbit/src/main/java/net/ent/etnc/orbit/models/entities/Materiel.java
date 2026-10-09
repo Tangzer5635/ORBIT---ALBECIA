@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
+import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
@@ -48,4 +49,11 @@ public class Materiel extends AbstractPersistableWithIdSetter<Long> {
     @NotNull(message = "dateAcquisition ne doit pas être null")
     @Column(name = "date_acquisition", nullable = false)
     private LocalDate dateAcquisition;
+
+    @Getter
+    @Setter
+    @NotNull(message = "type ne doit pas être null")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type",length = 15, nullable = false)
+    private TypeMateriel type;
 }

@@ -73,22 +73,5 @@ public class BatimentController {
         return ResponseEntity.noContent().build();
     }
 
-    //TODO Ajouter une salle à un batiment
-//    @PostMapping
-//    @PreAuthorize("hasRole('ADMINISTRATEUR')")
-//    public ResponseEntity<AjouterSalleABatiment> addSalleAUnBatiment(@RequestBody AjouterSalleABatiment batimentDto) {
-//        return ResponseEntity.ok(
-//              batimentService.addSalleAUnBatiment(batimentDto.idSalle, batimentDto.idBatiment)
-//        )
-//    }
-
-    //TODO Supprimer une salle à un batiment
-//    @PostMapping
-//    @PreAuthorize("hasRole('ADMINISTRATEUR')")
-//    public ResponseEntity<SupprimerDalleABatiment> deleteSalleAUnBatiment(@RequestBody SupprimerDalleABatiment batimentDto) {
-//        return ResponseEntity.ok(
-//
-//        )
-//    }
 
 }
