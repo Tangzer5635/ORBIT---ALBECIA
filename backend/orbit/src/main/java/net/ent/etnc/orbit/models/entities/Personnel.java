@@ -17,7 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 
 @Entity
-@Table(name = "USERS",
+@Table(name = "personnel",
         uniqueConstraints = @UniqueConstraint(name = "uk_USER_nid", columnNames = {"nid"}))
 @EqualsAndHashCode(callSuper = false, of = {"nid"})
 @ToString(callSuper = true, of = {"nid","login", "role"})
@@ -61,7 +61,7 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
 
     @Getter
     @Setter
-    @Column(name = "motDePasse", nullable = false)
+    @Column(name = "mot_de_passe", nullable = false)
     private String motDePasse;
 
     @Getter

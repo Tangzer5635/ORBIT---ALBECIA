@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BatimentRepository extends BaseRepository<Batiment> {
-
+    boolean existsBySalles_Id(Long idSalle);
 }

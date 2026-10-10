@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.dtos.requestDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import net.ent.etnc.orbit.models.enums.TypeMateriel;
 
 import java.time.LocalDate;
 
@@ -23,4 +24,9 @@ public class MaterielRequestDto {
 
     @NotNull(message = "dateAcquisition ne doit pas être null")
     private LocalDate dateAcquisition;
+
+    @NotNull(message = "type ne doit pas être null")
+    private TypeMateriel type;
+
+    private Long idStockage;
 }
