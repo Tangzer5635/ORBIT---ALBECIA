@@ -47,7 +47,7 @@ public class MaterielController {
 
     @PostMapping
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> post(@RequestBody MaterielRequestDto materielRequestDto) {
+    public ResponseEntity<MaterielResponseDto> post(@Valid @RequestBody MaterielRequestDto materielRequestDto) {
         return ResponseEntity.ok(
                 materielAssembler.toDto(
                         materielService.create(
@@ -56,7 +56,7 @@ public class MaterielController {
 
     @PutMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> put(@PathVariable Long id, @RequestBody MaterielRequestDto materielRequestDto) {
+    public ResponseEntity<MaterielResponseDto> put(@PathVariable Long id, @Valid @RequestBody MaterielRequestDto materielRequestDto) {
         if (!materielService.existsById(id)) return ResponseEntity.notFound().build();
         Materiel materiel = materielAssembler.toEntity(materielRequestDto);
         materiel.setId(id);
@@ -72,6 +72,12 @@ public class MaterielController {
         if (!materielService.existsById(id)) return ResponseEntity.notFound().build();
         materielService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/archiver/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<MaterielResponseDto> archiver(@PathVariable Long id) {
+        return ResponseEntity.ok(materielAssembler.toDto(materielService.archiver(id)));
     }
 
 

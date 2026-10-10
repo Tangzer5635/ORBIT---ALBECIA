@@ -7,4 +7,8 @@ public interface PosteService extends Service<Poste, Long> {
 
     boolean contientMateriel(Long idMateriel);
 
+    Poste affecterMateriel(Long idPoste, Long idMateriel);
+
+    void remettreEnStock(Long idPoste, Long idMateriel);
+
 }

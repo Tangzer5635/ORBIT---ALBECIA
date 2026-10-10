@@ -16,9 +16,10 @@ public class MaterielAssembler {
                 .numSerie(materiel.getNumSerie())
                 .modele(materiel.getModele())
                 .dateFinGarantie(materiel.getDateFinGarantie())
-
+                .dateAcquisition(materiel.getDateAcquisition())
+                .type(materiel.getType())
+                .etat(materiel.getEtat())
                 .build();
-
     }
 
     public List<MaterielResponseDto> toDtos(List<Materiel> materiels) {
@@ -27,12 +28,13 @@ public class MaterielAssembler {
                 .toList();
     }
 
-    public Materiel toEntity(MaterielRequestDto materielRequestDto) {
+    public Materiel toEntity(MaterielRequestDto dto) {
         Materiel materiel = new Materiel();
-        materiel.setNumSerie(materielRequestDto.getNumSerie());
-        materiel.setModele(materielRequestDto.getModele());
-        materiel.setDateFinGarantie(materielRequestDto.getDateFinGarantie());
-        materiel.setDateAcquisition(materielRequestDto.getDateAcquisition());
+        materiel.setNumSerie(dto.getNumSerie());
+        materiel.setModele(dto.getModele());
+        materiel.setDateFinGarantie(dto.getDateFinGarantie());
+        materiel.setDateAcquisition(dto.getDateAcquisition());
+        materiel.setType(dto.getType());
         return materiel;
     }
 

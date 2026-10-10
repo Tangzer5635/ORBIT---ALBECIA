@@ -5,4 +5,6 @@ import net.ent.etnc.orbit.services.commons.Service;
 
 public interface MaterielService extends Service<Materiel, Long> {
 
+    Materiel archiver(Long id);
+
 }

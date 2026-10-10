@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PastOrPresent;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.TypeMateriel;
@@ -55,7 +57,7 @@ public class Materiel extends AbstractPersistableWithIdSetter<Long> {
     @Setter
     @NotNull(message = "type ne doit pas être null")
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 15, nullable = false)
+    @Column(name = "type", length = 20, nullable = false)
     private TypeMateriel type;
 
 
