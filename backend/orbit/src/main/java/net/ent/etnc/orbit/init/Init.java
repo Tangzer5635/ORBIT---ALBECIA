@@ -1,7 +1,6 @@
 package net.ent.etnc.orbit.init;
 
 import net.ent.etnc.orbit.models.entities.*;
-import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
@@ -21,14 +20,16 @@ public class Init implements CommandLineRunner {
     private final BatimentService batimentService;
     private final SalleService salleService;
     private final PosteService posteService;
+    private final AffecterMaterielService affecterMaterielService;
 
     public Init(PersonnelService personnelService, MaterielService materielService, BatimentService batimentService,
-                SalleService salleService, PosteService posteService) {
+                SalleService salleService, PosteService posteService, AffecterMaterielService affecterMaterielService) {
         this.personnelService = personnelService;
         this.materielService = materielService;
         this.batimentService = batimentService;
         this.salleService = salleService;
         this.posteService = posteService;
+        this.affecterMaterielService = affecterMaterielService;
     }
 
     @Override
@@ -48,59 +49,56 @@ public class Init implements CommandLineRunner {
         Personnel inactif = personnelService.create(buildUser("4000000004", "Inactif", "Paul", "p.inactif", "1595", Role.STAGIAIRE));
         personnelService.deactivate(inactif.getId());
 
-        // ---------- Bâtiments + salles ----------
+        // ---------- Bâtiments + salles (l'ordre fixe les ids utilisés dans materiel-tests.http) ----------
         Batiment b201 = batimentService.create(buildBatiment("B201"));
         Batiment b305 = batimentService.create(buildBatiment("B305"));
 
-        Salle s101 = batimentService.creerSalle(b201.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));
-        Salle s102 = batimentService.creerSalle(b201.getId(), buildSalle("102", "1", TypeSalle.SalleDeCours));
-        Salle s199 = batimentService.creerSalle(b201.getId(), buildSalle("199", "1", TypeSalle.SalleStockage));
-        Salle s305 = batimentService.creerSalle(b305.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours)); // même numéro, autre bâtiment
-        salleService.create(buildSalle("999", "0", TypeSalle.SalleStockage));                              // salle sans bâtiment
+        Salle s101 = batimentService.creerSalle(b201.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));   // 1
+        Salle s102 = batimentService.creerSalle(b201.getId(), buildSalle("102", "1", TypeSalle.SalleDeCours));   // 2
+        Salle r201 = batimentService.creerSalle(b201.getId(), buildSalle("199", "1", TypeSalle.SalleStockage));  // 3 : réserve B201
+        Salle s305 = batimentService.creerSalle(b305.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));   // 4 : même numéro, autre bâtiment
+        Salle r305 = batimentService.creerSalle(b305.getId(), buildSalle("199", "0", TypeSalle.SalleStockage));  // 5 : réserve B305
+        salleService.create(buildSalle("999", "0", TypeSalle.SalleStockage));                                    // 6 : réserve sans bâtiment
 
         salleService.changerGestionnaire(s101.getId(), besnard.getId());
         salleService.changerGestionnaire(s102.getId(), besnard.getId());
-        salleService.changerGestionnaire(s199.getId(), besnard.getId());
+        salleService.changerGestionnaire(r201.getId(), besnard.getId());
         salleService.changerGestionnaire(s305.getId(), martin.getId());
+        salleService.changerGestionnaire(r305.getId(), martin.getId());
 
         s101.addPersonnel(ledeme);
         s102.addPersonnel(ledeme);
         s305.addPersonnel(durand);
 
         // ---------- Postes ----------
-        Poste p1 = creerPoste("P101-01", s101, lebuhe);
-        Poste p2 = creerPoste("P101-02", s101, bernard);
-        Poste p3 = creerPoste("P102-01", s102, petit);
-        creerPoste("P305-01", s305, null); // poste vide
+        Poste p1 = creerPoste("P101-01", s101, lebuhe);   // 1
+        Poste p2 = creerPoste("P101-02", s101, bernard);  // 2
+        Poste p3 = creerPoste("P102-01", s102, petit);    // 3
+        creerPoste("P305-01", s305, null);                // 4 : poste vide
 
-        // ---------- Matériels ----------
-        Materiel uc1 = creerMateriel("UC-0001", "Dell OptiPlex 7010", 2027, TypeMateriel.UC);
-        Materiel ec1 = creerMateriel("EC-0001", "Dell P2422H", 2027, TypeMateriel.Ecran);
-        Materiel uc2 = creerMateriel("UC-0002", "Dell OptiPlex 7010", 2027, TypeMateriel.UC);
-        Materiel ec2 = creerMateriel("EC-0002", "Dell P2422H", 2027, TypeMateriel.Ecran);
-        Materiel uc3 = creerMateriel("UC-0003", "HP EliteDesk 800", 2025, TypeMateriel.UC);
-        Materiel tbi = creerMateriel("TBI-0001", "Promethean ActivPanel", 2028, TypeMateriel.TableauInteractif);
-        Materiel vp1 = creerMateriel("VP-0001", "Epson EB-W51", 2027, TypeMateriel.VideoProjecteur);
-        creerMateriel("UC-0004", "Dell OptiPlex 7010", 2028, TypeMateriel.UC);           // stock
-        creerMateriel("EC-0003", "Dell P2422H", 2028, TypeMateriel.Ecran);               // stock
-        creerMateriel("IMP-0001", "HP LaserJet M404", 2027, TypeMateriel.Imprimante);    // stock
-        creerMateriel("VP-0002", "Epson EB-W51", 2028, TypeMateriel.VideoProjecteur);    // stock
-        Materiel vieux = creerMateriel("UC-0099", "Dell OptiPlex 3020", 2020, TypeMateriel.UC);
+        // ---------- Matériels (tous créés en stock dans la réserve B201) ----------
+        Materiel uc1 = creerMateriel("UC-0001", "Dell OptiPlex 7010", 2027, TypeMateriel.UC, r201);                   // 1
+        Materiel ec1 = creerMateriel("EC-0001", "Dell P2422H", 2027, TypeMateriel.Ecran, r201);                       // 2
+        Materiel uc2 = creerMateriel("UC-0002", "Dell OptiPlex 7010", 2027, TypeMateriel.UC, r201);                   // 3
+        Materiel ec2 = creerMateriel("EC-0002", "Dell P2422H", 2027, TypeMateriel.Ecran, r201);                       // 4
+        Materiel uc3 = creerMateriel("UC-0003", "HP EliteDesk 800", 2025, TypeMateriel.UC, r201);                     // 5 : garantie expirée -> A_REMPLACER
+        Materiel tbi = creerMateriel("TBI-0001", "Promethean ActivPanel", 2028, TypeMateriel.TableauInteractif, r201); // 6
+        Materiel vp1 = creerMateriel("VP-0001", "Epson EB-W51", 2027, TypeMateriel.VideoProjecteur, r201);            // 7
+        creerMateriel("UC-0004", "Dell OptiPlex 7010", 2028, TypeMateriel.UC, r201);                                  // 8  : stock
+        creerMateriel("EC-0003", "Dell P2422H", 2028, TypeMateriel.Ecran, r201);                                      // 9  : stock
+        creerMateriel("IMP-0001", "HP LaserJet M404", 2027, TypeMateriel.Imprimante, r201);                           // 10 : stock
+        creerMateriel("VP-0002", "Epson EB-W51", 2028, TypeMateriel.VideoProjecteur, r201);                           // 11 : stock
+        Materiel vieux = creerMateriel("UC-0099", "Dell OptiPlex 3020", 2020, TypeMateriel.UC, r201);                 // 12 : archivé
 
-        // Affectations aux postes
-        posteService.affecterMateriel(p1.getId(), uc1.getId());
-        posteService.affecterMateriel(p1.getId(), ec1.getId());
-        posteService.affecterMateriel(p2.getId(), uc2.getId());
-        posteService.affecterMateriel(p2.getId(), ec2.getId());
-        posteService.affecterMateriel(p3.getId(), uc3.getId());
+        // ---------- Affectations ----------
+        affecterMaterielService.affecterAPoste(p1.getId(), uc1.getId());
+        affecterMaterielService.affecterAPoste(p1.getId(), ec1.getId());
+        affecterMaterielService.affecterAPoste(p2.getId(), uc2.getId());
+        affecterMaterielService.affecterAPoste(p2.getId(), ec2.getId());
+        affecterMaterielService.affecterAPoste(p3.getId(), uc3.getId());
+        affecterMaterielService.affecterASalle(s101.getId(), tbi.getId());
+        affecterMaterielService.affecterASalle(s102.getId(), vp1.getId());
 
-        // Affectations aux salles
-        salleService.affecterMateriel(s101.getId(), tbi.getId());
-        salleService.affecterMateriel(s102.getId(), vp1.getId());
-
-        // États particuliers
-        ec2.setEtat(EtatMateriel.DEFECTUEUX);
-        uc3.setEtat(EtatMateriel.A_REMPLACER);
         materielService.archiver(vieux.getId());
     }
 
@@ -113,14 +111,14 @@ public class Init implements CommandLineRunner {
         return cree;
     }
 
-    private Materiel creerMateriel(String numSerie, String modele, int anneeFinGarantie, TypeMateriel type) throws ServiceException {
+    private Materiel creerMateriel(String numSerie, String modele, int anneeFinGarantie, TypeMateriel type, Salle stockage) throws ServiceException {
         Materiel m = new Materiel();
         m.setNumSerie(numSerie);
         m.setModele(modele);
         m.setDateAcquisition(LocalDate.of(anneeFinGarantie - 3, 9, 1));
         m.setDateFinGarantie(LocalDate.of(anneeFinGarantie, 9, 1));
         m.setType(type);
-        return materielService.create(m);
+        return materielService.creerEnStock(m, stockage.getId());
     }
 
     private Personnel buildUser(String nid, String nom, String prenom, String login, String password, Role role) {

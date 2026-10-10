@@ -1,14 +1,12 @@
 package net.ent.etnc.orbit.services.impl;
 
-import org.springframework.transaction.annotation.Transactional;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
-import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.SalleRepository;
-import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -16,20 +14,21 @@ import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> implements SalleService {
 
-    private final MaterielService materielService;
     private final PosteService posteService;
     private final PersonnelService personnelService;
 
     @Autowired
-    public SalleServiceImpl(SalleRepository salleRepository, MaterielService materielService, PosteService posteService, PersonnelService personnelService) {
+    public SalleServiceImpl(SalleRepository salleRepository, PosteService posteService, PersonnelService personnelService) {
         super(salleRepository);
-        this.materielService = materielService;
         this.posteService = posteService;
         this.personnelService = personnelService;
     }
@@ -40,20 +39,25 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         Salle salle = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
 
-        for (Materiel m : List.copyOf(salle.getMateriels())) {
-            salle.removeMateriel(m);
-            m.setEtat(EtatMateriel.DISPONIBLE);
-        }
+        List<Materiel> aRanger = new ArrayList<>(salle.getMateriels());
+        salle.getPostes().forEach(p -> aRanger.addAll(p.getMateriels()));
+
+        if (!aRanger.isEmpty() && salle.getType() == TypeSalle.SalleStockage)
+            throw new ServiceException("Vide la salle de stockage avant de la supprimer");
+
+        Salle stockage = aRanger.isEmpty() ? null : trouverStockage(id);
+
+        for (Materiel m : List.copyOf(salle.getMateriels())) salle.removeMateriel(m);
+        for (Poste p : salle.getPostes())
+            for (Materiel m : List.copyOf(p.getMateriels())) p.removeMateriel(m);
+        repository.flush(); // détache d'abord, sinon Hibernate peut réécrire la FK dans le désordre
+
+        aRanger.forEach(stockage::addMateriel);
 
         for (Poste p : List.copyOf(salle.getPostes())) {
-            for (Materiel m : List.copyOf(p.getMateriels())) {
-                p.removeMateriel(m);
-                m.setEtat(EtatMateriel.DISPONIBLE);
-            }
             salle.removePoste(p);
             posteService.delete(p);
         }
-
         repository.delete(salle);
     }
 
@@ -64,42 +68,39 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         Personnel gestionnaire = personnelService.findById(idGestionnaire)
                 .orElseThrow(() -> new ServiceException("Personnel " + idGestionnaire + " introuvable"));
-
         if (gestionnaire.getRole() != Role.GESTIONNAIRE && gestionnaire.getRole() != Role.ADMINISTRATEUR)
             throw new ServiceException("Ce personnel n'est pas gestionnaire");
-
         salle.setGestionnaire(gestionnaire);
         return salle;
     }
 
     @Override
-    @Transactional
-    public Salle affecterMateriel(Long idSalle, Long idMateriel) {
-        Salle salle = repository.findById(idSalle)
-                .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        Materiel materiel = materielService.findById(idMateriel)
-                .orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
-
-        if (materiel.getEtat() == EtatMateriel.ARCHIVE)
-            throw new ServiceException("Un matériel archivé ne peut pas être affecté");
-        if (repository.existsByMateriels_Id(idMateriel) || posteService.contientMateriel(idMateriel))
-            throw new ServiceException("Le matériel est déjà affecté");
-
-        salle.addMateriel(materiel);
-        materiel.setEtat(EtatMateriel.NORMAL);
-        return salle;
+    @Transactional(readOnly = true)
+    public boolean estEnStock(Long idMateriel) {
+        return repository.existsByTypeAndMateriels_Id(TypeSalle.SalleStockage, idMateriel);
     }
 
     @Override
-    @Transactional
-    public void remettreEnStock(Long idSalle, Long idMateriel) {
-        Salle salle = repository.findById(idSalle)
-                .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        Materiel materiel = salle.getMateriels().stream()
-                .filter(m -> m.getId().equals(idMateriel))
-                .findFirst()
-                .orElseThrow(() -> new ServiceException("Ce matériel n'est pas dans cette salle"));
-        salle.removeMateriel(materiel);
-        materiel.setEtat(EtatMateriel.DISPONIBLE);
+    @Transactional(readOnly = true)
+    public Optional<Salle> salleDuMateriel(Long idMateriel) {
+        return repository.findByMateriels_Id(idMateriel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Salle trouverStockage(Long idSalle) {
+        return premiereReserve(repository.findSallesDuBatiment(idSalle, TypeSalle.SalleStockage));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Salle trouverStockageDuPoste(Long idPoste) {
+        return premiereReserve(repository.findSallesDuBatimentDuPoste(idPoste, TypeSalle.SalleStockage));
+    }
+
+    private Salle premiereReserve(List<Salle> reservesDuBatiment) {
+        return reservesDuBatiment.stream().findFirst()
+                .or(() -> repository.findFirstByTypeOrderByIdAsc(TypeSalle.SalleStockage))
+                .orElseThrow(() -> new ServiceException("Aucune salle de stockage n'existe"));
     }
 }

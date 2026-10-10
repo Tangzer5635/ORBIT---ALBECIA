@@ -1,0 +1,687 @@
+### =====================================================================
+### ORBIT - Tests API matériel V2 (état calculé, stock = salle de stockage)
+### Prérequis : back redémarré (ddl-auto: create) => jeu de données Init tout neuf
+### Lancer : "Run All Requests in File" puis exporter les résultats
+### =====================================================================
+
+@host = http://localhost:8080
+@api = {{host}}/api/v1
+
+### ---------------------------------------------------------------------
+### AUTH
+### ---------------------------------------------------------------------
+
+### A1 - Login gestionnaire
+POST {{api}}/auth/login/
+Content-Type: application/json
+
+{ "username": "r.besnard", "password": "12345" }
+
+> {%
+    client.test("A1 - Login gestionnaire -> 200 + token", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(!!response.body.accessToken, "Pas de accessToken");
+    });
+    client.global.set("token", response.body.accessToken);
+%}
+
+### A2 - Login stagiaire
+POST {{api}}/auth/login/
+Content-Type: application/json
+
+{ "username": "t.lebuhe", "password": "1595" }
+
+> {%
+    client.test("A2 - Login stagiaire -> 200", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+    });
+    client.global.set("tokenStagiaire", response.body.accessToken);
+%}
+
+### A3 - Login compte désactivé
+POST {{api}}/auth/login/
+Content-Type: application/json
+
+{ "username": "p.inactif", "password": "1595" }
+
+> {%
+    client.test("A3 - Login compte désactivé -> 401", () => {
+        client.assert(response.status === 401, "Status " + response.status);
+    });
+%}
+
+### A4 - Login mauvais mot de passe
+POST {{api}}/auth/login/
+Content-Type: application/json
+
+{ "username": "r.besnard", "password": "faux" }
+
+> {%
+    client.test("A4 - Mauvais mot de passe -> 401", () => {
+        client.assert(response.status === 401, "Status " + response.status);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### LECTURE
+### ---------------------------------------------------------------------
+
+### L1 - Liste des matériels
+GET {{api}}/materiels/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("L1 - Liste -> 200, 12 matériels", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.content.length === 12, "Nb = " + response.body.content.length);
+    });
+%}
+
+### L2 - Détail d'un matériel en stock (8)
+GET {{api}}/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("L2 - Matériel 8 -> DISPONIBLE, avec type et dateAcquisition", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "DISPONIBLE", "Etat " + response.body.etat);
+        client.assert(response.body.type === "UC", "Type " + response.body.type);
+        client.assert(!!response.body.dateAcquisition, "Pas de dateAcquisition");
+    });
+%}
+
+### L3 - Matériel inexistant
+GET {{api}}/materiels/9999/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("L3 - Matériel inexistant -> 404", () => {
+        client.assert(response.status === 404, "Status " + response.status);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### CRÉATION
+### ---------------------------------------------------------------------
+
+### C1 - Création avec un etat forcé (doit être ignoré)
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "TEST-0001",
+  "modele": "Dell P2422H",
+  "dateFinGarantie": "2028-01-01",
+  "dateAcquisition": "2026-01-01",
+  "type": "Ecran",
+  "etat": "NORMAL",
+  "idStockage": 3
+}
+
+> {%
+    client.test("C1 - Création -> 200, état forcé à DISPONIBLE", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "DISPONIBLE", "Etat " + response.body.etat);
+    });
+    client.global.set("idCree", response.body.id);
+%}
+
+### C2 - Création d'un TableauInteractif (bug longueur colonne type)
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "TBI-TEST",
+  "modele": "Promethean ActivPanel",
+  "dateFinGarantie": "2029-01-01",
+  "dateAcquisition": "2026-01-01",
+  "type": "TableauInteractif",
+  "idStockage": 3
+}
+
+> {%
+    client.test("C2 - Création TableauInteractif -> 200", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+    });
+    client.global.set("idTbi", response.body.id);
+%}
+
+### C3 - Création sans type
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "TEST-0002",
+  "modele": "Dell P2422H",
+  "dateFinGarantie": "2028-01-01",
+  "dateAcquisition": "2026-01-01"
+}
+
+> {%
+    client.test("C3 - Création sans type -> 400 sur le champ type", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+        client.assert(!!response.body.type, "Pas d'erreur sur type");
+    });
+%}
+
+### C4 - Création avec numSerie vide
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "   ",
+  "modele": "Dell P2422H",
+  "dateFinGarantie": "2028-01-01",
+  "dateAcquisition": "2026-01-01",
+  "type": "Ecran"
+}
+
+> {%
+    client.test("C4 - numSerie vide -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### C5 - Création avec un numSerie déjà existant
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "UC-0001",
+  "modele": "Doublon",
+  "dateFinGarantie": "2028-01-01",
+  "dateAcquisition": "2026-01-01",
+  "type": "UC"
+}
+
+> {%
+    client.test("C5 - numSerie en doublon -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### C6 - Création sans salle de stockage
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "TEST-0003",
+  "modele": "Dell P2422H",
+  "dateFinGarantie": "2028-01-01",
+  "dateAcquisition": "2026-01-01",
+  "type": "Ecran"
+}
+
+> {%
+    client.test("C6 - Création sans idStockage -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### C7 - Création dans une salle de cours (1)
+POST {{api}}/materiels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "TEST-0004",
+  "modele": "Dell P2422H",
+  "dateFinGarantie": "2028-01-01",
+  "dateAcquisition": "2026-01-01",
+  "type": "Ecran",
+  "idStockage": 1
+}
+
+> {%
+    client.test("C7 - Création dans une salle de cours -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### MODIFICATION
+### ---------------------------------------------------------------------
+
+### M1 - Modifier un matériel affecté (1, sur poste 1)
+PUT {{api}}/materiels/1/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "UC-0001",
+  "modele": "Dell OptiPlex 7020",
+  "dateFinGarantie": "2027-09-01",
+  "dateAcquisition": "2024-09-01",
+  "type": "UC"
+}
+
+> {%
+    client.test("M1 - PUT matériel affecté -> 200, modèle changé, état reste NORMAL", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.modele === "Dell OptiPlex 7020", "Modele " + response.body.modele);
+        client.assert(response.body.etat === "NORMAL", "Etat " + response.body.etat);
+    });
+%}
+
+### M2 - Modifier un matériel à garantie expirée (5, sur poste 3)
+PUT {{api}}/materiels/5/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "UC-0003",
+  "modele": "HP EliteDesk 800 G6",
+  "dateFinGarantie": "2025-09-01",
+  "dateAcquisition": "2022-09-01",
+  "type": "UC"
+}
+
+> {%
+    client.test("M2 - PUT garantie expirée -> 200, état calculé A_REMPLACER", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "A_REMPLACER", "Etat " + response.body.etat);
+    });
+%}
+
+### M2b - Prolonger la garantie du matériel 5
+PUT {{api}}/materiels/5/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "UC-0003",
+  "modele": "HP EliteDesk 800 G6",
+  "dateFinGarantie": "2029-09-01",
+  "dateAcquisition": "2022-09-01",
+  "type": "UC"
+}
+
+> {%
+    client.test("M2b - Garantie prolongée -> état recalculé NORMAL", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "NORMAL", "Etat " + response.body.etat);
+    });
+%}
+
+### M3 - Modifier un matériel archivé (12)
+PUT {{api}}/materiels/12/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "UC-0099",
+  "modele": "Modif interdite",
+  "dateFinGarantie": "2020-09-01",
+  "dateAcquisition": "2017-09-01",
+  "type": "UC"
+}
+
+> {%
+    client.test("M3 - PUT matériel archivé -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### M4 - Modifier sans type
+PUT {{api}}/materiels/8/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "UC-0004",
+  "modele": "Dell OptiPlex 7010",
+  "dateFinGarantie": "2028-09-01",
+  "dateAcquisition": "2025-09-01"
+}
+
+> {%
+    client.test("M4 - PUT sans type -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### M5 - Modifier un matériel inexistant
+PUT {{api}}/materiels/9999/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "numSerie": "XX-9999",
+  "modele": "Fantome",
+  "dateFinGarantie": "2028-09-01",
+  "dateAcquisition": "2025-09-01",
+  "type": "UC"
+}
+
+> {%
+    client.test("M5 - PUT inexistant -> 404", () => {
+        client.assert(response.status === 404, "Status " + response.status);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### ARCHIVAGE
+### ---------------------------------------------------------------------
+
+### R1 - Archiver un matériel affecté (1)
+PATCH {{api}}/materiels/1/archiver/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("R1 - Archiver matériel affecté -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### R2 - Archiver un matériel sur poste (5)
+PATCH {{api}}/materiels/5/archiver/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("R2 - Archiver matériel sur poste -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### R3 - Archiver un matériel déjà archivé (12)
+PATCH {{api}}/materiels/12/archiver/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("R3 - Archiver déjà archivé -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### R4 - Archiver un matériel inexistant
+PATCH {{api}}/materiels/9999/archiver/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("R4 - Archiver inexistant -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### R5 - Archiver le matériel créé en C1 (en stock)
+PATCH {{api}}/materiels/{{idCree}}/archiver/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("R5 - Archiver matériel en stock -> 200, ARCHIVE", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "ARCHIVE", "Etat " + response.body.etat);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### AFFECTATION À UN POSTE
+### ---------------------------------------------------------------------
+
+### P1 - Affecter le matériel 8 (stock) au poste 4 (vide)
+POST {{api}}/affectermateriel/postes/4/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P1 - Affecter matériel en stock à un poste -> 200, NORMAL", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "NORMAL", "Etat " + response.body.etat);
+    });
+%}
+
+### P2 - Vérifier l'état du matériel 8
+GET {{api}}/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P2 - Matériel 8 après affectation -> NORMAL", () => {
+        client.assert(response.body.etat === "NORMAL", "Etat " + response.body.etat);
+    });
+%}
+
+### P3 - Réaffecter le matériel 8 au même poste
+POST {{api}}/affectermateriel/postes/4/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P3 - Double affectation -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P4 - Affecter à une salle le matériel 8 (déjà sur un poste)
+POST {{api}}/affectermateriel/salles/1/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P4 - Matériel sur poste affecté à une salle -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P5 - Affecter au poste le matériel 6 (déjà en salle)
+POST {{api}}/affectermateriel/postes/4/materiels/6/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P5 - Matériel en salle affecté à un poste -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P6 - Affecter au poste le matériel 12 (archivé)
+POST {{api}}/affectermateriel/postes/4/materiels/12/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P6 - Matériel archivé affecté à un poste -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P7 - Affecter au poste 4 le matériel 3 (déjà sur poste 2)
+POST {{api}}/affectermateriel/postes/4/materiels/3/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P7 - Matériel d'un autre poste -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P8 - Affecter à un poste inexistant
+POST {{api}}/affectermateriel/postes/9999/materiels/9/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P8 - Poste inexistant -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P9 - Retirer le matériel 8 du poste 4
+DELETE {{api}}/affectermateriel/postes/4/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P9 - Retrait du poste -> 200, DISPONIBLE", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "DISPONIBLE", "Etat " + response.body.etat);
+    });
+%}
+
+### P9b - Le matériel 8 est rangé dans la réserve de B305 (salle 5)
+GET {{api}}/salles/5/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P9b - Réserve B305 contient le matériel 8", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.materielsId.includes(8), "materielsId " + response.body.materielsId);
+    });
+%}
+
+### P10 - Vérifier le retour en stock du matériel 8
+GET {{api}}/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P10 - Matériel 8 après retrait -> DISPONIBLE", () => {
+        client.assert(response.body.etat === "DISPONIBLE", "Etat " + response.body.etat);
+    });
+%}
+
+### P11 - Retirer une seconde fois le matériel 8
+DELETE {{api}}/affectermateriel/postes/4/materiels/8/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P11 - Retrait d'un matériel absent du poste -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P12 - Retirer du poste 1 le matériel 6 (il est en salle)
+DELETE {{api}}/affectermateriel/postes/1/materiels/6/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P12 - Retrait d'un matériel d'un autre emplacement -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P13 - Retirer de la salle 1 le TBI (6)
+DELETE {{api}}/affectermateriel/salles/1/materiels/6/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P13 - Retrait de salle -> 200, DISPONIBLE", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.etat === "DISPONIBLE", "Etat " + response.body.etat);
+    });
+%}
+
+### P13b - Le TBI (6) est rangé dans la réserve de B201 (salle 3)
+GET {{api}}/salles/3/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P13b - Réserve B201 contient le matériel 6", () => {
+        client.assert(response.status === 200, "Status " + response.status);
+        client.assert(response.body.materielsId.includes(6), "materielsId " + response.body.materielsId);
+    });
+%}
+
+### P14 - Affecter un matériel à une salle de stockage (3)
+POST {{api}}/affectermateriel/salles/3/materiels/9/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P14 - Affecter à une salle de stockage -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### P15 - Retirer de la salle de stockage un matériel en stock (9)
+DELETE {{api}}/affectermateriel/salles/3/materiels/9/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("P15 - Retrait d'un matériel déjà en stock -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### SUPPRESSION
+### ---------------------------------------------------------------------
+
+### D1 - Supprimer un matériel affecté (1)
+DELETE {{api}}/materiels/1/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("D1 - Supprimer matériel affecté -> 400", () => {
+        client.assert(response.status === 400, "Status " + response.status);
+    });
+%}
+
+### D2 - Supprimer un matériel en stock (créé en C2)
+DELETE {{api}}/materiels/{{idTbi}}/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("D2 - Supprimer matériel en stock -> 204", () => {
+        client.assert(response.status === 204, "Status " + response.status);
+    });
+%}
+
+### D3 - Supprimer un matériel archivé (créé en C1, archivé en R5)
+DELETE {{api}}/materiels/{{idCree}}/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("D3 - Supprimer matériel archivé -> 204", () => {
+        client.assert(response.status === 204, "Status " + response.status);
+    });
+%}
+
+### D4 - Supprimer un matériel inexistant
+DELETE {{api}}/materiels/9999/
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("D4 - Supprimer inexistant -> 404", () => {
+        client.assert(response.status === 404, "Status " + response.status);
+    });
+%}
+
+### ---------------------------------------------------------------------
+### DROITS
+### ---------------------------------------------------------------------
+
+### S1 - Stagiaire : liste des matériels
+GET {{api}}/materiels/
+Authorization: Bearer {{tokenStagiaire}}
+
+> {%
+    client.test("S1 - Stagiaire liste matériels -> 403", () => {
+        client.assert(response.status === 403, "Status " + response.status);
+    });
+%}
+
+### S2 - Stagiaire : archiver
+PATCH {{api}}/materiels/9/archiver/
+Authorization: Bearer {{tokenStagiaire}}
+
+> {%
+    client.test("S2 - Stagiaire archive -> 403", () => {
+        client.assert(response.status === 403, "Status " + response.status);
+    });
+%}
+
+### S3 - Stagiaire : affecter à un poste
+POST {{api}}/affectermateriel/postes/4/materiels/9/
+Authorization: Bearer {{tokenStagiaire}}
+
+> {%
+    client.test("S3 - Stagiaire affecte -> 403", () => {
+        client.assert(response.status === 403, "Status " + response.status);
+    });
+%}
+
+### S4 - Sans token
+GET {{api}}/materiels/
+
+> {%
+    client.test("S4 - Sans token -> 401", () => {
+        client.assert(response.status === 401, "Status " + response.status);
+    });
+%}

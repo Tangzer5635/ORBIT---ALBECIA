@@ -4,11 +4,4 @@ import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.services.commons.Service;
 
 public interface PosteService extends Service<Poste, Long> {
-
-    boolean contientMateriel(Long idMateriel);
-
-    Poste affecterMateriel(Long idPoste, Long idMateriel);
-
-    void remettreEnStock(Long idPoste, Long idMateriel);
-
 }

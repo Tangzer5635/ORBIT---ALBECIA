@@ -20,5 +20,5 @@ public class MaterielResponseDto {
     private LocalDate dateAcquisition;
     private TypeMateriel type;
     private EtatMateriel etat;
-
+    private LocalDate dateArchivage;
 }

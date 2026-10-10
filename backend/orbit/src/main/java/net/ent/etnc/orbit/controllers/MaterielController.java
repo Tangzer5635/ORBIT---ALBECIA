@@ -28,30 +28,30 @@ public class MaterielController {
         this.materielAssembler = materielAssembler;
     }
 
+    private MaterielResponseDto dto(Materiel m) {
+        return materielAssembler.toDto(m, materielService.etatDe(m));
+    }
+
     @GetMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Page<MaterielResponseDto>> getAll(
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(materielService.findAll(pageable)
-                .map(materielAssembler::toDto));
+        return ResponseEntity.ok(materielService.findAll(pageable).map(this::dto));
     }
 
     @GetMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MaterielResponseDto> getById(@PathVariable Long id) {
         return materielService.findById(id)
-                .map(materiel -> ResponseEntity.ok(materielAssembler.toDto(materiel)))
+                .map(m -> ResponseEntity.ok(dto(m)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MaterielResponseDto> post(@Valid @RequestBody MaterielRequestDto materielRequestDto) {
-        return ResponseEntity.ok(
-                materielAssembler.toDto(
-                        materielService.create(
-                                materielAssembler.toEntity(materielRequestDto))));
+        return ResponseEntity.ok(dto(materielService.creerEnStock(materielAssembler.toEntity(materielRequestDto), materielRequestDto.getIdStockage())));
     }
 
     @PutMapping("/{id}/")
@@ -60,10 +60,7 @@ public class MaterielController {
         if (!materielService.existsById(id)) return ResponseEntity.notFound().build();
         Materiel materiel = materielAssembler.toEntity(materielRequestDto);
         materiel.setId(id);
-        return ResponseEntity.ok(
-                materielAssembler.toDto(
-                        materielService.update(
-                                materiel)));
+        return ResponseEntity.ok(dto(materielService.update(materiel)));
     }
 
     @DeleteMapping("/{id}/")
@@ -77,7 +74,7 @@ public class MaterielController {
     @PatchMapping("/{id}/archiver/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MaterielResponseDto> archiver(@PathVariable Long id) {
-        return ResponseEntity.ok(materielAssembler.toDto(materielService.archiver(id)));
+        return ResponseEntity.ok(dto(materielService.archiver(id)));
     }
 
 

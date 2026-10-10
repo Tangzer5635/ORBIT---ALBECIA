@@ -27,4 +27,6 @@ public class MaterielRequestDto {
 
     @NotNull(message = "type ne doit pas être null")
     private TypeMateriel type;
+
+    private Long idStockage;
 }
