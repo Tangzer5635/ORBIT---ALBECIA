@@ -89,6 +89,12 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Salle> salleDuPoste(Long idPoste) {
+        return repository.findByPostes_Id(idPoste);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Salle trouverStockage(Long idSalle) {
         return premiereReserve(repository.findSallesDuBatiment(idSalle, TypeSalle.SalleStockage));
     }

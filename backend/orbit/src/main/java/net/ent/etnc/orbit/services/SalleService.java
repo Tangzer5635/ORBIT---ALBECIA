@@ -10,6 +10,8 @@ public interface SalleService extends Service<Salle, Long> {
     Salle changerGestionnaire(Long idSalle, Long idGestionnaire) throws ServiceException;
     boolean estEnStock(Long idMateriel);
     Optional<Salle> salleDuMateriel(Long idMateriel);
+
+    Optional<Salle> salleDuPoste(Long idPoste);
     Salle trouverStockage(Long idSalle) throws ServiceException;
     Salle trouverStockageDuPoste(Long idPoste) throws ServiceException;
 }

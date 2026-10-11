@@ -8,8 +8,8 @@ import java.util.Set;
 
 public enum Role {
     STAGIAIRE("Stagiaire"),
-    FORMATEUR("Formateur"),
     TECHNIQUE("Technicien", true),
+    FORMATEUR("Formateur", STAGIAIRE, TECHNIQUE),
     GESTIONNAIRE("Gestionnaire", TECHNIQUE),
     ADMINISTRATEUR("Administrateur", GESTIONNAIRE);
 

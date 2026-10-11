@@ -19,6 +19,8 @@ public interface SalleRepository extends BaseRepository<Salle> {
 
     Optional<Salle> findByMateriels_Id(Long idMateriel);
 
+    Optional<Salle> findByPostes_Id(Long idPoste);
+
     Optional<Salle> findFirstByTypeOrderByIdAsc(TypeSalle type);
 
     @Query("""

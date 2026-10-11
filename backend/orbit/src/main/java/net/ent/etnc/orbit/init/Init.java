@@ -36,8 +36,6 @@ public class Init implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         if (personnelService.count() > 0) return;
-
-        // ---------- Personnels ----------
         personnelService.create(buildUser("1000000001", "Admin", "Orbit", "admin", "admin1234", Role.ADMINISTRATEUR));
         Personnel besnard = personnelService.create(buildUser("3000000001", "Besnard", "Romain", "r.besnard", "12345", Role.GESTIONNAIRE));
         Personnel martin = personnelService.create(buildUser("3000000002", "Martin", "Alice", "a.martin", "12345", Role.GESTIONNAIRE));
@@ -49,7 +47,6 @@ public class Init implements CommandLineRunner {
         Personnel inactif = personnelService.create(buildUser("4000000004", "Inactif", "Paul", "p.inactif", "1595", Role.STAGIAIRE));
         personnelService.deactivate(inactif.getId());
 
-        // ---------- Bâtiments + salles (l'ordre fixe les ids utilisés dans materiel-tests.http) ----------
         Batiment b201 = batimentService.create(buildBatiment("B201"));
         Batiment b305 = batimentService.create(buildBatiment("B305"));
 
@@ -70,13 +67,11 @@ public class Init implements CommandLineRunner {
         s102.addPersonnel(ledeme);
         s305.addPersonnel(durand);
 
-        // ---------- Postes ----------
-        Poste p1 = creerPoste("P101-01", s101, lebuhe);   // 1
-        Poste p2 = creerPoste("P101-02", s101, bernard);  // 2
-        Poste p3 = creerPoste("P102-01", s102, petit);    // 3
-        creerPoste("P305-01", s305, null);                // 4 : poste vide
+        Poste p1 = creerPoste("P101-01", s101, lebuhe);
+        Poste p2 = creerPoste("P101-02", s101, bernard);
+        Poste p3 = creerPoste("P102-01", s102, petit);
+        creerPoste("P305-01", s305, null);
 
-        // ---------- Matériels (tous créés en stock dans la réserve B201) ----------
         Materiel uc1 = creerMateriel("UC-0001", "Dell OptiPlex 7010", 2027, TypeMateriel.UC, r201);                   // 1
         Materiel ec1 = creerMateriel("EC-0001", "Dell P2422H", 2027, TypeMateriel.Ecran, r201);                       // 2
         Materiel uc2 = creerMateriel("UC-0002", "Dell OptiPlex 7010", 2027, TypeMateriel.UC, r201);                   // 3
@@ -90,7 +85,6 @@ public class Init implements CommandLineRunner {
         creerMateriel("VP-0002", "Epson EB-W51", 2028, TypeMateriel.VideoProjecteur, r201);                           // 11 : stock
         Materiel vieux = creerMateriel("UC-0099", "Dell OptiPlex 3020", 2020, TypeMateriel.UC, r201);                 // 12 : archivé
 
-        // ---------- Affectations ----------
         affecterMaterielService.affecterAPoste(p1.getId(), uc1.getId());
         affecterMaterielService.affecterAPoste(p1.getId(), ec1.getId());
         affecterMaterielService.affecterAPoste(p2.getId(), uc2.getId());
