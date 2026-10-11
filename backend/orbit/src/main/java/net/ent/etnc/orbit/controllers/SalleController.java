@@ -51,7 +51,7 @@ public class SalleController {
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<SalleResponseDto> post(@Valid @RequestBody SalleRequestDto salleDto) {
         return ResponseEntity.ok(salleAssembler.toDto(
-                batimentService.creerSalle(salleDto.getIdBatiment(), salleAssembler.toEntity(salleDto))));
+                batimentService.create(salleDto.getIdBatiment(), salleAssembler.toEntity(salleDto))));
     }
 
     @PatchMapping("/{id}/gestionnaire/{idGestionnaire}/")

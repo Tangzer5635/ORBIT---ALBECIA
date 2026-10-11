@@ -21,10 +21,27 @@ public interface SalleRepository extends BaseRepository<Salle> {
 
     Optional<Salle> findFirstByTypeOrderByIdAsc(TypeSalle type);
 
-    @Query("select r from Batiment b join b.salles s join b.salles r where s.id = :idSalle and r.type = :type order by r.id")
+    @Query("""
+            select r
+            from Batiment b
+            join b.salles s
+            join b.salles r
+            where s.id = :idSalle
+            and r.type = :type
+            order by r.id
+            """)
     List<Salle> findSallesDuBatiment(@Param("idSalle") Long idSalle, @Param("type") TypeSalle type);
 
-    @Query("select r from Batiment b join b.salles s join s.postes p join b.salles r where p.id = :idPoste and r.type = :type order by r.id")
+    @Query("""
+            select r
+            from Batiment b
+            join b.salles s
+            join s.postes p
+            join b.salles r
+            where p.id = :idPoste
+            and r.type = :type
+            order by r.id
+            """)
     List<Salle> findSallesDuBatimentDuPoste(@Param("idPoste") Long idPoste, @Param("type") TypeSalle type);
 
 }

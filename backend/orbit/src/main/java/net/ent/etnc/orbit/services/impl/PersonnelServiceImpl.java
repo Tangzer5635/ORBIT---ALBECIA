@@ -51,10 +51,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     @Override
     @Transactional
     public void deleteById(Long id) throws ServiceException {
-        Personnel user = repository.findById(id)
-                .orElseThrow(() ->
-                        new ServiceException("Utilisateur introuvable")
-                );
+        Personnel user = repository.findById(id).orElseThrow(() -> new ServiceException("Utilisateur introuvable"));
         if (user.getRole() == Role.ADMINISTRATEUR) {
             long nombreAdmins = repository.countByRole(Role.ADMINISTRATEUR);
             if (nombreAdmins <= 1) {
@@ -85,9 +82,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     @Override
     @Transactional
     public Personnel changeRole(Long id, Role role) throws ServiceException {
-        Personnel user = repository.findById(id)
-                .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
-
+        Personnel user = repository.findById(id).orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             Personnel currentUser = auth.getPrincipal() instanceof Personnel ? (Personnel) auth.getPrincipal() : null;

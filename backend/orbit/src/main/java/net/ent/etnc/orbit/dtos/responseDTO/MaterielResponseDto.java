@@ -12,7 +12,6 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MaterielResponseDto {
-
     private Long id;
     private String numSerie;
     private String modele;

@@ -53,11 +53,11 @@ public class Init implements CommandLineRunner {
         Batiment b201 = batimentService.create(buildBatiment("B201"));
         Batiment b305 = batimentService.create(buildBatiment("B305"));
 
-        Salle s101 = batimentService.creerSalle(b201.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));   // 1
-        Salle s102 = batimentService.creerSalle(b201.getId(), buildSalle("102", "1", TypeSalle.SalleDeCours));   // 2
-        Salle r201 = batimentService.creerSalle(b201.getId(), buildSalle("199", "1", TypeSalle.SalleStockage));  // 3 : réserve B201
-        Salle s305 = batimentService.creerSalle(b305.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));   // 4 : même numéro, autre bâtiment
-        Salle r305 = batimentService.creerSalle(b305.getId(), buildSalle("199", "0", TypeSalle.SalleStockage));  // 5 : réserve B305
+        Salle s101 = batimentService.create(b201.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));   // 1
+        Salle s102 = batimentService.create(b201.getId(), buildSalle("102", "1", TypeSalle.SalleDeCours));   // 2
+        Salle r201 = batimentService.create(b201.getId(), buildSalle("199", "1", TypeSalle.SalleStockage));  // 3 : réserve B201
+        Salle s305 = batimentService.create(b305.getId(), buildSalle("101", "1", TypeSalle.SalleDeCours));   // 4 : même numéro, autre bâtiment
+        Salle r305 = batimentService.create(b305.getId(), buildSalle("199", "0", TypeSalle.SalleStockage));  // 5 : réserve B305
         salleService.create(buildSalle("999", "0", TypeSalle.SalleStockage));                                    // 6 : réserve sans bâtiment
 
         salleService.changerGestionnaire(s101.getId(), besnard.getId());

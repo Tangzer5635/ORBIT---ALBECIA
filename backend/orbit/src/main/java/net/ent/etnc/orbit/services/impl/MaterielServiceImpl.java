@@ -31,12 +31,13 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     public Materiel creerEnStock(Materiel materiel, Long idStockage) {
         if (idStockage == null)
             throw new ServiceException("La salle de stockage est obligatoire");
-        Salle stockage = salleService.findById(idStockage)
-                .orElseThrow(() -> new ServiceException("Salle " + idStockage + " introuvable"));
+        if (repository.existsByNumSerie(materiel.getNumSerie()))
+            throw new ServiceException("Le numéro de série " + materiel.getNumSerie() + " existe déjà");
+        Salle stockage = salleService.findById(idStockage).orElseThrow(() -> new ServiceException("Salle " + idStockage + " introuvable"));
         if (stockage.getType() != TypeSalle.SalleStockage)
             throw new ServiceException("Un matériel se crée dans une salle de stockage");
         materiel.setArchive(false);
-        Materiel cree = create(materiel);
+        Materiel cree = repository.save(materiel);
         stockage.addMateriel(cree);
         return cree;
     }
@@ -45,18 +46,17 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Transactional
     public Materiel update(Materiel materiel) {
         Materiel existant = trouver(materiel.getId());
+        //TODO a voir avec l'équipe
         if (existant.isArchive())
             throw new ServiceException("Un matériel archivé ne peut pas être modifié");
+        if (repository.existsByNumSerieAndIdNot(materiel.getNumSerie(), materiel.getId()))
+            throw new ServiceException("Le numéro de série " + materiel.getNumSerie() + " existe déjà");
         existant.setNumSerie(materiel.getNumSerie());
         existant.setModele(materiel.getModele());
         existant.setDateFinGarantie(materiel.getDateFinGarantie());
         existant.setDateAcquisition(materiel.getDateAcquisition());
         existant.setType(materiel.getType());
-        try {
-            return repository.saveAndFlush(existant);
-        } catch (Exception e) {
-            throw new ServiceException("Erreur lors de la mise à jour", e);
-        }
+        return repository.save(existant);
     }
 
     @Override
@@ -65,7 +65,10 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         Materiel materiel = trouver(id);
         if (!materiel.isArchive() && !salleService.estEnStock(id))
             throw new ServiceException("Un matériel affecté ne peut pas être supprimé, remets-le en stock d'abord");
-        salleService.salleDuMateriel(id).ifPresent(s -> s.removeMateriel(materiel));
+        Salle salle = salleService.salleDuMateriel(id).orElse(null);
+        if (salle != null) {
+            salle.removeMateriel(materiel);
+        }
         repository.delete(materiel);
     }
 
@@ -75,10 +78,10 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         Materiel materiel = trouver(id);
         if (materiel.isArchive())
             throw new ServiceException("Ce matériel est déjà archivé");
-        Salle stockage = salleService.salleDuMateriel(id)
-                .filter(s -> s.getType() == TypeSalle.SalleStockage)
-                .orElseThrow(() -> new ServiceException("Un matériel affecté ne peut pas être archivé, remets-le en stock d'abord"));
-        stockage.removeMateriel(materiel);
+        Salle salle = salleService.salleDuMateriel(id).orElse(null);
+        if (salle == null || salle.getType() != TypeSalle.SalleStockage)
+            throw new ServiceException("Un matériel affecté ne peut pas être archivé, remets-le en stock d'abord");
+        salle.removeMateriel(materiel);
         materiel.setArchive(true);
         materiel.setDateArchivage(LocalDate.now());
         return materiel;
@@ -87,11 +90,11 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Override
     @Transactional(readOnly = true)
     public EtatMateriel etatDe(Materiel materiel) {
-        return materiel.calculerEtat(!materiel.isArchive() && salleService.estEnStock(materiel.getId()));
+        boolean enStock = !materiel.isArchive() && salleService.estEnStock(materiel.getId());
+        return materiel.calculerEtat(enStock);
     }
 
     private Materiel trouver(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ServiceException("Matériel " + id + " introuvable"));
+        return repository.findById(id).orElseThrow(() -> new ServiceException("Matériel " + id + " introuvable"));
     }
 }

@@ -36,24 +36,27 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public void deleteById(Long id) {
-        Salle salle = repository.findById(id)
-                .orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
-
-        List<Materiel> aRanger = new ArrayList<>(salle.getMateriels());
-        salle.getPostes().forEach(p -> aRanger.addAll(p.getMateriels()));
-
-        if (!aRanger.isEmpty() && salle.getType() == TypeSalle.SalleStockage)
+        Salle salle = repository.findById(id).orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
+        if (salle.getType() == TypeSalle.SalleStockage && !salle.getMateriels().isEmpty())
             throw new ServiceException("Vide la salle de stockage avant de la supprimer");
-
-        Salle stockage = aRanger.isEmpty() ? null : trouverStockage(id);
-
-        for (Materiel m : List.copyOf(salle.getMateriels())) salle.removeMateriel(m);
-        for (Poste p : salle.getPostes())
-            for (Materiel m : List.copyOf(p.getMateriels())) p.removeMateriel(m);
-        repository.flush(); // détache d'abord, sinon Hibernate peut réécrire la FK dans le désordre
-
-        aRanger.forEach(stockage::addMateriel);
-
+        List<Materiel> aRanger = new ArrayList<>(salle.getMateriels());
+        for (Poste p : salle.getPostes()) {
+            aRanger.addAll(p.getMateriels());
+        }
+        if (!aRanger.isEmpty()) {
+            Salle stockage = trouverStockage(id);
+            for (Materiel m : List.copyOf(salle.getMateriels())) {
+                salle.removeMateriel(m);
+            }
+            for (Poste p : salle.getPostes()) {
+                for (Materiel m : List.copyOf(p.getMateriels())) {
+                    p.removeMateriel(m);
+                }
+            }
+            for (Materiel m : aRanger) {
+                stockage.addMateriel(m);
+            }
+        }
         for (Poste p : List.copyOf(salle.getPostes())) {
             salle.removePoste(p);
             posteService.delete(p);
@@ -64,10 +67,8 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public Salle changerGestionnaire(Long idSalle, Long idGestionnaire) {
-        Salle salle = repository.findById(idSalle)
-                .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        Personnel gestionnaire = personnelService.findById(idGestionnaire)
-                .orElseThrow(() -> new ServiceException("Personnel " + idGestionnaire + " introuvable"));
+        Salle salle = repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+        Personnel gestionnaire = personnelService.findById(idGestionnaire).orElseThrow(() -> new ServiceException("Personnel " + idGestionnaire + " introuvable"));
         if (gestionnaire.getRole() != Role.GESTIONNAIRE && gestionnaire.getRole() != Role.ADMINISTRATEUR)
             throw new ServiceException("Ce personnel n'est pas gestionnaire");
         salle.setGestionnaire(gestionnaire);
@@ -99,8 +100,9 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     }
 
     private Salle premiereReserve(List<Salle> reservesDuBatiment) {
-        return reservesDuBatiment.stream().findFirst()
-                .or(() -> repository.findFirstByTypeOrderByIdAsc(TypeSalle.SalleStockage))
-                .orElseThrow(() -> new ServiceException("Aucune salle de stockage n'existe"));
+        if (!reservesDuBatiment.isEmpty()) {
+            return reservesDuBatiment.get(0);
+        }
+        return repository.findFirstByTypeOrderByIdAsc(TypeSalle.SalleStockage).orElseThrow(() -> new ServiceException("Aucune salle de stockage n'existe"));
     }
 }
