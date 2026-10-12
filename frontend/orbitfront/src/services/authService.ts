@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8080/api/v1/auth";
+const API_URL = "/api/v1/auth";
 const TOKEN_KEY = "orbit-token";
 const USER_KEY = "orbit-user";
 
@@ -29,7 +29,6 @@ export async function login(username: string, password: string): Promise<Utilisa
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    console.log(response);
   } catch {
     throw new AuthError(0); // serveur injoignable
   }

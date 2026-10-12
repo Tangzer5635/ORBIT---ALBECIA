@@ -13,6 +13,7 @@ import net.ent.etnc.orbit.security.services.UserDetailsServiceImpl;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,7 +40,6 @@ import java.util.Arrays;
  * </ul>
  */
 @RestController
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 

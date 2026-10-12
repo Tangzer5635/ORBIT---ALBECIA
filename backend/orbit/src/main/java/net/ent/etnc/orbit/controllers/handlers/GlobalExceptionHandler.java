@@ -4,9 +4,12 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -72,5 +75,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleException(Exception e) {
         log.error("Erreur inattendue", e);
         return ResponseEntity.internalServerError().body("Erreur interne");
+    }
+
+    /** Compte désactivé → 403. */
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<String> handleDisabled(DisabledException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Compte désactivé");
+    }
+
+    /** Compte verrouillé → 423. */
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<String> handleLocked(LockedException e) {
+        return ResponseEntity.status(HttpStatus.LOCKED).body("Compte verrouillé");
     }
 }
