@@ -30,7 +30,7 @@ public class SalleController {
     }
 
     @GetMapping("/")
-    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<SalleResponseDto>> getAll(
             @PageableDefault(size = 20) Pageable pageable
     ) {
@@ -39,7 +39,7 @@ public class SalleController {
     }
 
     @GetMapping("/{id}/")
-    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<SalleResponseDto> getById(@PathVariable Long id) {
         return salleService.findById(id)
                 .map(salle -> ResponseEntity.ok(salleAssembler.toDto(salle)))
@@ -54,7 +54,7 @@ public class SalleController {
     }
 
     @PatchMapping("/{id}/gestionnaire/{idGestionnaire}/")
-    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
     public ResponseEntity<SalleResponseDto> changerGestionnaire(@PathVariable Long id, @PathVariable Long idGestionnaire) {
         return ResponseEntity.ok(salleAssembler.toDto(salleService.changerGestionnaire(id, idGestionnaire)));
     }

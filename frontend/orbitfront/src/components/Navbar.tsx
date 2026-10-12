@@ -1,6 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { getUtilisateur, logout } from "../services/authService.ts";
-import "./Navbar.css";
 import logo from "../assets/orbit-logo.gif";
 import { ACCES } from "../config/acces.ts";
 
