@@ -15,3 +15,6 @@ Thumbs.db
 # Secrets
 .env
 .env.local
+
+*.zip
+Test Results*.html

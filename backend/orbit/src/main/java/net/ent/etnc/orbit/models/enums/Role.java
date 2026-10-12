@@ -8,10 +8,10 @@ import java.util.Set;
 
 public enum Role {
     STAGIAIRE("Stagiaire"),
-    FORMATEUR("Formateur"),
-    ROLE_TECHNIQUE("Technicien", true),
-    GESTIONNAIRE("Gestionnaire", ROLE_TECHNIQUE),
-    ADMINISTRATEUR("Administrateur", GESTIONNAIRE);
+    TECHNIQUE("Technicien", true),
+    FORMATEUR("Formateur", STAGIAIRE, TECHNIQUE),
+    GESTIONNAIRE("Gestionnaire", TECHNIQUE),
+    ADMINISTRATEUR("Administrateur", GESTIONNAIRE, FORMATEUR);
 
     @Getter
     private final String libelle;

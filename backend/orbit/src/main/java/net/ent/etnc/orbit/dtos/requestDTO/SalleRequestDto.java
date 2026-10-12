@@ -19,4 +19,7 @@ public class SalleRequestDto {
 
     @NotNull(message = "type ne doit pas être null")
     private TypeSalle type;
+
+    @NotNull(message = "idBatiment ne doit pas être null")
+    private Long idBatiment;
 }

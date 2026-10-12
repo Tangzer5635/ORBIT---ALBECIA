@@ -2,6 +2,7 @@ package net.ent.etnc.orbit.dtos.assemblers;
 
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
+import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,8 @@ public class SalleAssembler {
                 .numSalle(salle.getNumSalle())
                 .etage(salle.getEtage())
                 .type(salle.getType())
+                .materielsId(salle.getMateriels().stream().map(Materiel::getId).toList())
+                .gestionnaireId(salle.getGestionnaire() == null ? null : salle.getGestionnaire().getId())
                 .build();
     }
 

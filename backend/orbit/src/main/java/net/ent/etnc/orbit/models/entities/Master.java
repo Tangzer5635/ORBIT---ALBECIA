@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "MASTER",
+@Table(name = "master",
         uniqueConstraints = @UniqueConstraint(name = "uk_MASTER_nom", columnNames = {"nom"}))
 @EqualsAndHashCode(callSuper = false, of = {"nom"})
 @ToString(callSuper = true, of = {"nom", "versionMaster", "dateCreation"})

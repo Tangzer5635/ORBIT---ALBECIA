@@ -7,4 +7,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MaterielRepository extends BaseRepository<Materiel> {
 
+    boolean existsByNumSerie(String numSerie);
+
+    boolean existsByNumSerieAndIdNot(String numSerie, Long id);
 }
