@@ -4,7 +4,7 @@ export function NotFoundPage() {
     return (
         <section className="empty-page">
             <p className="eyebrow">Erreur 404</p>
-            <h1>Page inconnu</h1>
+            <h1>Page inconnue</h1>
             <p>La route demandée n'existe pas.</p>
             <Link className="button button--primary" to="/">
                 Retour

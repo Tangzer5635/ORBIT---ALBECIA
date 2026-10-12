@@ -1,0 +1,94 @@
+/* =========================================================
+   Styles globaux d'ORBIT (chargés une fois dans main.tsx)
+   Couleurs reprises de la maquette, thème sombre uniquement.
+   ========================================================= */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
+
+/* ---- Thème sombre ---- */
+:root {
+    --bg: #100e24;
+    --bg2: #1b1840;
+    --card: #1c1a3a;
+    --card2: #25224b;
+    --ink: #f1efff;
+    --muted: #a19dc4;
+    --line: #312d5e;
+    --accent: #8f74ff;
+    --accent-ink: #120f2c;
+    --accent-soft: #2c2560;
+    --error: #fb7185;
+    --success: #34d399;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    --radius-card: 30px;
+    --radius-field: 14px;
+    --page-width: 1240px;
+
+    color-scheme: dark;
+    font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+}
+
+/* ---- Base ---- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.45;
+    background:
+            radial-gradient(1100px 600px at 10% -10%, var(--bg2), transparent 60%),
+            var(--bg);
+    background-attachment: fixed;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+h1,
+h2,
+h3 {
+    letter-spacing: -0.01em;
+}
+
+/* ---- Zone de contenu sous la Navbar (Layout.tsx) ---- */
+.page {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: 22px 24px 60px;
+}
+
+@media (max-width: 720px) {
+    .page {
+        padding: 16px 14px 50px;
+    }
+}
+
+/* ---- Animations réduites si l'utilisateur le demande ---- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
