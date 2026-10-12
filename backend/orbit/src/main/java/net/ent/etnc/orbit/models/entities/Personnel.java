@@ -76,6 +76,12 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
+    @Getter
+    @Setter
+    @Column(name = "verrouille", nullable = false)
+    private boolean verrouille = false;
+
+
     /**
      * Retourne les autorités Spring Security de cet utilisateur.
      * Inclut le rôle propre et tous les rôles hérités (hiérarchie cumulative).
@@ -104,6 +110,9 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
         return active;
     }
 
-
+    @Override
+    public boolean isAccountNonLocked() {
+        return !verrouille;
+    }
 
 }

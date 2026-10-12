@@ -45,8 +45,9 @@ public class Init implements CommandLineRunner {
         Personnel bernard = personnelService.create(buildUser("4000000002", "Bernard", "Marc", "m.bernard", "1595", Role.STAGIAIRE));
         Personnel petit = personnelService.create(buildUser("4000000003", "Petit", "Julie", "j.petit", "1595", Role.STAGIAIRE));
         Personnel inactif = personnelService.create(buildUser("4000000004", "Inactif", "Paul", "p.inactif", "1595", Role.STAGIAIRE));
+        Personnel verrouiller = personnelService.create(buildUser("4000000005", "Verrouiller", "Paul", "p.verrouiller", "1595", Role.STAGIAIRE));
         personnelService.deactivate(inactif.getId());
-
+        verrouiller.setVerrouille(true);
         Batiment b201 = batimentService.create(buildBatiment("B201"));
         Batiment b305 = batimentService.create(buildBatiment("B305"));
 
