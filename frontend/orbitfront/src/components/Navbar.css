@@ -17,6 +17,7 @@
   max-width: var(--page-width);
   margin: 0 auto;
   display: flex;
+  flex-wrap: wrap;          /* AJOUT */
   align-items: center;
   gap: 18px;
   padding: 10px 24px;
@@ -25,6 +26,9 @@
 /* Nom de l'appli */
 .navbar-brand {
   flex: none;
+  display: flex;            /* AJOUT */
+  align-items: center;      /* AJOUT */
+  gap: 10px;                /* AJOUT */
   margin: 0;
   font-size: 22px;
   font-weight: 800;
@@ -33,16 +37,22 @@
   text-decoration: none;
 }
 
-/* Liens : défilent horizontalement s'il n'y a pas la place */
+.navbar-logo {
+  height: 40px;
+  width: 40px;
+  filter: var(--logo-filter);
+  mix-blend-mode: var(--logo-blend);
+}
+
 .navbar-links {
-  flex: 1;
+  order: 3;                 /* 2e ligne, comme la maquette */
+  flex-basis: 100%;
   display: flex;
   gap: 4px;
   overflow-x: auto;
-  padding: 2px;
   scrollbar-width: none;
+  /* supprime padding-top: 50px et flex: 1 */
 }
-
 .navbar-links::-webkit-scrollbar {
   display: none;
 }
