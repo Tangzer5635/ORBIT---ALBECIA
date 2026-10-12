@@ -2,6 +2,8 @@ package net.ent.etnc.orbit.dtos.responseDTO;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -10,4 +12,7 @@ import lombok.*;
 public class PosteResponseDto {
 
     private Long id;
+    private String numPoste;
+    private Long occupantId;
+    private List<Long> materielsId;
 }

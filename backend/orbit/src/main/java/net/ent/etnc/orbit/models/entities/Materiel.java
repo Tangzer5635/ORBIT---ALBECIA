@@ -68,9 +68,14 @@ public class Materiel extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "date_archivage")
     private LocalDate dateArchivage;
 
-    public EtatMateriel calculerEtat(boolean enStock) {
+    /**
+     * État calculé (non stocké), par ordre de priorité :
+     * archivé, défectueux (défaillance signalée non résolue), à remplacer (garantie finie
+     * ou finissant sous 90 jours), puis disponible (en stock) ou normal (affecté).
+     */
+    public EtatMateriel calculerEtat(boolean enStock, boolean defaillanceOuverte) {
         if (archive) return EtatMateriel.ARCHIVE;
-        // TODO DEFECTUEUX : quand une défaillance ouverte existe (entité Defaillance à venir)
+        if (defaillanceOuverte) return EtatMateriel.DEFECTUEUX;
         if (!dateFinGarantie.isAfter(LocalDate.now().plusDays(90))) return EtatMateriel.A_REMPLACER;
         return enStock ? EtatMateriel.DISPONIBLE : EtatMateriel.NORMAL;
     }

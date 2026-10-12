@@ -13,6 +13,7 @@ import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,12 +45,12 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Override
     @Transactional
     public Defaillance signaler(Long idMateriel, String description, Personnel auteur) throws ServiceException {
-        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("RG-D01", "Matériel " + idMateriel + " introuvable"));
+        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new NotFoundException("RG-D01", "Matériel " + idMateriel + " introuvable"));
+        if (!peutSignaler(auteur, idMateriel)) {
+            throw new AccessDeniedException("Ce matériel n'est ni sur votre poste ni sur un poste de vos salles");
+        }
         if (repository.existsByMateriel_IdAndStatut(idMateriel, StatutDefaillance.SIGNALEE)) {
             throw new ServiceException("RG-D03", "Ce matériel a déjà une défaillance signalée");
-        }
-        if (!peutSignaler(auteur, idMateriel)) {
-            throw new AccessDeniedException("Ce matériel n'est ni sur votre poste ni dans vos salles");
         }
         Defaillance d = new Defaillance();
         d.setMateriel(materiel);
@@ -63,7 +64,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Override
     @Transactional
     public Defaillance resoudre(Long id, String noteSolution, Personnel technicien) throws ServiceException {
-        Defaillance d = repository.findById(id).orElseThrow(() -> new ServiceException("RG-D04", "Défaillance " + id + " introuvable"));
+        Defaillance d = repository.findById(id).orElseThrow(() -> new NotFoundException("RG-D04", "Défaillance " + id + " introuvable"));
         if (d.isResolue()) {
             throw new ServiceException("RG-D05", "Défaillance déjà résolue");
         }
@@ -82,6 +83,18 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
 
     @Override
     @Transactional(readOnly = true)
+    public boolean aUneDefaillanceOuverte(Long idMateriel) {
+        return repository.existsByMateriel_IdAndStatut(idMateriel, StatutDefaillance.SIGNALEE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean aDesDefaillances(Long idMateriel) {
+        return repository.existsByMateriel_Id(idMateriel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable) throws ServiceException {
         return repository.findByStatut(statut, pageable);
     }
@@ -96,16 +109,20 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
         throw new ServiceException("RG-D07", "Une défaillance ne se modifie pas, elle se résout");
     }
 
+    /**
+     * DCU « Remonter une défaillance » : le stagiaire signale sur son poste ;
+     * le formateur sur son propre poste ou sur un poste d'une salle qui lui est affectée.
+     * Le matériel de salle (hors poste) et le matériel en stock ne se signalent pas.
+     */
     private boolean peutSignaler(Personnel user, Long idMateriel) {
-        if (user.getRole().equals("FORMATEUR")){
-            return true;
-        }
         Optional<Poste> poste = posteService.posteDuMateriel(idMateriel);
-        boolean surSonPoste = poste.map(p -> memePersonne(p.getOccupant(), user)).orElse(false);
-        if (surSonPoste) {
+        if (poste.isEmpty()) {
+            return false;
+        }
+        if (memePersonne(poste.get().getOccupant(), user)) {
             return true;
         }
-        return user.getRole() == Role.FORMATEUR && dansSesSalles(user, idMateriel, poste);
+        return user.getRole().hasRole(Role.FORMATEUR) && dansSesSalles(user, idMateriel, poste);
     }
 
     private boolean peutTraiter(Personnel user, Long idMateriel) {

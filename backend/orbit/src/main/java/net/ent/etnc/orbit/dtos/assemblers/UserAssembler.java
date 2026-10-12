@@ -18,6 +18,7 @@ public class UserAssembler {
                 .nom(personnel.getNom())
                 .prenom(personnel.getPrenom())
                 .active(personnel.isActive())
+                .verrouille(personnel.isVerrouille())
                 .build();
     }
 

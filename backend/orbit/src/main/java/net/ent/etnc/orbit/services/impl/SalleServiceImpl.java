@@ -11,6 +11,7 @@ import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,7 +37,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public void deleteById(Long id) {
-        Salle salle = repository.findById(id).orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
+        Salle salle = repository.findById(id).orElseThrow(() -> new NotFoundException("Salle " + id + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage && !salle.getMateriels().isEmpty())
             throw new ServiceException("Vide la salle de stockage avant de la supprimer");
         List<Materiel> aRanger = new ArrayList<>(salle.getMateriels());
@@ -66,9 +67,37 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
+    public Poste creerPoste(Long idSalle, Poste poste) {
+        Salle salle = repository.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
+        if (salle.getType() == TypeSalle.SalleStockage)
+            throw new ServiceException("On ne crée pas de poste dans une salle de stockage");
+        Poste cree = posteService.create(poste);
+        salle.addPoste(cree);
+        return cree;
+    }
+
+    @Override
+    @Transactional
+    public void supprimerPoste(Long idPoste) {
+        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new NotFoundException("Poste " + idPoste + " introuvable"));
+        List<Materiel> aRanger = List.copyOf(poste.getMateriels());
+        if (!aRanger.isEmpty()) {
+            // la réserve se cherche avant de détacher le poste de sa salle
+            Salle stockage = trouverStockageDuPoste(idPoste);
+            for (Materiel m : aRanger) {
+                poste.removeMateriel(m);
+                stockage.addMateriel(m);
+            }
+        }
+        repository.findByPostes_Id(idPoste).ifPresent(salle -> salle.removePoste(poste));
+        posteService.delete(poste);
+    }
+
+    @Override
+    @Transactional
     public Salle changerGestionnaire(Long idSalle, Long idGestionnaire) {
-        Salle salle = repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        Personnel gestionnaire = personnelService.findById(idGestionnaire).orElseThrow(() -> new ServiceException("Personnel " + idGestionnaire + " introuvable"));
+        Salle salle = repository.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
+        Personnel gestionnaire = personnelService.findById(idGestionnaire).orElseThrow(() -> new NotFoundException("Personnel " + idGestionnaire + " introuvable"));
         if (gestionnaire.getRole() != Role.GESTIONNAIRE && gestionnaire.getRole() != Role.ADMINISTRATEUR)
             throw new ServiceException("Ce personnel n'est pas gestionnaire");
         salle.setGestionnaire(gestionnaire);

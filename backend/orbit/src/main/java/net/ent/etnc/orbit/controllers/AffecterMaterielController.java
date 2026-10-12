@@ -10,9 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/v1/affectermateriel")
+@RequestMapping("/api/v1/materiels/{idMateriel}")
 public class AffecterMaterielController {
 
     private final AffecterMaterielService affecterMaterielService;
@@ -21,34 +20,33 @@ public class AffecterMaterielController {
 
     @Autowired
     public AffecterMaterielController(AffecterMaterielService affecterMaterielService, MaterielAssembler materielAssembler, MaterielService materielService) {
-
         this.affecterMaterielService = affecterMaterielService;
         this.materielAssembler = materielAssembler;
         this.materielService = materielService;
     }
 
-    @PostMapping("/salles/{idSalle}/materiels/{idMateriel}/")
+    @PostMapping(value = "/", params = "salleId")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> affecterASalle(@PathVariable Long idSalle, @PathVariable Long idMateriel) {
-        return ResponseEntity.ok(dto(affecterMaterielService.affecterASalle(idSalle, idMateriel)));
+    public ResponseEntity<MaterielResponseDto> affecterASalle(@PathVariable Long idMateriel, @RequestParam Long salleId) {
+        return ResponseEntity.ok(dto(affecterMaterielService.affecterASalle(salleId, idMateriel)));
     }
 
-    @DeleteMapping("/salles/{idSalle}/materiels/{idMateriel}/")
+    @DeleteMapping(value = "/", params = "salleId")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> retirerDeSalle(@PathVariable Long idSalle, @PathVariable Long idMateriel) {
-        return ResponseEntity.ok(dto(affecterMaterielService.retirerDeSalle(idSalle, idMateriel)));
+    public ResponseEntity<MaterielResponseDto> retirerDeSalle(@PathVariable Long idMateriel, @RequestParam Long salleId) {
+        return ResponseEntity.ok(dto(affecterMaterielService.retirerDeSalle(salleId, idMateriel)));
     }
 
-    @PostMapping("/postes/{idPoste}/materiels/{idMateriel}/")
+    @PostMapping(value = "/", params = "posteId")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> affecterAPoste(@PathVariable Long idPoste, @PathVariable Long idMateriel) {
-        return ResponseEntity.ok(dto(affecterMaterielService.affecterAPoste(idPoste, idMateriel)));
+    public ResponseEntity<MaterielResponseDto> affecterAPoste(@PathVariable Long idMateriel, @RequestParam Long posteId) {
+        return ResponseEntity.ok(dto(affecterMaterielService.affecterAPoste(posteId, idMateriel)));
     }
 
-    @DeleteMapping("/postes/{idPoste}/materiels/{idMateriel}/")
+    @DeleteMapping(value = "/", params = "posteId")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> retirerDuPoste(@PathVariable Long idPoste, @PathVariable Long idMateriel) {
-        return ResponseEntity.ok(dto(affecterMaterielService.retirerDuPoste(idPoste, idMateriel)));
+    public ResponseEntity<MaterielResponseDto> retirerDuPoste(@PathVariable Long idMateriel, @RequestParam Long posteId) {
+        return ResponseEntity.ok(dto(affecterMaterielService.retirerDuPoste(posteId, idMateriel)));
     }
 
     private MaterielResponseDto dto(Materiel m) {

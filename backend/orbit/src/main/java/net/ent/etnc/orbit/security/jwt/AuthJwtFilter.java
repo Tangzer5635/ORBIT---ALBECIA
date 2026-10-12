@@ -46,7 +46,8 @@ public class AuthJwtFilter extends OncePerRequestFilter {
         if (token != null && jwtUtils.validateJwtToken(token)) {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(jwtUtils.getUsernameFromToken(token));
-                if (userDetails.isEnabled()) {
+                // compte désactivé ou verrouillé : le jeton est ignoré, la requête reste anonyme (401)
+                if (userDetails.isEnabled() && userDetails.isAccountNonLocked()) {
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
