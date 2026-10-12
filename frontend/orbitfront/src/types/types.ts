@@ -7,7 +7,15 @@ export interface Utilisateur {
     role: Role;
 }
 
+// (BatimentResponseDto)
 export interface Batiment {
     id: number;
     numBatiment: string;
+    sallesId: number[];
 }
+
+// (BatimentRequestDto)
+export interface BatimentRequest {
+    numBatiment: string;
+}
+
