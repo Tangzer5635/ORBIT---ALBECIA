@@ -15,6 +15,8 @@ public class UserAssembler {
                 .id(personnel.getId())
                 .login(personnel.getUsername())
                 .role(personnel.getRole())
+                .nom(personnel.getNom())
+                .prenom(personnel.getPrenom())
                 .active(personnel.isActive())
                 .build();
     }

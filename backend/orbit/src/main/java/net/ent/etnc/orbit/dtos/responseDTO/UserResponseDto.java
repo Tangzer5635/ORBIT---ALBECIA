@@ -17,5 +17,9 @@ public class UserResponseDto {
     private String login;
     @NotNull(message = "Le rôle est obligatoire")
     private Role role;
+    @NotNull(message = "Le prenom est obligatoire")
+    private String prenom;
+    @NotNull(message = "Le nom est obligatoire")
+    private String nom;
     private boolean active;
 }

@@ -17,6 +17,7 @@ public class TokenResponse {
 
     private String accessToken;
     private String tokenType = "Bearer";
+    private UserResponseDto utilisateur;
     private Long expiresIn;
 
     public TokenResponse(String accessToken, Long expiresIn) {

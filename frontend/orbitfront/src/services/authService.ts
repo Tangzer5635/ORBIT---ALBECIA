@@ -1,8 +1,8 @@
-const API_URL = "/api/v1/auth";
+const API_URL = "http://localhost:8080/api/v1/auth";
 const TOKEN_KEY = "orbit-token";
 const USER_KEY = "orbit-user";
 
-export type Role = "admin" | "gestionnaire" | "formateur" | "stagiaire";
+export type Role = "ADMINISTRATEUR" | "GESTIONNAIRE" | "FORMATEUR" | "STAGIAIRE";
 
 export interface Utilisateur {
   id: number;
@@ -21,22 +21,23 @@ export class AuthError extends Error {
 }
 
 // Méthode pour se connecter
-export async function login(identifiant: string, motDePasse: string): Promise<Utilisateur> {
+export async function login(username: string, password: string): Promise<Utilisateur> {
   let response: Response;
   try {
     response = await fetch(`${API_URL}/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifiant, motDePasse }),
+      body: JSON.stringify({ username, password }),
     });
+    console.log(response);
   } catch {
     throw new AuthError(0); // serveur injoignable
   }
 
   if (!response.ok) throw new AuthError(response.status);
 
-  const data: { token: string; utilisateur: Utilisateur } = await response.json();
-  sessionStorage.setItem(TOKEN_KEY, data.token);
+  const data: { accessToken: string; utilisateur: Utilisateur } = await response.json();
+  sessionStorage.setItem(TOKEN_KEY, data.accessToken);
   sessionStorage.setItem(USER_KEY, JSON.stringify(data.utilisateur));
   return data.utilisateur;
 }
