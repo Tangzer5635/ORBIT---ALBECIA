@@ -14,6 +14,8 @@ public interface DefaillanceRepository extends BaseRepository<Defaillance> {
 
     boolean existsByMateriel_IdAndStatut(Long idMateriel, StatutDefaillance statut);
 
+    boolean existsByMateriel_Id(Long idMateriel);
+
     List<Defaillance> findByMateriel_IdOrderByDateSignalementDesc(Long idMateriel);
 
     Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable);

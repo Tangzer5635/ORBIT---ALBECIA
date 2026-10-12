@@ -22,4 +22,5 @@ public class UserResponseDto {
     @NotNull(message = "Le nom est obligatoire")
     private String nom;
     private boolean active;
+    private boolean verrouille;
 }

@@ -14,4 +14,8 @@ public interface PersonnelService extends Service<Personnel, Long> {
     Personnel deactivate(Long id) throws ServiceException;
 
     Personnel changeRole(Long id, Role role) throws ServiceException;
+
+    Personnel verrouiller(Long id) throws ServiceException;
+
+    Personnel deverrouiller(Long id) throws ServiceException;
 }

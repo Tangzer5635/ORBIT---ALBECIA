@@ -8,6 +8,7 @@ import net.ent.etnc.orbit.services.AffecterMaterielService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
+import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,11 +31,11 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel affecterASalle(Long idSalle, Long idMateriel) {
-        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("On n'affecte pas un matériel à une salle de stockage");
 
-        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
+        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new NotFoundException("Matériel " + idMateriel + " introuvable"));
         sortirDuStock(materiel);
         salle.addMateriel(materiel);
         return materiel;
@@ -43,8 +44,8 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel affecterAPoste(Long idPoste, Long idMateriel) {
-        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
-        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
+        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new NotFoundException("Poste " + idPoste + " introuvable"));
+        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new NotFoundException("Matériel " + idMateriel + " introuvable"));
         sortirDuStock(materiel);
         poste.addMateriel(materiel);
         return materiel;
@@ -53,7 +54,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel retirerDeSalle(Long idSalle, Long idMateriel) {
-        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("Ce matériel est déjà en stock");
         Materiel materiel = chercher(salle.getMateriels(), idMateriel);
@@ -68,7 +69,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel retirerDuPoste(Long idPoste, Long idMateriel) {
-        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
+        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new NotFoundException("Poste " + idPoste + " introuvable"));
         Materiel materiel = chercher(poste.getMateriels(), idMateriel);
         if (materiel == null)
             throw new ServiceException("Ce matériel n'est pas sur ce poste");

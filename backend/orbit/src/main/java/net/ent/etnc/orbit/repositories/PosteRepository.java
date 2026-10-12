@@ -13,4 +13,7 @@ public interface PosteRepository extends BaseRepository<Poste> {
 
     Optional<Poste> findByMateriels_Id(Long idMateriel);
 
+    boolean existsByNumPoste(String numPoste);
+
+    boolean existsByNumPosteAndIdNot(String numPoste, Long id);
 }

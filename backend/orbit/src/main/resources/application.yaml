@@ -1,6 +1,6 @@
 spring:
   application:
-    name: template_auth_sb
+    name: orbit
   datasource:
     url: jdbc:postgresql://localhost:5432/orbit
     username: postgres

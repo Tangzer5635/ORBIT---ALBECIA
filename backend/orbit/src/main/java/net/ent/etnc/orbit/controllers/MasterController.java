@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/masters")
 public class MasterController {
@@ -27,7 +26,7 @@ public class MasterController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<MasterDto>> getAll(
             @PageableDefault(size = 20) Pageable pageable
     ) {
@@ -36,7 +35,7 @@ public class MasterController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<MasterDto> getById(@PathVariable Long id) {
         return masterService.findById(id)
                 .map(master -> ResponseEntity.ok(masterAssembler.toDto(master)))
@@ -44,7 +43,7 @@ public class MasterController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('')")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MasterDto> post(@RequestBody MasterDto masterDto) {
         return ResponseEntity.ok(
                 masterAssembler.toDto(
@@ -53,7 +52,7 @@ public class MasterController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('')")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MasterDto> put(@PathVariable Long id, @RequestBody MasterDto masterDto) {
         if (!masterService.existsById(id)) return ResponseEntity.notFound().build();
         Master master = masterAssembler.toEntity(masterDto);
@@ -65,7 +64,7 @@ public class MasterController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('')")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (!masterService.existsById(id)) return ResponseEntity.notFound().build();
         masterService.deleteById(id);

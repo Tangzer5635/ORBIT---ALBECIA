@@ -12,7 +12,7 @@ import java.util.List;
  * (ex: {@code "RG-U01"}) et expose {@link #causesMessage} pour lister récursivement
  * les messages de la chaîne de causes.
  *
- * <p>Interceptée par {@link net.ent.etnc.certificationcenter.controllers.handlers.GlobalExceptionHandler}
+ * <p>Interceptée par {@link net.ent.etnc.orbit.controllers.handlers.GlobalExceptionHandler}
  * qui retourne une réponse HTTP 400 avec le message comme corps.
  */
 public class ServiceException extends RuntimeException {

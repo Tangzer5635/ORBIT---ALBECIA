@@ -49,7 +49,7 @@ public class AbstractService<T extends AbstractPersistableWithIdSetter<Long>, R 
             throw new ServiceException("L'ID de l'entité ne doit pas être nul pour une mise à jour");
         }
         T existing = repository.findById(entity.getId())
-                .orElseThrow(() -> new ServiceException("Entité avec l'ID " + entity.getId() + " introuvable"));
+                .orElseThrow(() -> new NotFoundException("Entité avec l'ID " + entity.getId() + " introuvable"));
         entity.setVersion(existing.getVersion());
 
         try {
