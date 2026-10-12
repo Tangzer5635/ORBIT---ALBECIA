@@ -1,15 +1,10 @@
+import type {Utilisateur} from "../types/types.ts";
+
 const API_URL = "/api/v1/auth";
 const TOKEN_KEY = "orbit-token";
 const USER_KEY = "orbit-user";
 
-export type Role = "ADMINISTRATEUR" | "GESTIONNAIRE" | "FORMATEUR" | "STAGIAIRE";
 
-export interface Utilisateur {
-  id: number;
-  prenom: string;
-  nom: string;
-  role: Role;
-}
 
 // Erreur avec le code HTTP, pour choisir le bon message dans la page.
 export class AuthError extends Error {
