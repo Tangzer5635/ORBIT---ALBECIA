@@ -17,10 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 
@@ -42,6 +39,7 @@ import java.util.Arrays;
  * </ul>
  */
 @RestController
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
@@ -84,8 +82,9 @@ public class AuthController {
         String rawRefreshToken = refreshTokenService.createRefreshToken(user.getUsername());
 
         addRefreshCookie(response, rawRefreshToken);
-
-        return ResponseEntity.ok(new TokenResponse(accessToken, jwtExpirationMs / 1000));
+        TokenResponse body = new TokenResponse(accessToken, jwtExpirationMs / 1000);
+        body.setUtilisateur(userAssembler.toDto(user));
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/refresh/")
