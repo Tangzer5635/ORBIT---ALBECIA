@@ -5,11 +5,14 @@ import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
+import net.ent.etnc.orbit.services.DefaillanceService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,11 +22,15 @@ import java.time.LocalDate;
 public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepository> implements MaterielService {
 
     private final SalleService salleService;
+    /** @Lazy : DefaillanceService dépend déjà de MaterielService (dépendance circulaire sinon). */
+    private final DefaillanceService defaillanceService;
 
     @Autowired
-    public MaterielServiceImpl(MaterielRepository materielRepository, SalleService salleService) {
+    public MaterielServiceImpl(MaterielRepository materielRepository, SalleService salleService,
+                               @Lazy DefaillanceService defaillanceService) {
         super(materielRepository);
         this.salleService = salleService;
+        this.defaillanceService = defaillanceService;
     }
 
     @Override
@@ -33,7 +40,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
             throw new ServiceException("La salle de stockage est obligatoire");
         if (repository.existsByNumSerie(materiel.getNumSerie()))
             throw new ServiceException("Le numéro de série " + materiel.getNumSerie() + " existe déjà");
-        Salle stockage = salleService.findById(idStockage).orElseThrow(() -> new ServiceException("Salle " + idStockage + " introuvable"));
+        Salle stockage = salleService.findById(idStockage).orElseThrow(() -> new NotFoundException("Salle " + idStockage + " introuvable"));
         if (stockage.getType() != TypeSalle.SalleStockage)
             throw new ServiceException("Un matériel se crée dans une salle de stockage");
         materiel.setArchive(false);
@@ -63,6 +70,8 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Transactional
     public void deleteById(Long id) {
         Materiel materiel = trouver(id);
+        if (defaillanceService.aDesDefaillances(id))
+            throw new ServiceException("Ce matériel a un historique de défaillances : archive-le au lieu de le supprimer");
         if (!materiel.isArchive() && !salleService.estEnStock(id))
             throw new ServiceException("Un matériel affecté ne peut pas être supprimé, remets-le en stock d'abord");
         Salle salle = salleService.salleDuMateriel(id).orElse(null);
@@ -90,11 +99,13 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Override
     @Transactional(readOnly = true)
     public EtatMateriel etatDe(Materiel materiel) {
-        boolean enStock = !materiel.isArchive() && salleService.estEnStock(materiel.getId());
-        return materiel.calculerEtat(enStock);
+        if (materiel.isArchive()) return materiel.calculerEtat(false, false);
+        boolean enStock = salleService.estEnStock(materiel.getId());
+        boolean defaillanceOuverte = defaillanceService.aUneDefaillanceOuverte(materiel.getId());
+        return materiel.calculerEtat(enStock, defaillanceOuverte);
     }
 
     private Materiel trouver(Long id) {
-        return repository.findById(id).orElseThrow(() -> new ServiceException("Matériel " + id + " introuvable"));
+        return repository.findById(id).orElseThrow(() -> new NotFoundException("Matériel " + id + " introuvable"));
     }
 }

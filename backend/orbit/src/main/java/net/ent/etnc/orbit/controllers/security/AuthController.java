@@ -27,14 +27,15 @@ import java.util.Arrays;
  *
  * <p>Stratégie token :
  * <ul>
+ *   <li><strong>Access token</strong> — JWT renvoyé en JSON, à envoyer dans {@code Authorization: Bearer}.
  *       Durée configurée par {@code app.jwt.expiration-ms}.</li>
  *   <li><strong>Refresh token</strong> — valeur brute (SHA-256 stocké en base) transmise
- *       via un cookie HttpOnly ({@code certification_center_refresh}), jamais exposée en JSON.</li>
+ *       via un cookie HttpOnly ({@code orbit_refresh}), jamais exposée en JSON.</li>
  * </ul>
  *
  * <p>Endpoints :
  * <ul>
- *   <li>{@code POST /login/} — authentification par email/mot de passe.</li>
+ *   <li>{@code POST /login/} — authentification par identifiant (login) / mot de passe.</li>
  *   <li>{@code POST /refresh/} — rotation du refresh token et nouvel access token.</li>
  *   <li>{@code POST /logout/} — suppression du cookie de refresh.</li>
  * </ul>
@@ -98,6 +99,10 @@ public class AuthController {
         if (!user.isEnabled()) {
             refreshTokenService.revokeAllForUser(user.getUsername());
             throw new ServiceException("RG-SEC04", "Compte désactivé");
+        }
+        if (!user.isAccountNonLocked()) {
+            refreshTokenService.revokeAllForUser(user.getUsername());
+            throw new ServiceException("RG-SEC05", "Compte verrouillé");
         }
         addRefreshCookie(response, result.rawToken());
         return ResponseEntity.ok(new TokenResponse(jwtUtils.generateJwtToken(user), jwtExpirationMs / 1000));

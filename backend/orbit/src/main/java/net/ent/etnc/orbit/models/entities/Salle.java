@@ -20,7 +20,6 @@ import java.util.List;
                 name = "uk_salle_batiment_id_num_salle",
                 columnNames = {"batiment_id", "num_salle"}
         ))
-@EqualsAndHashCode(callSuper = false, of = {"numSalle"})
 @ToString(callSuper = true, of = {"numSalle", "etage", "type"})
 public class Salle extends AbstractPersistableWithIdSetter<Long> {
 
@@ -120,5 +119,22 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
 
     public void removeMateriel(Materiel materiel) {
         materiels.remove(materiel);
+    }
+
+    /**
+     * Le numéro de salle n'est unique qu'au sein d'un bâtiment (la salle 101 de B201 et
+     * celle de B305 sont deux salles distinctes) : l'égalité repose donc sur l'identifiant.
+     * Deux salles pas encore persistées ne sont égales que si c'est la même instance.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Salle other)) return false;
+        return getId() != null && getId().equals(other.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Salle.class.hashCode();
     }
 }

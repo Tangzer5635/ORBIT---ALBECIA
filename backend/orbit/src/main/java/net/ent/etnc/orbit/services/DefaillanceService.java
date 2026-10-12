@@ -18,5 +18,11 @@ public interface DefaillanceService extends Service<Defaillance, Long> {
 
     List<Defaillance> findByMateriel(Long idMateriel) throws ServiceException;
 
+    /** {@code true} si le matériel a une défaillance signalée et non résolue (état DEFECTUEUX). */
+    boolean aUneDefaillanceOuverte(Long idMateriel);
+
+    /** {@code true} si le matériel a un historique de défaillances (il ne peut alors qu'être archivé). */
+    boolean aDesDefaillances(Long idMateriel);
+
     Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable) throws ServiceException;
 }

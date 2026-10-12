@@ -7,6 +7,7 @@ import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
     @Override
     @Transactional
     public Salle create(Long idBatiment, Salle salle) {
-        Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
+        Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new NotFoundException("Bâtiment " + idBatiment + " introuvable"));
         if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
             throw new ServiceException("Une salle " + salle.getNumSalle() + " existe déjà dans ce bâtiment");
         Salle creee = salleService.create(salle);
@@ -36,8 +37,8 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
     @Override
     @Transactional
     public Batiment affecterSalle(Long idBatiment, Long idSalle) {
-        Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
-        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+        Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new NotFoundException("Bâtiment " + idBatiment + " introuvable"));
+        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
         if (repository.existsBySalles_Id(idSalle))
             throw new ServiceException("La salle est déjà affectée à un bâtiment");
         if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
@@ -49,7 +50,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
     @Override
     @Transactional
     public void retirerSalle(Long idBatiment, Long idSalle) {
-        Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
+        Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new NotFoundException("Bâtiment " + idBatiment + " introuvable"));
         Salle salle = batiment.getSalles().stream()
                 .filter(s -> s.getId().equals(idSalle))
                 .findFirst()

@@ -8,9 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/v1/affectersalle")
+@RequestMapping("/api/v1/salles/{idSalle}")
 public class AffecterSalleController {
 
     private final BatimentService batimentService;
@@ -22,16 +21,16 @@ public class AffecterSalleController {
         this.batimentAssembler = batimentAssembler;
     }
 
-    @PostMapping("/{idBatiment}/salles/{idSalle}/")
+    @PostMapping(value = "/", params = "batimentId")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<BatimentResponseDto> affecterSalle(@PathVariable Long idBatiment, @PathVariable Long idSalle) {
-        return ResponseEntity.ok(batimentAssembler.toDto(batimentService.affecterSalle(idBatiment, idSalle)));
+    public ResponseEntity<BatimentResponseDto> affecterSalle(@PathVariable Long idSalle, @RequestParam Long batimentId) {
+        return ResponseEntity.ok(batimentAssembler.toDto(batimentService.affecterSalle(batimentId, idSalle)));
     }
 
-    @DeleteMapping("/{idBatiment}/salles/{idSalle}/")
+    @DeleteMapping(value = "/", params = "batimentId")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<Void> retirerSalle(@PathVariable Long idBatiment, @PathVariable Long idSalle) {
-        batimentService.retirerSalle(idBatiment, idSalle);
+    public ResponseEntity<Void> retirerSalle(@PathVariable Long idSalle, @RequestParam Long batimentId) {
+        batimentService.retirerSalle(batimentId, idSalle);
         return ResponseEntity.noContent().build();
     }
 }

@@ -37,7 +37,7 @@ public interface RefreshTokenService extends Service<RefreshToken, Long> {
      *
      * @param rawToken le token brut reçu dans le cookie HTTP-only
      * @return le nouveau token brut et l'email du propriétaire
-     * @throws net.ent.etnc.certificationcenter.services.commons.ServiceException
+     * @throws net.ent.etnc.orbit.services.commons.ServiceException
      *         (RG-SEC01) token inconnu, (RG-SEC02) vol détecté, (RG-SEC03) token expiré
      */
     RotateResult rotateRefreshToken(String rawToken);

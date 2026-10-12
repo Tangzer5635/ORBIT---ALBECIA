@@ -60,6 +60,18 @@ public class PersonnelController {
         return ResponseEntity.ok(userAssembler.toDto(personnelService.update(user)));
     }
 
+    @PatchMapping("/{id}/verrouiller/")
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public ResponseEntity<UserResponseDto> verrouiller(@PathVariable Long id) {
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.verrouiller(id)));
+    }
+
+    @PatchMapping("/{id}/deverrouiller/")
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public ResponseEntity<UserResponseDto> deverrouiller(@PathVariable Long id) {
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.deverrouiller(id)));
+    }
+
     @DeleteMapping("/{id}/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
