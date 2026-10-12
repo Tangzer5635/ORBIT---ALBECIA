@@ -6,10 +6,7 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import org.springframework.stereotype.Component;
 
-/**
- * Pas de toEntity : une défaillance se crée uniquement par DefaillanceService.signaler()
- * (auteur et date fixés côté serveur, jamais par le client).
- */
+
 @Component
 public class DefaillanceAssembler {
 

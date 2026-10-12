@@ -11,7 +11,7 @@ public enum Role {
     TECHNIQUE("Technicien", true),
     FORMATEUR("Formateur", STAGIAIRE, TECHNIQUE),
     GESTIONNAIRE("Gestionnaire", TECHNIQUE),
-    ADMINISTRATEUR("Administrateur", GESTIONNAIRE);
+    ADMINISTRATEUR("Administrateur", GESTIONNAIRE, FORMATEUR);
 
     @Getter
     private final String libelle;

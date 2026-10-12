@@ -45,9 +45,6 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Transactional
     public Defaillance signaler(Long idMateriel, String description, Personnel auteur) throws ServiceException {
         Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("RG-D01", "Matériel " + idMateriel + " introuvable"));
-        if (materiel.isArchive()) {
-            throw new ServiceException("RG-D02", "Impossible de signaler un matériel archivé");
-        }
         if (repository.existsByMateriel_IdAndStatut(idMateriel, StatutDefaillance.SIGNALEE)) {
             throw new ServiceException("RG-D03", "Ce matériel a déjà une défaillance signalée");
         }
@@ -100,6 +97,9 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     }
 
     private boolean peutSignaler(Personnel user, Long idMateriel) {
+        if (user.getRole().equals("FORMATEUR")){
+            return true;
+        }
         Optional<Poste> poste = posteService.posteDuMateriel(idMateriel);
         boolean surSonPoste = poste.map(p -> memePersonne(p.getOccupant(), user)).orElse(false);
         if (surSonPoste) {

@@ -45,7 +45,7 @@ import java.util.Arrays;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
-    private static final String COOKIE_NAME = "template_auth_refresh";
+    private static final String COOKIE_NAME = "orbit_refresh";
     private final long refreshExpirationMs;
     private final long jwtExpirationMs;
     private final AuthenticationManager authenticationManager;
