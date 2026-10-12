@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./LoginPage.css";
 import {AuthError, login} from "../services/authService.ts";
 
 // Messages de la FD "S'authentifier"

@@ -1,8 +1,13 @@
 /* =========================================================
-   Styles globaux d'ORBIT (chargés une fois dans main.tsx)
+   Styles d'ORBIT — tout dans un seul fichier (chargé dans main.tsx)
    Couleurs reprises de la maquette, thème sombre uniquement.
+   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion
    ========================================================= */
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
+
+/* =========================================================
+   1. BASE
+   ========================================================= */
 
 /* ---- Thème sombre ---- */
 :root {
@@ -30,7 +35,6 @@
     color-scheme: dark;
     font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     color: var(--ink);
-
 }
 
 :root[data-theme="light"] {
@@ -38,7 +42,6 @@
     --logo-blend: multiply;
 }
 
-/* ---- Base ---- */
 *,
 *::before,
 *::after {
@@ -79,7 +82,7 @@ h3 {
     letter-spacing: -0.01em;
 }
 
-/* ---- Zone de contenu sous la Navbar (Layout.tsx) ---- */
+/* Zone de contenu sous la Navbar (Layout.tsx) */
 .page {
     max-width: var(--page-width);
     margin: 0 auto;
@@ -92,12 +95,365 @@ h3 {
     }
 }
 
-/* ---- Animations réduites si l'utilisateur le demande ---- */
+/* Animations réduites si l'utilisateur le demande */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
         transition: none !important;
         animation: none !important;
+    }
+}
+
+/* =========================================================
+   2. NAVBAR (barre du haut de la maquette)
+   ========================================================= */
+
+/* Barre collée en haut de l'écran pendant le défilement */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 14px rgba(40, 30, 110, 0.06);
+}
+
+/* Contenu centré, même largeur que les pages */
+.navbar-inner {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 24px;
+}
+
+/* Nom de l'appli */
+.navbar-brand {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.navbar-logo {
+    height: 40px;
+    width: 40px;
+    filter: var(--logo-filter);
+    mix-blend-mode: var(--logo-blend);
+}
+
+/* Liens : sur une 2e ligne, comme la maquette */
+.navbar-links {
+    order: 3;
+    flex-basis: 100%;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.navbar-links::-webkit-scrollbar {
+    display: none;
+}
+
+.navbar-links a {
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.navbar-links a:hover {
+    color: var(--ink);
+    background: var(--card2);
+}
+
+/* Page courante : NavLink ajoute la classe "active" tout seul */
+.navbar-links a.active {
+    background: var(--ink);
+    color: var(--card);
+}
+
+/* Bloc utilisateur à droite */
+.navbar-user {
+    flex: none;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.navbar-who {
+    text-align: right;
+    line-height: 1.2;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Rôle sous le nom : "GESTIONNAIRE" s'affiche "Gestionnaire" */
+.navbar-role {
+    display: block;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 400;
+    text-transform: lowercase;
+}
+
+.navbar-role::first-letter {
+    text-transform: uppercase;
+}
+
+/* Bouton Déconnexion */
+.navbar-logout {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.navbar-logout:hover {
+    background: var(--accent-soft);
+}
+
+/* Tablette / mobile */
+@media (max-width: 900px) {
+    .navbar-inner {
+        padding: 10px 14px;
+        gap: 10px 14px;
+    }
+}
+
+/* Mobile : on cache le nom pour garder de la place */
+@media (max-width: 520px) {
+    .navbar-who {
+        display: none;
+    }
+}
+
+/* =========================================================
+   3. BARRE DES BÂTIMENTS (.sub / .pills de la maquette)
+   ========================================================= */
+.batimentBar {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 14px rgba(40, 30, 110, 0.06);
+}
+
+/* Contenu centré, même largeur que la navbar */
+.batimentBar-inner {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+}
+
+/* Liste des pastilles (8 max affichées) */
+.batimentBar-liste {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.batimentBar-liste::-webkit-scrollbar {
+    display: none;
+}
+
+/* Pastille d'un bâtiment */
+.batiment {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 7px 13px;
+    background: var(--card2);
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.batiment svg {
+    width: 17px;
+    height: 17px;
+    flex: none;
+}
+
+.batiment:hover {
+    background: var(--accent-soft);
+}
+
+/* Bâtiment sélectionné */
+.batiment.active {
+    background: var(--ink);
+    color: var(--card);
+}
+
+/* Flèches gauche / droite */
+.batimentBar-fleche {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card2);
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.batimentBar-fleche svg {
+    width: 19px;
+    height: 19px;
+}
+
+.batimentBar-fleche:hover:not(:disabled) {
+    background: var(--accent-soft);
+}
+
+.batimentBar-fleche:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+@media (max-width: 900px) {
+    .batimentBar-inner {
+        padding: 8px 14px;
+    }
+}
+
+/* =========================================================
+   4. PAGE DE CONNEXION
+   ========================================================= */
+
+/* Page : carte centrée */
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+}
+
+/* Carte */
+.login-card {
+    width: min(460px, 100%);
+    background: var(--card);
+    border-radius: var(--radius-card);
+    padding: 32px 30px 30px;
+    box-shadow: var(--shadow);
+}
+
+/* Titre + sous-titre */
+.login-title {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.login-subtitle {
+    margin: 2px 0 22px;
+    color: var(--muted);
+}
+
+/* Formulaire */
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-form label {
+    font-weight: 600;
+    margin: 12px 0 6px;
+}
+
+.login-form label:first-child {
+    margin-top: 0;
+}
+
+.login-form input {
+    width: 100%;
+    border: 2px solid transparent;
+    background: var(--card2);
+    border-radius: var(--radius-field);
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.login-form input:focus {
+    border-color: var(--accent);
+    background: var(--card);
+}
+
+/* Champ en erreur (si on ajoute aria-invalid sur l'input) */
+.login-form input[aria-invalid="true"] {
+    border-color: var(--error);
+}
+
+/* Message d'erreur */
+.error-message {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--error);
+}
+
+/* Bouton */
+.login-button {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    transition: filter 0.15s, transform 0.05s;
+}
+
+.login-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.login-button:active:not(:disabled) {
+    transform: scale(0.99);
+}
+
+.login-button:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+/* Petit écran */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 26px 20px 22px;
+        border-radius: 24px;
+    }
+
+    .login-title {
+        font-size: 28px;
     }
 }

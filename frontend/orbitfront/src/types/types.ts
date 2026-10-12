@@ -6,3 +6,8 @@ export interface Utilisateur {
     nom: string;
     role: Role;
 }
+
+export interface Batiment {
+    id: number;
+    numBatiment: string;
+}

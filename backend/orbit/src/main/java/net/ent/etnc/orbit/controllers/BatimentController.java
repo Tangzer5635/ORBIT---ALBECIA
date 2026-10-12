@@ -26,7 +26,7 @@ public class BatimentController {
     }
 
     @GetMapping("/")
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Page<BatimentResponseDto>> getAll(
             @PageableDefault(size = 20) Pageable pageable
     ) {

@@ -4,8 +4,6 @@ const API_URL = "/api/v1/auth";
 const TOKEN_KEY = "orbit-token";
 const USER_KEY = "orbit-user";
 
-
-
 // Erreur avec le code HTTP, pour choisir le bon message dans la page.
 export class AuthError extends Error {
   status: number;
