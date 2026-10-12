@@ -6,15 +6,19 @@ import "./Navbar.css";
 // tableau avec les liens, le nom qui sera afficher sur la page et les roles pouvant y acceder
 //TODO rajouter l'administrateur
 const LIENS: { to: string; label: string; roles: Role[] }[] = [
-    { to: "/batiments",    label: "Bâtiments",    roles: ["GESTIONNAIRE"] },
+    { to: "/batiments",    label: "Bâtiments",    roles: ["ADMINISTRATEUR"] },
+    { to: "/salles",       label: "Salles",       roles: ["ADMINISTRATEUR","GESTIONNAIRE"]},
     { to: "/salles",       label: "Mes salles",   roles: ["FORMATEUR"] },
-    { to: "/defaillances", label: "Défaillances", roles: ["GESTIONNAIRE", "FORMATEUR"] },
-    { to: "/garanties",    label: "Garanties",    roles: ["GESTIONNAIRE"] },
-    { to: "/materiel",     label: "Matériel",     roles: ["GESTIONNAIRE"] },
-    { to: "/masters",      label: "Masters",      roles: ["GESTIONNAIRE"] },
-    { to: "/stages",       label: "Stages",       roles: ["GESTIONNAIRE"] },
-    { to: "/processus",    label: "Processus",    roles: ["FORMATEUR"] },
+    { to: "/defaillances", label: "Défaillances", roles: ["GESTIONNAIRE", "FORMATEUR","ADMINISTRATEUR"] },
+    { to: "/garanties",    label: "Garanties",    roles: ["GESTIONNAIRE","ADMINISTRATEUR"] },
+    { to: "/materiel",     label: "Matériel",     roles: ["GESTIONNAIRE","ADMINISTRATEUR"] },
+    { to: "/masters",      label: "Masters",      roles: ["GESTIONNAIRE","ADMINISTRATEUR"] },
+    { to: "/stages",       label: "Stages",       roles: ["GESTIONNAIRE","ADMINISTRATEUR"] },
+    { to: "/processus",    label: "Processus",    roles: ["FORMATEUR","ADMINISTRATEUR"] },
     { to: "/poste",        label: "Mon poste",    roles: ["STAGIAIRE"] },
+    { to: "/utilisateurs", label: "Utilisateurs", roles: ["ADMINISTRATEUR"]},
+    { to: "/journal", label: "Journal", roles: ["ADMINISTRATEUR"]},
+
 ];
 
 export default function Navbar() {
