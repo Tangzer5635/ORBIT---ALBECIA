@@ -13,7 +13,6 @@ import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -45,7 +44,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Override
     @Transactional
     public Defaillance signaler(Long idMateriel, String description, Personnel auteur) throws ServiceException {
-        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new NotFoundException("RG-D01", "Matériel " + idMateriel + " introuvable"));
+        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("RG-D01", "Matériel " + idMateriel + " introuvable"));
         if (!peutSignaler(auteur, idMateriel)) {
             throw new AccessDeniedException("Ce matériel n'est ni sur votre poste ni sur un poste de vos salles");
         }
@@ -64,7 +63,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Override
     @Transactional
     public Defaillance resoudre(Long id, String noteSolution, Personnel technicien) throws ServiceException {
-        Defaillance d = repository.findById(id).orElseThrow(() -> new NotFoundException("RG-D04", "Défaillance " + id + " introuvable"));
+        Defaillance d = repository.findById(id).orElseThrow(() -> new ServiceException("RG-D04", "Défaillance " + id + " introuvable"));
         if (d.isResolue()) {
             throw new ServiceException("RG-D05", "Défaillance déjà résolue");
         }

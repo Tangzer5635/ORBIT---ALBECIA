@@ -5,7 +5,6 @@ import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.repositories.PersonnelRepository;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.NotFoundException;
-import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

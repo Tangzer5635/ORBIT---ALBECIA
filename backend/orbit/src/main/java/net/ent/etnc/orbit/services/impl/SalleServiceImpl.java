@@ -11,7 +11,6 @@ import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public void deleteById(Long id) {
-        Salle salle = repository.findById(id).orElseThrow(() -> new NotFoundException("Salle " + id + " introuvable"));
+        Salle salle = repository.findById(id).orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage && !salle.getMateriels().isEmpty())
             throw new ServiceException("Vide la salle de stockage avant de la supprimer");
         List<Materiel> aRanger = new ArrayList<>(salle.getMateriels());
@@ -69,7 +68,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public Poste creerPoste(Long idSalle, Poste poste) {
-        Salle salle = repository.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
+        Salle salle = repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("On ne crée pas de poste dans une salle de stockage");
         Poste cree = posteService.create(poste);
@@ -80,7 +79,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public void supprimerPoste(Long idPoste) {
-        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new NotFoundException("Poste " + idPoste + " introuvable"));
+        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
         List<Materiel> aRanger = List.copyOf(poste.getMateriels());
         if (!aRanger.isEmpty()) {
             // la réserve se cherche avant de détacher le poste de sa salle

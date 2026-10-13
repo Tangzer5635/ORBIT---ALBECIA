@@ -7,7 +7,6 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,7 +90,7 @@ class AffecterMaterielServiceImplTest {
         when(salleService.findById(2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.affecterASalle(2L, 11L))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Salle 2 introuvable");
     }
 
@@ -111,7 +110,7 @@ class AffecterMaterielServiceImplTest {
         when(materielService.findById(11L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.affecterASalle(2L, 11L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     @Test
@@ -175,7 +174,7 @@ class AffecterMaterielServiceImplTest {
         when(posteService.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.affecterAPoste(1L, 8L))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Poste 1 introuvable");
         verify(materielService, never()).findById(any());
     }
@@ -233,7 +232,7 @@ class AffecterMaterielServiceImplTest {
         when(salleService.findById(2L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.retirerDeSalle(2L, 11L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- retirerDuPoste ----------
@@ -268,6 +267,6 @@ class AffecterMaterielServiceImplTest {
         when(posteService.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.retirerDuPoste(1L, 8L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 }

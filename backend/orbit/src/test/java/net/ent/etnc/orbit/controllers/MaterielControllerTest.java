@@ -10,7 +10,6 @@ import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.commons.NotFoundException;
-import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;

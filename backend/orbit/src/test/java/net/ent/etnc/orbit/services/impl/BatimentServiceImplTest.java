@@ -6,7 +6,6 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.NotFoundException;
-import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

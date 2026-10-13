@@ -9,7 +9,6 @@ import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.NotFoundException;
-import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
