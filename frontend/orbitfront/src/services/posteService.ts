@@ -1,4 +1,4 @@
-import type {Page, Poste, PosteRequest} from "../types/types.ts";
+import type {MonPoste, Page, Poste, PosteRequest} from "../types/types.ts";
 import { authHeaders } from "./api.ts";
 
 const URL = `/api/v1/postes`;
@@ -26,7 +26,9 @@ export async function getPostes(): Promise<Poste[]> {
     return data.content; //les postes sont dans "content" car on a des pages
 }
 
-export async function getMyPoste(): Promise<Poste> {
+// Méthode pour récupérer le poste de l'utilisateur connecté (stagiaire)
+// null si aucun poste ne lui est affecté (404)
+export async function getMyPoste(): Promise<MonPoste | null> {
     let response: Response;
     try {
         response = await fetch(`${URL}/me/`, { headers: authHeaders() });
@@ -34,6 +36,7 @@ export async function getMyPoste(): Promise<Poste> {
         throw new PosteError(0); // serveur injoignable
     }
 
+    if (response.status === 404) return null;
     if (!response.ok) throw new PosteError(response.status);
 
     return await response.json();
