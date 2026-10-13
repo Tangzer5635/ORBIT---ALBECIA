@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { getUtilisateur, logout } from "../services/authService.ts";
 import logo from "../assets/orbit-logo.gif";
 import { ACCES } from "../config/acces.ts";
+import ThemeButton from "./ThemeButton.tsx";
 
 export default function Navbar() {
     const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function Navbar() {
                         {utilisateur.prenom} {utilisateur.nom}
                         <span className="navbar-role">{utilisateur.role}</span>
                     </div>
-                    {/*TODO bouton mode clair/sombre*/}
+                    <ThemeButton />
                     <button className="navbar-logout" onClick={handleLogout}>
                         Déconnexion
                     </button>
