@@ -53,12 +53,6 @@ public class SalleController {
                 batimentService.create(salleDto.getIdBatiment(), salleAssembler.toEntity(salleDto))));
     }
 
-    @PatchMapping("/{id}/gestionnaire/{idGestionnaire}/")
-    @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<SalleResponseDto> changerGestionnaire(@PathVariable Long id, @PathVariable Long idGestionnaire) {
-        return ResponseEntity.ok(salleAssembler.toDto(salleService.changerGestionnaire(id, idGestionnaire)));
-    }
-
     @DeleteMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

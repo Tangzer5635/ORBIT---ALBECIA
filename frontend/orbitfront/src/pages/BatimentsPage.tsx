@@ -1,10 +1,10 @@
-import BatimentCard from "../components/BatimentComponents.tsx";
-import type {Batiment} from "../types/types.ts";
-import {type FormEvent, useEffect, useState} from "react";
-import {ajouterBatiment, BatimentError, getBatiments, supprimerBatiment} from "../services/batimentService.ts";
+import BatimentCard from "../components/BatimentCard.tsx";
+import {type FormEvent, useState} from "react";
+import {ajouterBatiment, BatimentError, supprimerBatiment} from "../services/batimentService.ts";
+import {useBatiments} from "../context/BatimentsContext.tsx";
 
 export function BatimentsPage() {
-    const [batiments, setBatiments] = useState<Batiment[]>([]);
+    const {batiments, setBatiments, erreurChargement} = useBatiments(); // liste partagée avec la BatimentBar
     const [error, setError] = useState<string>();
 
     //useState pour le form
@@ -12,14 +12,6 @@ export function BatimentsPage() {
     const [numBatiment, setNumBatiment] = useState("");
     const [erreurForm, setErreurForm] = useState("");
     const [envoi, setEnvoi] = useState(false);
-
-    useEffect(() => {
-        getBatiments()
-            .then(setBatiments)
-            .catch(() => setError("Impossible de charger les bâtiments."));
-    }, []);
-
-    console.log(batiments);
 
     function fermerForm() {
         setFormOuvert(false);
@@ -39,7 +31,7 @@ export function BatimentsPage() {
         setEnvoi(true);
         try {
             const nouveau = await ajouterBatiment({ numBatiment: numBatiment.trim() });
-            setBatiments([...batiments, nouveau]); // on l'ajoute à la liste affichée
+            setBatiments((liste) => [...liste, nouveau]); // on l'ajoute à la liste affichée
 
             // //ferme le form
             // setFormOuvert(false);
@@ -63,7 +55,7 @@ export function BatimentsPage() {
     async function handleSupprimer(id: number) {
         try {
             await supprimerBatiment(id);
-            setBatiments(batiments.filter((b) => b.id !== id));
+            setBatiments((liste) => liste.filter((b) => b.id !== id));
         } catch (err) {
             if (err instanceof BatimentError && err.status === 403) setError("Vous n'avez pas le droit de supprimer un bâtiment.");
             else if (err instanceof BatimentError && err.status === 404) setError("Ce bâtiment n'existe plus.");
@@ -72,16 +64,21 @@ export function BatimentsPage() {
         }
     }
 
+    const nb = batiments.length;
+
     return (
-        <main>
-            <h1>Gestion Batiment</h1>
+        <>
+            <div className="page-head">
+                <h1>Bâtiments</h1>
+                <span className="muted">{nb} bâtiment{nb > 1 ? "s" : ""}</span>
+            </div>
 
             {!formOuvert && (
-                <button onClick={() => setFormOuvert(true)}>Créer un bâtiment</button>
+                <button type="button" className="btn primary" onClick={() => setFormOuvert(true)}>Créer un bâtiment</button>
             )}
 
             {formOuvert && (
-                <form onSubmit={handleSubmit} noValidate>
+                <form className="bat-form" onSubmit={handleSubmit} noValidate>
                     <label htmlFor="numBatiment">Numéro du bâtiment</label>
                     <input
                         id="numBatiment"
@@ -89,24 +86,22 @@ export function BatimentsPage() {
                         onChange={(e) => setNumBatiment(e.target.value)}
                         autoFocus
                     />
-
-                    {erreurForm && <p className="error-message" role="alert">{erreurForm}</p>}
-
-                    <button type="button" onClick={fermerForm}>Annuler</button>
-                    <button type="submit" disabled={envoi}>
+                    <button type="submit" className="btn primary" disabled={envoi}>
                         {envoi ? "Création…" : "Créer"}
                     </button>
+                    <button type="button" className="btn" onClick={fermerForm}>Annuler</button>
+
+                    {erreurForm && <p className="error-message bat-form-erreur" role="alert">{erreurForm}</p>}
                 </form>
             )}
 
-            {error && <p className="error-message" role="alert">{error}</p>}
+            {(error ?? erreurChargement) && <p className="error-message" role="alert">{error ?? erreurChargement}</p>}
 
-            <div>
+            <div className="bat-grid">
                 {batiments.map((b) => (
-                    <BatimentCard batiment={b} onSupprime={handleSupprimer}  />
+                    <BatimentCard key={b.id} batiment={b} onSupprime={handleSupprimer}/>
                 ))}
             </div>
-
-        </main>
+        </>
     );
 }

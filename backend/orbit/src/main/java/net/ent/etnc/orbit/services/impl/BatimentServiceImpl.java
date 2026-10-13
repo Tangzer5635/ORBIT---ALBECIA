@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.services.impl;
 import org.springframework.transaction.annotation.Transactional;
 import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -15,12 +16,31 @@ import org.springframework.stereotype.Service;
 @Service
 public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepository> implements BatimentService {
 
+    private static final String NUM_SALLE_STOCKAGE = "199";
+    private static final String ETAGE_SALLE_STOCKAGE = "0";
+
     private final SalleService salleService;
 
     @Autowired
     public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService) {
         super(batimentRepository);
         this.salleService = salleService;
+    }
+
+    /**
+     * Crée le bâtiment et, dans la même transaction, sa salle de stockage :
+     * si l'une des deux créations échoue, rien n'est enregistré.
+     */
+    @Override
+    @Transactional
+    public Batiment create(Batiment batiment) {
+        Batiment cree = super.create(batiment);
+        Salle stockage = new Salle();
+        stockage.setNumSalle(NUM_SALLE_STOCKAGE);
+        stockage.setEtage(ETAGE_SALLE_STOCKAGE);
+        stockage.setType(TypeSalle.SalleStockage);
+        cree.addSalle(salleService.create(stockage));
+        return cree;
     }
 
     @Override

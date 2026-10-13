@@ -1,4 +1,4 @@
-import type {Utilisateur} from "../types/types.ts";
+import type {TokenResponse, Utilisateur} from "../types/types.ts";
 
 const API_URL = "/api/v1/auth";
 const TOKEN_KEY = "orbit-token";
@@ -30,7 +30,7 @@ export async function login(username: string, password: string): Promise<Utilisa
 
   if (!response.ok) throw new AuthError(response.status);
 
-  const data: { accessToken: string; utilisateur: Utilisateur } = await response.json();
+  const data: TokenResponse = await response.json();
   sessionStorage.setItem(TOKEN_KEY, data.accessToken);
   sessionStorage.setItem(USER_KEY, JSON.stringify(data.utilisateur));
   return data.utilisateur;

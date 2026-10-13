@@ -48,12 +48,6 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "type",length = 20, nullable = false)
     private TypeSalle type;
 
-    @Getter
-    @Setter
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gestionnaire_id", foreignKey = @ForeignKey(name = "fk_salle_gestionnaire"))
-    private Personnel gestionnaire;
-
     @Valid
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "salle_personnel",

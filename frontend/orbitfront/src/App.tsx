@@ -17,10 +17,12 @@ import UserPage from "./pages/UserPage.tsx";
 import JournalPage from "./pages/JournalPage.tsx";
 import PostePage from "./pages/PostePage.tsx";
 import { ACCES } from "./config/acces.ts";
+import SalleDetailPage from "./pages/SalleDetailPage.tsx";
 
 const PAGES: Record<string, ReactElement> = {
     "/batiments": <BatimentsPage />,
     "/salles": <SallePage />,
+    "/salles/$id": <SalleDetailPage />,
     "/defaillances": <DefaillancePage />,
     "/garanties": <GarantiePage />,
     "/materiel": <MaterielPage />,

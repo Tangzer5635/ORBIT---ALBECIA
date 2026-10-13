@@ -50,6 +50,22 @@ class BatimentServiceImplTest {
         return s;
     }
 
+    // ---------- create(batiment) ----------
+
+    @Test
+    void create_doitCreerUneSalleDeStockageAvecLeBatiment() {
+        Batiment b = batiment();
+        when(repository.saveAndFlush(b)).thenReturn(b);
+        when(salleService.create(any(Salle.class))).thenAnswer(i -> i.getArgument(0));
+
+        Batiment resultat = service.create(b);
+
+        assertThat(resultat.getSalles()).hasSize(1);
+        Salle stockage = resultat.getSalles().get(0);
+        assertThat(stockage.getType()).isEqualTo(TypeSalle.SalleStockage);
+        assertThat(stockage.getNumSalle()).isEqualTo("199");
+    }
+
     // ---------- create(idBatiment, salle) ----------
 
     @Test

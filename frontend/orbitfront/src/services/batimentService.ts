@@ -1,4 +1,4 @@
-import type { Batiment, BatimentRequest } from "../types/types.ts";
+import type { Batiment, BatimentRequest, Page } from "../types/types.ts";
 import { authHeaders } from "./api.ts";
 
 const URL = `/api/v1/batiments`;
@@ -22,7 +22,7 @@ export async function getBatiments(): Promise<Batiment[]> {
 
     if (!response.ok) throw new BatimentError(response.status);
 
-    const data: { content: Batiment[] } = await response.json();
+    const data: Page<Batiment> = await response.json();
     return data.content; //les bâtiments sont dans "content" car on a des pages
 }
 

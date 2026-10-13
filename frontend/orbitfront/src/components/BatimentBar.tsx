@@ -1,7 +1,8 @@
-import {useEffect, useState} from "react";
-import {getToken, getUtilisateur} from "../services/authService.ts";
-import type {Batiment} from "../types/types.ts";
-
+import {useCallback, useEffect, useRef, useState} from "react";
+import {useLocation, useNavigate, useSearchParams} from "react-router-dom";
+import {getUtilisateur} from "../services/authService.ts";
+import {useBatiments} from "../context/BatimentsContext.tsx";
+import {niveau, pourcentageUtilisable} from "../utils/postes.ts";
 
 function IconeBatiment() {
     return (
@@ -25,51 +26,102 @@ function Fleche({sens, ...props}: { sens: "gauche" | "droite" } & React.ButtonHT
 }
 
 export default function BatimentBar() {
-    const PAR_PAGE = 8;
-    const [batiments, setBatiments] = useState<Batiment[]>([]);
-    const MAX_DEBUT = Math.max(0, batiments.length - PAR_PAGE);
+    const {batiments} = useBatiments();
     const utilisateur = getUtilisateur();
-    const [debut, setDebut] = useState(0);
-    const [selection, setSelection] = useState<number | null>(null);
+    const navigate = useNavigate();
+    const {pathname} = useLocation();
+    const [params] = useSearchParams();
 
+    const listeRef = useRef<HTMLElement>(null);
+    const [peutGauche, setPeutGauche] = useState(false);
+    const [peutDroite, setPeutDroite] = useState(false);
+    // état du glisser à la souris
+    const drag = useRef({enCours: false, aBouge: false, departX: 0, departScroll: 0});
+
+    // le bâtiment sélectionné vient de l'URL : /salles?batiment=2
+    const selection = pathname === "/salles" ? Number(params.get("batiment")) : null;
+
+    // active/désactive les flèches selon la position de la liste
+    const majFleches = useCallback(() => {
+        const el = listeRef.current;
+        if (!el) return;
+        setPeutGauche(el.scrollLeft > 0);
+        setPeutDroite(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    }, []);
+
+    // recalcul quand la liste change ou que la fenêtre est redimensionnée
     useEffect(() => {
-        fetch("http://localhost:8080/api/v1/batiments/", {
-            headers: {Authorization: `Bearer ${getToken()}`},
-        })
-            .then(response => response.json())
-            .then(data => setBatiments(data.content));
-    }, [])
+        majFleches();
+        window.addEventListener("resize", majFleches);
+        return () => window.removeEventListener("resize", majFleches);
+    }, [batiments, majFleches]);
 
     if (utilisateur?.role === "STAGIAIRE") return null;
 
-    const visibles = batiments.slice(debut, debut + PAR_PAGE);
+    // glisse d'une largeur visible vers la gauche ou la droite
+    function defiler(sens: -1 | 1) {
+        const el = listeRef.current;
+        if (el) el.scrollBy({left: sens * el.clientWidth, behavior: "smooth"});
+    }
 
-    const defilement = batiments.length > PAR_PAGE;
+    // glisser à la souris
+    function onPointerDown(e: React.PointerEvent<HTMLElement>) {
+        if (e.pointerType !== "mouse" || e.button !== 0) return; // tactile : défilement natif
+        drag.current = {enCours: true, aBouge: false, departX: e.clientX, departScroll: e.currentTarget.scrollLeft};
+    }
+
+    function onPointerMove(e: React.PointerEvent<HTMLElement>) {
+        const d = drag.current;
+        if (!d.enCours) return;
+        const dx = e.clientX - d.departX;
+        if (!d.aBouge && Math.abs(dx) > 5) {
+            d.aBouge = true;
+            e.currentTarget.classList.add("drag");
+            e.currentTarget.setPointerCapture(e.pointerId);
+        }
+        if (d.aBouge) e.currentTarget.scrollLeft = d.departScroll - dx;
+    }
+
+    function onPointerFin(e: React.PointerEvent<HTMLElement>) {
+        drag.current.enCours = false;
+        e.currentTarget.classList.remove("drag");
+        // le clic qui suit un glisser ne doit pas sélectionner un bâtiment
+        setTimeout(() => { drag.current.aBouge = false; }, 0);
+    }
+
+    function onClickCapture(e: React.MouseEvent) {
+        if (drag.current.aBouge) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
 
     return (
         <div className="batimentBar">
             <div className="batimentBar-inner">
-                {defilement && (
-                    <Fleche sens="gauche" aria-label="Bâtiments précédents" disabled={debut === 0}
-                            onClick={() => setDebut((d) => Math.max(0, d - PAR_PAGE))}/>
-                )}
+                <Fleche sens="gauche" aria-label="Bâtiments précédents"
+                        disabled={!peutGauche} onClick={() => defiler(-1)}/>
 
-                <nav className="batimentBar-liste" aria-label="Bâtiments">
-                    {visibles.map((b) => (
-                        <button key={b.id} type="button"
-                                className={"batiment" + (selection === b.id ? " active" : "")}
-                                onClick={() => setSelection(b.id)}>
-                            <IconeBatiment/>
-                            {b.numBatiment}
-                        </button>
-                    ))}
+                <nav className="batimentBar-liste" ref={listeRef} onScroll={majFleches} aria-label="Bâtiments"
+                     onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+                     onPointerUp={onPointerFin} onPointerCancel={onPointerFin}
+                     onClickCapture={onClickCapture}>
+                    {batiments.map((b) => {
+                        const pct = pourcentageUtilisable(b.comptes);
+                        return (
+                            <button key={b.id} type="button"
+                                    className={"batiment" + (selection === b.id ? " active" : "")}
+                                    onClick={() => navigate(`/salles?batiment=${b.id}`)}>
+                                <IconeBatiment/>
+                                {b.numBatiment}
+                                {pct !== null && <span className={"pp " + niveau(pct)}>{pct}%</span>}
+                            </button>
+                        );
+                    })}
                 </nav>
 
-                {defilement && (
-                    <Fleche sens="droite" aria-label="Bâtiments suivants"
-                            disabled={debut >= MAX_DEBUT}
-                            onClick={() => setDebut((d) => Math.min(MAX_DEBUT, d + PAR_PAGE))}/>
-                )}
+                <Fleche sens="droite" aria-label="Bâtiments suivants"
+                        disabled={!peutDroite} onClick={() => defiler(1)}/>
             </div>
         </div>
     );

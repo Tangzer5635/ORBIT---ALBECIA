@@ -8,7 +8,6 @@ import net.ent.etnc.orbit.services.commons.ServiceException;
 import java.util.Optional;
 
 public interface SalleService extends Service<Salle, Long> {
-    Salle changerGestionnaire(Long idSalle, Long idGestionnaire) throws ServiceException;
     boolean estEnStock(Long idMateriel);
     Optional<Salle> salleDuMateriel(Long idMateriel);
 

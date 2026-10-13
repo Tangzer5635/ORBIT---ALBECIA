@@ -1,13 +1,10 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
-import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
-import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.SalleRepository;
-import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -36,9 +33,6 @@ class SalleServiceImplTest {
     @Mock
     private PosteService posteService;
 
-    @Mock
-    private PersonnelService personnelService;
-
     @InjectMocks
     private SalleServiceImpl service;
 
@@ -63,14 +57,6 @@ class SalleServiceImplTest {
         m.setId(id);
         m.setNumSerie("MAT-" + id);
         return m;
-    }
-
-    private Personnel personnel(Long id, Role role) {
-        Personnel p = new Personnel();
-        p.setId(id);
-        p.setNid(String.format("%010d", id));
-        p.setRole(role);
-        return p;
     }
 
     // ---------- creerPoste ----------
@@ -205,58 +191,6 @@ class SalleServiceImplTest {
 
         assertThatThrownBy(() -> service.deleteById(1L))
                 .isInstanceOf(NotFoundException.class);
-    }
-
-    // ---------- changerGestionnaire ----------
-
-    @Test
-    void changerGestionnaire_doitAffecterLeGestionnaire() {
-        Salle salle = salle(1L, TypeSalle.SalleDeCours);
-        Personnel gestionnaire = personnel(3L, Role.GESTIONNAIRE);
-        when(repository.findById(1L)).thenReturn(Optional.of(salle));
-        when(personnelService.findById(3L)).thenReturn(Optional.of(gestionnaire));
-
-        assertThat(service.changerGestionnaire(1L, 3L).getGestionnaire()).isSameAs(gestionnaire);
-    }
-
-    @Test
-    void changerGestionnaire_doitAccepterUnAdministrateur() {
-        Personnel admin = personnel(1L, Role.ADMINISTRATEUR);
-        when(repository.findById(1L)).thenReturn(Optional.of(salle(1L, TypeSalle.SalleDeCours)));
-        when(personnelService.findById(1L)).thenReturn(Optional.of(admin));
-
-        assertThat(service.changerGestionnaire(1L, 1L).getGestionnaire()).isSameAs(admin);
-    }
-
-    @Test
-    void changerGestionnaire_doitLeverServiceException_quandPasGestionnaire() {
-        Salle salle = salle(1L, TypeSalle.SalleDeCours);
-        when(repository.findById(1L)).thenReturn(Optional.of(salle));
-        when(personnelService.findById(4L)).thenReturn(Optional.of(personnel(4L, Role.FORMATEUR)));
-
-        assertThatThrownBy(() -> service.changerGestionnaire(1L, 4L))
-                .isInstanceOf(ServiceException.class)
-                .hasMessage("Ce personnel n'est pas gestionnaire");
-        assertThat(salle.getGestionnaire()).isNull();
-    }
-
-    @Test
-    void changerGestionnaire_doitLeverNotFound_quandPersonnelIntrouvable() {
-        when(repository.findById(1L)).thenReturn(Optional.of(salle(1L, TypeSalle.SalleDeCours)));
-        when(personnelService.findById(999L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.changerGestionnaire(1L, 999L))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessage("Personnel 999 introuvable");
-    }
-
-    @Test
-    void changerGestionnaire_doitLeverNotFound_quandSalleIntrouvable() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.changerGestionnaire(1L, 3L))
-                .isInstanceOf(NotFoundException.class);
-        verify(personnelService, never()).findById(any());
     }
 
     // ---------- trouverStockage ----------
