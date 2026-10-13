@@ -1,13 +1,10 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
-import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
-import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.SalleRepository;
-import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
@@ -25,13 +22,11 @@ import java.util.Optional;
 public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> implements SalleService {
 
     private final PosteService posteService;
-    private final PersonnelService personnelService;
 
     @Autowired
-    public SalleServiceImpl(SalleRepository salleRepository, PosteService posteService, PersonnelService personnelService) {
+    public SalleServiceImpl(SalleRepository salleRepository, PosteService posteService) {
         super(salleRepository);
         this.posteService = posteService;
-        this.personnelService = personnelService;
     }
 
     @Override
@@ -91,17 +86,6 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         }
         repository.findByPostes_Id(idPoste).ifPresent(salle -> salle.removePoste(poste));
         posteService.delete(poste);
-    }
-
-    @Override
-    @Transactional
-    public Salle changerGestionnaire(Long idSalle, Long idGestionnaire) {
-        Salle salle = repository.findById(idSalle).orElseThrow(() -> new NotFoundException("Salle " + idSalle + " introuvable"));
-        Personnel gestionnaire = personnelService.findById(idGestionnaire).orElseThrow(() -> new NotFoundException("Personnel " + idGestionnaire + " introuvable"));
-        if (gestionnaire.getRole() != Role.GESTIONNAIRE && gestionnaire.getRole() != Role.ADMINISTRATEUR)
-            throw new ServiceException("Ce personnel n'est pas gestionnaire");
-        salle.setGestionnaire(gestionnaire);
-        return salle;
     }
 
     @Override

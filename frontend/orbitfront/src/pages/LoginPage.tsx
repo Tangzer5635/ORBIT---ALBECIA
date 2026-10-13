@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {AuthError, login} from "../services/authService.ts";
+import logo from "../assets/orbit-logo.gif";
 
 // Messages de la FD "S'authentifier"
 function messageErreur(err: unknown): string {
@@ -44,6 +45,7 @@ export function LoginPage() {
     return (
         <div className="login-page">
             <div className="login-card">
+                <img src={logo} alt="" className="navbar-logo"/>
                 <h1 className="login-title">Orbit</h1>
                 <p className="login-subtitle">Outil de recensement des biens et inventaires techniques</p>
 

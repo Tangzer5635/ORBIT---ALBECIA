@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -63,7 +62,7 @@ class SalleControllerTest extends ControllerTestSupport {
 
     private void reponse() {
         when(salleAssembler.toDto(any())).thenReturn(SalleResponseDto.builder()
-                .id(1L).numSalle("101").etage("1").type(TypeSalle.SalleDeCours).materielsId(List.of()).gestionnaireId(2L).build());
+                .id(1L).numSalle("101").etage("1").type(TypeSalle.SalleDeCours).materielsId(List.of()).build());
     }
 
     // ---------- getAll ----------
@@ -79,8 +78,8 @@ class SalleControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void getAll_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(get("/api/v1/salles/").with(connecte(Role.FORMATEUR)))
+    void getAll_doitRenvoyer403_quandStagiaire() throws Exception {
+        mockMvc.perform(get("/api/v1/salles/").with(connecte(Role.STAGIAIRE)))
                 .andExpect(status().isForbidden());
     }
 
@@ -99,7 +98,7 @@ class SalleControllerTest extends ControllerTestSupport {
 
         mockMvc.perform(get("/api/v1/salles/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.gestionnaireId").value(2));
+                .andExpect(jsonPath("$.numSalle").value("101"));
     }
 
     @Test
@@ -159,44 +158,6 @@ class SalleControllerTest extends ControllerTestSupport {
     void post_doitRenvoyer403_quandFormateur() throws Exception {
         mockMvc.perform(post("/api/v1/salles").with(connecte(Role.FORMATEUR))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
-                .andExpect(status().isForbidden());
-    }
-
-    // ---------- changerGestionnaire ----------
-
-    @Test
-    void changerGestionnaire_doitRenvoyer200_quandValide() throws Exception {
-        when(salleService.changerGestionnaire(1L, 3L)).thenReturn(salle());
-        reponse();
-
-        mockMvc.perform(patch("/api/v1/salles/{id}/gestionnaire/{idGestionnaire}/", 1L, 3L)
-                        .with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isOk());
-        verify(salleService).changerGestionnaire(1L, 3L);
-    }
-
-    @Test
-    void changerGestionnaire_doitRenvoyer400_quandPasGestionnaire() throws Exception {
-        when(salleService.changerGestionnaire(1L, 6L)).thenThrow(new ServiceException("Ce personnel n'est pas gestionnaire"));
-
-        mockMvc.perform(patch("/api/v1/salles/{id}/gestionnaire/{idGestionnaire}/", 1L, 6L)
-                        .with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void changerGestionnaire_doitRenvoyer404_quandPersonnelIntrouvable() throws Exception {
-        when(salleService.changerGestionnaire(1L, 999L)).thenThrow(new NotFoundException("Personnel 999 introuvable"));
-
-        mockMvc.perform(patch("/api/v1/salles/{id}/gestionnaire/{idGestionnaire}/", 1L, 999L)
-                        .with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void changerGestionnaire_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(patch("/api/v1/salles/{id}/gestionnaire/{idGestionnaire}/", 1L, 3L)
-                        .with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isForbidden());
     }
 

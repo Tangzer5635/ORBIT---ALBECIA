@@ -1,10 +1,13 @@
 package net.ent.etnc.orbit.controllers;
 
 import net.ent.etnc.orbit.dtos.assemblers.BatimentAssembler;
+import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -40,6 +43,9 @@ class BatimentControllerTest extends ControllerTestSupport {
     @MockitoBean
     private BatimentAssembler batimentAssembler;
 
+    @MockitoBean
+    private SalleAssembler salleAssembler;
+
     private Batiment batiment() {
         Batiment b = new Batiment();
         b.setId(1L);
@@ -49,6 +55,34 @@ class BatimentControllerTest extends ControllerTestSupport {
 
     private BatimentResponseDto dto() {
         return BatimentResponseDto.builder().id(1L).numBatiment("B201").sallesId(List.of()).build();
+    }
+
+    // ---------- getSalles ----------
+
+    @Test
+    void getSalles_doitRenvoyer200_quandBatimentTrouve() throws Exception {
+        when(batimentService.findById(1L)).thenReturn(Optional.of(batiment()));
+        when(salleAssembler.toDtos(any())).thenReturn(List.of(
+                SalleResponseDto.builder().id(5L).numSalle("101").etage("1")
+                        .type(TypeSalle.SalleDeCours).materielsId(List.of()).build()));
+
+        mockMvc.perform(get("/api/v1/batiments/{id}/salles/", 1L).with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].numSalle").value("101"));
+    }
+
+    @Test
+    void getSalles_doitRenvoyer404_quandBatimentIntrouvable() throws Exception {
+        when(batimentService.findById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/batiments/{id}/salles/", 99L).with(connecte(Role.GESTIONNAIRE)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getSalles_doitRenvoyer403_quandStagiaire() throws Exception {
+        mockMvc.perform(get("/api/v1/batiments/{id}/salles/", 1L).with(connecte(Role.STAGIAIRE)))
+                .andExpect(status().isForbidden());
     }
 
     // ---------- getAll ----------
@@ -64,8 +98,8 @@ class BatimentControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void getAll_doitRenvoyer403_quandGestionnaire() throws Exception {
-        mockMvc.perform(get("/api/v1/batiments/").with(connecte(Role.GESTIONNAIRE)))
+    void getAll_doitRenvoyer403_quandFormateur() throws Exception {
+        mockMvc.perform(get("/api/v1/batiments/").with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isForbidden());
     }
 

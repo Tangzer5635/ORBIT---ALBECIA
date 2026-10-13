@@ -1,7 +1,7 @@
 /* =========================================================
    Styles d'ORBIT — tout dans un seul fichier (chargé dans main.tsx)
    Couleurs reprises de la maquette, thème sombre uniquement.
-   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion
+   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments
    ========================================================= */
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
 
@@ -23,6 +23,12 @@
     --accent-soft: #2c2560;
     --error: #fb7185;
     --success: #34d399;
+    /* couleurs d'état du matériel (anneau de disponibilité) */
+    --use: #34d399;
+    --use-bg: #1f5a4b;
+    --chg: #fbbf24;
+    --inc: #60a5fa;
+    --def: #fb7185;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 
     --radius-card: 30px;
@@ -265,14 +271,23 @@ h3 {
     padding: 10px 24px;
 }
 
-/* Liste des pastilles (8 max affichées) */
+/* Liste des pastilles : autant que la largeur le permet, le reste défile */
 .batimentBar-liste {
     flex: 1;
     min-width: 0;
     display: flex;
     gap: 6px;
     overflow-x: auto;
+    scroll-behavior: smooth;   /* glissement au clic sur une flèche */
     scrollbar-width: none;
+    cursor: grab;
+}
+
+/* Pendant le glisser à la souris : pas d'animation, curseur "main fermée" */
+.batimentBar-liste.drag {
+    cursor: grabbing;
+    scroll-behavior: auto;
+    user-select: none;
 }
 
 .batimentBar-liste::-webkit-scrollbar {
@@ -308,6 +323,17 @@ h3 {
 .batiment.active {
     background: var(--ink);
     color: var(--card);
+}
+
+.batiment .pp {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--c);
+}
+
+.batiment.active .pp {
+    color: inherit;
+    opacity: 0.8;
 }
 
 /* Flèches gauche / droite */
@@ -455,5 +481,482 @@ h3 {
 
     .login-title {
         font-size: 28px;
+    }
+}
+
+/* =========================================================
+   5. PAGE BÂTIMENTS
+   ========================================================= */
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 13.5px;
+}
+
+/* Boutons en pastille */
+.btn {
+    display: inline-block;
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 16px;
+    background: var(--bg);
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: filter 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+    filter: brightness(1.2);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+.btn.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.btn.primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.btn.sm {
+    padding: 5px 12px;
+    font-size: 13.5px;
+}
+
+.btn.danger {
+    color: var(--def);
+}
+
+/* Titre de page + résumé à droite */
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+    margin-bottom: 14px;
+}
+
+.page-head h1 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.bat-note {
+    margin: 14px 0 16px;
+    font-size: 14px;
+}
+
+/* Formulaire de création */
+.bat-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
+.bat-form label {
+    font-weight: 600;
+}
+
+.bat-form input {
+    border: 2px solid transparent;
+    background: var(--card2);
+    border-radius: var(--radius-field);
+    padding: 8px 14px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.bat-form input:focus {
+    border-color: var(--accent);
+    background: var(--card);
+}
+
+.bat-form-erreur {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.bat-grid {
+    padding-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+/* Carte d'un bâtiment */
+.bat-card {
+    background: var(--card);
+    border-radius: var(--radius-card);
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+
+.bat-card-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.bat-card-head h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.bat-card-head h2 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.bat-card-head p {
+    margin: 2px 0 0;
+    font-size: 14px;
+}
+
+/* Informations : libellé / valeur */
+.bat-infos {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 16px;
+    margin: 0 0 14px;
+    padding: 0 6px;
+    font-size: 14px;
+}
+
+.bat-infos dt {
+    color: var(--muted);
+}
+
+.bat-infos dd {
+    margin: 0;
+    font-weight: 500;
+}
+
+.bat-label {
+    margin: 0 0 8px 6px;
+    font-size: 14px;
+}
+
+.bat-vide {
+    margin: 0 6px 14px;
+    font-size: 14px;
+}
+
+/* Salle de stockage */
+.bat-stock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: var(--card2);
+}
+
+.bat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.bat-card-actions {
+    margin-top: 4px;
+}
+
+/* Anneau de disponibilité */
+.ring {
+    position: relative;
+    flex: none;
+    width: 84px;
+    height: 84px;
+    display: grid;
+    place-items: center;
+}
+
+.ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.ring div {
+    position: relative;
+    text-align: center;
+    line-height: 1.1;
+}
+
+.ring b {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+/* =========================================================
+   6. PAGE SALLES (par disponibilité / par étage)
+   ========================================================= */
+
+/* Choix de l'affichage : "Par étage" / "Par disponibilité" */
+.seg {
+    display: flex;
+    gap: 6px;
+}
+
+.seg button {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
+}
+
+.seg button:hover {
+    background: var(--accent-soft);
+}
+
+.seg button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--card);
+}
+
+/* En-tête du bâtiment : grand anneau + résumé + légende + actions */
+.hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 22px;
+    align-items: center;
+    margin-bottom: 18px;
+    padding: 20px 24px;
+    border-radius: 28px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.hero h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.hero p {
+    margin: 2px 0 12px;
+    color: var(--muted);
+}
+
+.hero-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.hero-row .btn:not(.primary) {
+    background: var(--card2);
+}
+
+/* Grand anneau de l'en-tête */
+.ring.grand {
+    width: 124px;
+    height: 124px;
+}
+
+.ring.grand b {
+    display: block;
+    font-size: 30px;
+}
+
+.ring span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* Titre "Salles" + choix de l'affichage */
+.sh {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin: 6px 0 10px;
+}
+
+.sh h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+/* Légende des couleurs de l'anneau */
+.rleg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+}
+
+.rleg li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rleg b {
+    font-weight: 700;
+}
+
+.rleg.compact {
+    margin: 0 4px 14px;
+}
+
+.rleg-note {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+/* Carré de couleur de la légende */
+.sw {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--c);
+}
+
+.sw.dispo {
+    background: repeating-linear-gradient(45deg, var(--use) 0 3px, var(--use-bg) 3px 7px);
+}
+
+@media (max-width: 720px) {
+    .hero {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+}
+/* Couleur de chaque état (légende et pastilles des cartes) */
+.use { --c: var(--use); }
+.chg { --c: var(--chg); }
+.inc { --c: var(--inc); }
+.def { --c: var(--def); }
+.dispo { --c: var(--muted); }
+
+
+/* Un étage (ou la réserve) : libellé à gauche, salles à droite */
+.floor {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+}
+
+.rooms + .floor {
+    margin-top: 20px;
+}
+
+.floor > h2 {
+    margin: 6px 0 0;
+    font-size: 17px;
+    color: var(--muted);
+}
+
+/* Grille de salles */
+.rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+}
+
+/* Carte d'une salle : anneau + infos */
+.room {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 18px;
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.room h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.room p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Alertes de la salle, avec une pastille de couleur */
+.room-flags {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.room-flags li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.room-flags li::before {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c, var(--muted));
+}
+
+/* Réserve : carte en pointillés, sans anneau */
+.room.stock {
+    grid-template-columns: 1fr;
+    background: var(--card2);
+    border: 2px dashed var(--line);
+    box-shadow: none;
+}
+
+.room.stock .room-flags li::before {
+    background: none;
+    border: 2px solid var(--muted);
+}
+
+@media (max-width: 720px) {
+    .floor {
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
 }
