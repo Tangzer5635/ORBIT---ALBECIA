@@ -9,6 +9,8 @@ import SalleCard from "../components/SalleCard.tsx";
 import StockageCard from "../components/StockageCard.tsx";
 import type {SalleCarte} from "../types/types.ts";
 import { pourcentageUtilisable, totalMateriels } from "../utils/postes.ts";
+import CreerSallePopup from "../components/CreerSallePopup.tsx";
+import {getBatiments} from "../services/batimentService.ts";
 
 // résultat du dernier chargement, mémorisé avec le bâtiment concerné
 interface Resultat {
@@ -32,13 +34,15 @@ function parDisponibilite(a: SalleCarte, b: SalleCarte) {
 
 export default function SallePage() {
     const [params] = useSearchParams();
-    const { batiments } = useBatiments();
+    const { batiments, setBatiments } = useBatiments();
+    const [creerOuvert, setCreerOuvert] = useState(false);
+    const [version, setVersion] = useState(0);
     const idBatiment = Number(params.get("batiment"));
     const batiment = batiments.find((b) => b.id === idBatiment);
     const role = getUtilisateur()?.role;
 
     const [resultat, setResultat] = useState<Resultat>();
-    const [affichage, setAffichage] = useState<Affichage>("dispo"); // par disponibilité par défaut
+    const [affichage] = useState<Affichage>("dispo");
 
     // recharge les salles à chaque changement de bâtiment
     useEffect(() => {
@@ -50,7 +54,13 @@ export default function SallePage() {
                 if (actif) setResultat({ idBatiment, salles: [], erreur: "Impossible de charger les salles de ce bâtiment." });
             });
         return () => { actif = false; };
-    }, [idBatiment]);
+    }, [idBatiment, version]);
+
+    function salleCreee() {
+        setCreerOuvert(false);
+        setVersion((v) => v + 1);
+        getBatiments().then(setBatiments).catch(() => {});
+    }
 
     if (!idBatiment) {
         return (
@@ -85,7 +95,7 @@ export default function SallePage() {
                         </p>
                         {(role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && (
                             <div className="hero-row">
-                                <button type="button" className="btn primary">Créer une salle</button>
+                                <button type="button" className="btn primary" onClick={() => setCreerOuvert(true)}>Créer une salle</button>
                                 <button type="button" className="btn">Importer une salle</button>
                                 {role === "ADMINISTRATEUR" && (
                                     <button type="button" className="btn">Modifier le bâtiment</button>
@@ -119,6 +129,9 @@ export default function SallePage() {
                         {stockages.map((s) => <StockageCard key={s.id} salle={s}/>)}
                     </div>
                 </section>
+            )}
+            {creerOuvert && batiment && (
+                <CreerSallePopup batiment={batiment} onClose={() => setCreerOuvert(false)} onCree={salleCreee}/>
             )}
         </>
     );

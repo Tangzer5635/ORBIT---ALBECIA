@@ -4,18 +4,11 @@ import Anneau from "./Anneau.tsx";
 
 interface BatimentCardProps {
     batiment: Batiment;
-    onSupprime: (id: number) => void;
+    onSupprime: (batiment: Batiment) => void;
 }
 
 export default function BatimentCard({batiment, onSupprime}: BatimentCardProps) {
     const nbSalles = batiment.nbSalles; // hors salles de stockage
-
-    function handleSupprimer() {
-        // Confirmation avant suppression
-        if (window.confirm(`Supprimer le bâtiment ${batiment.numBatiment} ?`)) {
-            onSupprime(batiment.id);
-        }
-    }
 
     return (
         <article className="bat-card">
@@ -35,28 +28,19 @@ export default function BatimentCard({batiment, onSupprime}: BatimentCardProps) 
                 <dd>{nbSalles} salle{nbSalles > 1 ? "s" : ""}</dd>
             </dl>
 
-            <>
-                <p className="bat-label muted">Salles de stockage</p>
-                {batiment.stockages.length === 0 ? (
-                    <p className="muted bat-vide">
-                        Aucune : le matériel retiré des salles part dans la première réserve du parc.
-                    </p>
-                ) : (
-                    batiment.stockages.map((s) => (
-                        <div key={s.id} className="bat-stock">
-                            <div>
-                                <div>Salle {s.numSalle}</div>
-                                <div className="muted small">{s.nbMateriels} matériel{s.nbMateriels > 1 ? "s" : ""}</div>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </>
+            <p className="bat-label muted">Salles de stockage</p>
+            {batiment.stockages.map((s) => (
+                <div key={s.id} className="bat-stock">
+                    <div>
+                        <div>Salle {s.numSalle}</div>
+                        <div className="muted small">{s.nbMateriels} matériel{s.nbMateriels > 1 ? "s" : ""}</div>
+                    </div>
+                </div>
+            ))}
 
             <div className="bat-actions bat-card-actions">
                 <Link to={`/salles?batiment=${batiment.id}`} className="btn primary sm">Voir les salles</Link>
-                <button type="button" className="btn sm">Modifier</button>
-                <button type="button" className="btn sm danger" onClick={handleSupprimer}>Supprimer</button>
+                <button type="button" className="btn sm danger" onClick={() => onSupprime(batiment)}>Supprimer</button>
             </div>
         </article>
     );

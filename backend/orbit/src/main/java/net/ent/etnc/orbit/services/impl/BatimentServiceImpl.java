@@ -1,11 +1,17 @@
 package net.ent.etnc.orbit.services.impl;
 
+import lombok.extern.slf4j.Slf4j;
+import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Poste;
+import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import net.ent.etnc.orbit.repositories.projections.StockageCompte;
+import net.ent.etnc.orbit.services.PosteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,18 +33,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepository> implements BatimentService {
 
     private static final String NUM_SALLE_STOCKAGE = "199";
     private static final String ETAGE_SALLE_STOCKAGE = "0";
 
+    private record EnStock(Materiel materiel, Salle reserve) {}
+
     private final SalleService salleService;
+    private final PosteService posteService;
 
     @Autowired
-    public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService) {
+    public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService, PosteService posteService) {
         super(batimentRepository);
         this.salleService = salleService;
+        this.posteService = posteService;
     }
 
     /**
@@ -66,6 +77,111 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         Salle creee = salleService.create(salle);
         batiment.addSalle(creee);
         return creee;
+    }
+
+    @Override
+    @Transactional
+    public void supprimer(Long idBatiment, Long idStockageCible) {
+        Batiment batiment = repository.findById(idBatiment)
+                .orElseThrow(() -> new NotFoundException("Bâtiment " + idBatiment + " introuvable"));
+        List<Salle> salles = List.copyOf(batiment.getSalles());
+
+        // 1. Détacher tout le matériel des salles et des postes
+        List<Materiel> materiels = new ArrayList<>();
+        for (Salle salle : salles) {
+            for (Poste poste : salle.getPostes()) {
+                List<Materiel> surPoste = List.copyOf(poste.getMateriels());
+                surPoste.forEach(poste::removeMateriel);
+                materiels.addAll(surPoste);
+            }
+            List<Materiel> enSalle = List.copyOf(salle.getMateriels());
+            enSalle.forEach(salle::removeMateriel);
+            materiels.addAll(enSalle);
+        }
+
+        if (!materiels.isEmpty()) {
+            if (idStockageCible == null)
+                throw new ServiceException("Choisissez une salle de stockage pour le matériel");
+            Salle cible = salleService.findById(idStockageCible)
+                    .orElseThrow(() -> new NotFoundException("Salle " + idStockageCible + " introuvable"));
+            if (cible.getType() != TypeSalle.SalleStockage)
+                throw new ServiceException("La salle cible n'est pas une salle de stockage");
+            if (salles.contains(cible))
+                throw new ServiceException("La salle cible appartient au bâtiment supprimé");
+            materiels.forEach(cible::addMateriel);
+        }
+        for (Salle salle : salles) {
+            for (Poste poste : List.copyOf(salle.getPostes())) {
+                salle.removePoste(poste);
+                posteService.deleteById(poste.getId());
+            }
+            batiment.removeSalle(salle);
+            salleService.deleteById(salle.getId());
+        }
+        repository.delete(batiment);
+    }
+
+    @Override
+    @Transactional
+    public SalleEquipeeResponseDto creerSalleEquipee(SalleEquipeeRequestDto dto) {
+        Salle salle = new Salle();
+        salle.setNumSalle(dto.getNumSalle().trim());
+        salle.setEtage(dto.getEtage());
+        salle.setType(TypeSalle.SalleDeCours);
+        Salle creee = create(dto.getIdBatiment(), salle); // vérifie le bâtiment et le numéro en double
+        Batiment batiment = repository.findById(dto.getIdBatiment()).orElseThrow();
+
+        // Stock du bâtiment, rangé par type (matériel archivé exclu)
+        Map<TypeMateriel, Deque<EnStock>> stock = new EnumMap<>(TypeMateriel.class);
+        for (Salle reserve : batiment.getSalles()) {
+            if (reserve.getType() != TypeSalle.SalleStockage) continue;
+            for (Materiel m : reserve.getMateriels()) {
+                if (!m.isArchive())
+                    stock.computeIfAbsent(m.getType(), t -> new ArrayDeque<>()).add(new EnStock(m, reserve));
+            }
+        }
+        Map<TypeMateriel, Integer> manquants = new EnumMap<>(TypeMateriel.class);
+
+        // numPoste est unique sur tout le parc : on préfixe par bâtiment + salle
+        String prefixe = "B" + batiment.getNumBatiment() + "-S" + creee.getNumSalle() + "-";
+        List<String> numeros = new ArrayList<>();
+        numeros.add(prefixe + "F"); // formateur en premier = servi en priorité
+        for (int i = 1; i <= dto.getNbPostes(); i++) numeros.add(prefixe + String.format("P%02d", i));
+
+        for (String numero : numeros) {
+            Poste poste = new Poste();
+            poste.setNumPoste(numero);
+            Poste cree = salleService.creerPoste(creee.getId(), poste);
+            prendre(stock, TypeMateriel.UC, 1, manquants).forEach(cree::addMateriel);
+            prendre(stock, TypeMateriel.Ecran, dto.getEcransParPoste(), manquants).forEach(cree::addMateriel);
+        }
+        prendre(stock, TypeMateriel.VideoProjecteur, dto.getNbVideoProjecteurs(), manquants).forEach(creee::addMateriel);
+        prendre(stock, TypeMateriel.TableauInteractif, dto.getNbTableaux(), manquants).forEach(creee::addMateriel);
+
+        if (!manquants.isEmpty()) {
+            boolean plusRien = stock.values().stream().allMatch(Deque::isEmpty);
+            log.warn("Salle {} du bâtiment {} créée incomplète{} : il manque {}",
+                    creee.getNumSalle(), batiment.getNumBatiment(),
+                    plusRien ? " (plus rien en stock)" : "", manquants);
+        }
+        return new SalleEquipeeResponseDto(creee.getId(), manquants);
+    }
+
+    /** Retire jusqu'à `quantite` matériels du stock ; note ce qui manque. */
+    private List<Materiel> prendre(Map<TypeMateriel, Deque<EnStock>> stock, TypeMateriel type,
+                                   int quantite, Map<TypeMateriel, Integer> manquants) {
+        Deque<EnStock> dispo = stock.getOrDefault(type, new ArrayDeque<>());
+        List<Materiel> pris = new ArrayList<>();
+        for (int i = 0; i < quantite; i++) {
+            EnStock e = dispo.poll();
+            if (e == null) {
+                manquants.merge(type, quantite - i, Integer::sum);
+                break;
+            }
+            e.reserve().removeMateriel(e.materiel());
+            pris.add(e.materiel());
+        }
+        return pris;
     }
 
     @Override

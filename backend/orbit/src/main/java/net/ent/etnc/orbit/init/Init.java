@@ -126,8 +126,11 @@ public class Init implements CommandLineRunner {
         Batiment batiment666 = batimentService.create(buildBatiment("666"));
         Salle stockage666 = stockageDe(batiment666);
 
-        Salle salle999 = batimentService.create(batiment666.getId(),
-                buildSalle("999", "0", TypeSalle.SalleDeCours));
+            // stock de rechange : de quoi équiper 1 ou 2 salles complètes, plutôt récent
+            remplirStock(stockage, UC, 20 + random.nextInt(21));                 // 20 à 40 UC
+            remplirStock(stockage, ECRANS, 30 + random.nextInt(31));             // 30 à 60 écrans
+            remplirStock(stockage, EQUIPEMENTS_SALLE.subList(0, 2), 2 + random.nextInt(3)); // 2 à 4 vidéoprojecteurs
+            remplirStock(stockage, EQUIPEMENTS_SALLE.subList(2, 4), 1 + random.nextInt(3)); // 1 à 3 tableaux
 
         Poste poste666 = creerPoste("666", salle999, p1);
 
@@ -192,6 +195,12 @@ public class Init implements CommandLineRunner {
         materiel.setDateFinGarantie(acquisition.plusYears(3));
         materiel.setType(modele.type());
         return materielService.creerEnStock(materiel, stockage.getId());
+    }
+
+    private void remplirStock(Salle stockage, List<Modele> famille, int nombre) throws ServiceException {
+        for (int i = 0; i < nombre; i++) {
+            creerMateriel(choisir(famille), aujourdhui.minusMonths(random.nextInt(18)), stockage);
+        }
     }
 
     private static String prefixe(TypeMateriel type) {

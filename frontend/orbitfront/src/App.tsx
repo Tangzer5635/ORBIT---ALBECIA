@@ -49,6 +49,7 @@ export default function App() {
                             <Route path={path} element={PAGES[path]} />
                         </Route>
                     ))}
+                    <Route path="/salles/:salleId" element={<SalleDetailPage/>}/>
                 </Route>
             </Route>
 

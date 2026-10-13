@@ -2,8 +2,10 @@ package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
+import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -72,4 +74,9 @@ public class SalleController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/equipee")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleEquipeeResponseDto> postEquipee(@Valid @RequestBody SalleEquipeeRequestDto dto) {
+        return ResponseEntity.ok(batimentService.creerSalleEquipee(dto));
+    }
 }
