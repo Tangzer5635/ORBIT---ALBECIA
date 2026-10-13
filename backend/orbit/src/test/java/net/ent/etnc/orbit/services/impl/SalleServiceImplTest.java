@@ -6,7 +6,7 @@ import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.SalleRepository;
 import net.ent.etnc.orbit.services.PosteService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -89,7 +89,7 @@ class SalleServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.creerPoste(1L, poste(null)))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Salle 1 introuvable");
     }
 
@@ -132,7 +132,7 @@ class SalleServiceImplTest {
         when(posteService.findById(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.supprimerPoste(5L))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Poste 5 introuvable");
         verify(posteService, never()).delete(any());
     }
@@ -189,7 +189,7 @@ class SalleServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteById(1L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- trouverStockage ----------

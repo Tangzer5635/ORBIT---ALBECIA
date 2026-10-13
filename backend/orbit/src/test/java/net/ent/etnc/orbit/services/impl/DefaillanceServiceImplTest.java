@@ -11,7 +11,7 @@ import net.ent.etnc.orbit.repositories.DefaillanceRepository;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -189,7 +189,7 @@ class DefaillanceServiceImplTest {
         when(materielService.findById(ID_MATERIEL)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.signaler(ID_MATERIEL, "Fantôme", personnel(6L, Role.STAGIAIRE)))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
         verify(posteService, never()).posteDuMateriel(any());
     }
 
@@ -276,7 +276,7 @@ class DefaillanceServiceImplTest {
         when(repository.findById(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.resoudre(5L, "Fantôme", personnel(2L, Role.GESTIONNAIRE)))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- requêtes ----------

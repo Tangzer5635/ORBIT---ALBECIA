@@ -11,7 +11,7 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -139,7 +139,7 @@ class SalleControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer404_quandBatimentIntrouvable() throws Exception {
         when(salleAssembler.toEntity(any(SalleRequestDto.class))).thenReturn(salle());
-        when(batimentService.create(eq(1L), any(Salle.class))).thenThrow(new NotFoundException("Bâtiment 1 introuvable"));
+        when(batimentService.create(eq(1L), any(Salle.class))).thenThrow(new ServiceException("Bâtiment 1 introuvable"));
 
         mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))

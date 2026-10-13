@@ -4,7 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.repositories.PersonnelRepository;
 import net.ent.etnc.orbit.services.RefreshTokenService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -131,7 +131,7 @@ class PersonnelServiceImplTest {
         when(repository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(personnel(7L, Role.STAGIAIRE)))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- deleteById ----------
@@ -171,7 +171,7 @@ class PersonnelServiceImplTest {
         when(repository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteById(7L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- deactivate ----------
@@ -235,7 +235,7 @@ class PersonnelServiceImplTest {
         when(repository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.verrouiller(7L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- deverrouiller ----------

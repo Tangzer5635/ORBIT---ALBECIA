@@ -2,7 +2,9 @@ package net.ent.etnc.orbit.controllers.handlers;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
+import org.springframework.data.crossstore.ChangeSetPersister;
+import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
  * <p>Stratégie de mapping :
  * <ul>
  *   <li>{@link AccessDeniedException} → 401 si non authentifié, 403 si authentifié sans les droits requis.</li>
- *   <li>{@link NotFoundException} → 404, {@link ServiceException} → 400.</li>
+ *   <li>{@link ServiceException} → 404, {@link ServiceException} → 400.</li>
  *   <li>Exceptions Spring MVC ({@link ErrorResponse}) → leur propre statut.</li>
  *   <li>{@link Exception} → 500 Internal Server Error.</li>
  * </ul>

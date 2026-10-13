@@ -8,7 +8,7 @@ import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.StatutDefaillance;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.DefaillanceService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -197,7 +197,7 @@ class DefaillanceControllerTest extends ControllerTestSupport {
     @Test
     void signaler_doitRenvoyer404_quandMaterielIntrouvable() throws Exception {
         when(defaillanceService.signaler(eq(1L), anyString(), any(Personnel.class)))
-                .thenThrow(new NotFoundException("RG-D01", "Matériel 1 introuvable"));
+                .thenThrow(new ServiceException("RG-D01", "Matériel 1 introuvable"));
 
         mockMvc.perform(post("/api/v1/defaillances/").with(connecte(Role.STAGIAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_SIGNALER))
@@ -274,7 +274,7 @@ class DefaillanceControllerTest extends ControllerTestSupport {
     @Test
     void resoudre_doitRenvoyer404_quandIntrouvable() throws Exception {
         when(defaillanceService.resoudre(eq(1L), anyString(), any(Personnel.class)))
-                .thenThrow(new NotFoundException("RG-D04", "Défaillance 1 introuvable"));
+                .thenThrow(new ServiceException("RG-D04", "Défaillance 1 introuvable"));
 
         mockMvc.perform(patch("/api/v1/defaillances/{id}/resoudre/", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_RESOUDRE))

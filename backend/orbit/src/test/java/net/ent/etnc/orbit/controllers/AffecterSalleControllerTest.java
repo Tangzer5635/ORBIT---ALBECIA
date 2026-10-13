@@ -6,7 +6,7 @@ import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.BatimentService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -51,7 +51,7 @@ class AffecterSalleControllerTest extends ControllerTestSupport {
 
     @Test
     void affecterSalle_doitRenvoyer404_quandBatimentIntrouvable() throws Exception {
-        when(batimentService.affecterSalle(999L, 6L)).thenThrow(new NotFoundException("Bâtiment 999 introuvable"));
+        when(batimentService.affecterSalle(999L, 6L)).thenThrow(new ServiceException("Bâtiment 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/salles/{idSalle}/", 6L).param("batimentId", "999")
                         .with(connecte(Role.ADMINISTRATEUR)))

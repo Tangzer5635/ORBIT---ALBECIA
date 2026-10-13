@@ -8,7 +8,7 @@ import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.AffecterMaterielService;
 import net.ent.etnc.orbit.services.MaterielService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -67,7 +67,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void affecterASalle_doitRenvoyer404_quandSalleIntrouvable() throws Exception {
-        when(affecterMaterielService.affecterASalle(999L, 11L)).thenThrow(new NotFoundException("Salle 999 introuvable"));
+        when(affecterMaterielService.affecterASalle(999L, 11L)).thenThrow(new ServiceException("Salle 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 11L).param("salleId", "999")
                         .with(connecte(Role.GESTIONNAIRE)))
@@ -142,7 +142,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void affecterAPoste_doitRenvoyer404_quandPosteIntrouvable() throws Exception {
-        when(affecterMaterielService.affecterAPoste(999L, 8L)).thenThrow(new NotFoundException("Poste 999 introuvable"));
+        when(affecterMaterielService.affecterAPoste(999L, 8L)).thenThrow(new ServiceException("Poste 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 8L).param("posteId", "999")
                         .with(connecte(Role.GESTIONNAIRE)))

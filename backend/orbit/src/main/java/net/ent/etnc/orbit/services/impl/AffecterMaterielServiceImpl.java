@@ -8,7 +8,6 @@ import net.ent.etnc.orbit.services.AffecterMaterielService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

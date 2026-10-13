@@ -3,7 +3,7 @@ package net.ent.etnc.orbit.services.impl;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.PosteRepository;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
+import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -91,7 +91,7 @@ class PosteServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(poste(1L, "P101-01")))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Poste 1 introuvable");
     }
 
