@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {AuthError, login} from "../services/authService.ts";
 import logo from "../assets/orbit-logo.gif";
+import {PAGE_ACCUEIL} from "../config/acces.ts";
 
 // Messages de la FD "S'authentifier"
 function messageErreur(err: unknown): string {
@@ -33,7 +34,9 @@ export function LoginPage() {
         setChargement(true);
         try {
             await login(identifiant.trim(), motDePasse);
-            navigate("/accueil");
+            //Redirection sur les differentes pages en fonction du role du personnel
+            const utilisateur = await login(identifiant.trim(), motDePasse);
+            navigate(PAGE_ACCUEIL[utilisateur.role], { replace: true });
         } catch (err) {
             setError(messageErreur(err));
             setMotDePasse("");

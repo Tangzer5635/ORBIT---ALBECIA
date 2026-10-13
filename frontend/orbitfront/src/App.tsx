@@ -1,12 +1,12 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import type { ReactElement } from "react";
 import { NotFoundPage } from "./pages/NotFoundPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
-import { HomePage } from "./pages/HomePage.tsx";
-import { PrivateRoute } from "./components/PrivateRoute.tsx";
+import {PrivateRoute, RedirectionAccueil} from "./components/PrivateRoute.tsx";
 import { Layout } from "./components/Layout.tsx";
 import { BatimentsPage } from "./pages/BatimentsPage.tsx";
 import SallePage from "./pages/SallePage.tsx";
+import SalleDetailPage from "./pages/SalleDetailPage.tsx";
 import DefaillancePage from "./pages/DefaillancePage.tsx";
 import GarantiePage from "./pages/GarantiePage.tsx";
 import MaterielPage from "./pages/MaterielPage.tsx";
@@ -17,7 +17,6 @@ import UserPage from "./pages/UserPage.tsx";
 import JournalPage from "./pages/JournalPage.tsx";
 import PostePage from "./pages/PostePage.tsx";
 import { ACCES } from "./config/acces.ts";
-import SalleDetailPage from "./pages/SalleDetailPage.tsx";
 
 const PAGES: Record<string, ReactElement> = {
     "/batiments": <BatimentsPage />,
@@ -39,10 +38,12 @@ export default function App() {
         <Routes>
             <Route path="/connexion" element={<LoginPage />} />
 
+            {/* Redirige vers la page du rôle (ou vers la connexion) */}
+            <Route path="/" element={<RedirectionAccueil />} />
+            <Route path="/accueil" element={<RedirectionAccueil />} />
+
             <Route element={<PrivateRoute />}>
                 <Route element={<Layout />}>
-                    <Route path="/accueil" element={<HomePage />} />
-
                     {ACCES.map(({ path, roles }) => (
                         <Route key={path} element={<PrivateRoute roles={roles} />}>
                             <Route path={path} element={PAGES[path]} />
@@ -52,7 +53,6 @@ export default function App() {
                 </Route>
             </Route>
 
-            <Route path="/" element={<Navigate to="/accueil" replace />} />
             <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );

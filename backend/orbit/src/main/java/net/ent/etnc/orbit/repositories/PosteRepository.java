@@ -19,9 +19,12 @@ public interface PosteRepository extends BaseRepository<Poste> {
     boolean existsByNumPosteAndIdNot(String numPoste, Long id);
 
     @Query("""
-SELECT p FROM Poste p
-LEFT JOIN p.occupant u
-WHERE u.id = :id
-""")
+            SELECT p FROM Poste p
+            LEFT JOIN p.occupant u
+            WHERE u.id = :id
+            """)
     Optional<Poste> findByIdUtilisateur(Long id);
+
+    /** Poste occupé par un personnel (le premier par numéro s'il en occupe plusieurs pour les tests)*/
+    Optional<Poste> findFirstByOccupant_IdOrderByNumPosteAsc(Long idOccupant);
 }
