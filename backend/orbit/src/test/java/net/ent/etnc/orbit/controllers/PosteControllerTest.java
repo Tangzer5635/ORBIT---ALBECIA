@@ -8,7 +8,6 @@ import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -167,7 +166,7 @@ class PosteControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer404_quandSalleIntrouvable() throws Exception {
         when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(poste());
-        when(salleService.creerPoste(eq(999L), any(Poste.class))).thenThrow(new NotFoundException("Salle 999 introuvable"));
+        when(salleService.creerPoste(eq(999L), any(Poste.class))).thenThrow(new ServiceException("Salle 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/postes/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -218,7 +217,7 @@ class PosteControllerTest extends ControllerTestSupport {
     @Test
     void put_doitRenvoyer404_quandIntrouvable() throws Exception {
         when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(new Poste());
-        when(posteService.update(any())).thenThrow(new NotFoundException("Poste 1 introuvable"));
+        when(posteService.update(any())).thenThrow(new ServiceException("Poste 1 introuvable"));
 
         mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -256,7 +255,7 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void delete_doitRenvoyer404_quandIntrouvable() throws Exception {
-        doThrow(new NotFoundException("Poste 1 introuvable")).when(salleService).supprimerPoste(1L);
+        doThrow(new ServiceException("Poste 1 introuvable")).when(salleService).supprimerPoste(1L);
 
         mockMvc.perform(delete("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());

@@ -9,7 +9,6 @@ import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.MaterielService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -166,7 +165,7 @@ class MaterielControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer404_quandReserveIntrouvable() throws Exception {
         when(materielAssembler.toEntity(any(MaterielRequestDto.class))).thenReturn(materiel());
-        when(materielService.creerEnStock(any(), eq(3L))).thenThrow(new NotFoundException("Salle 3 introuvable"));
+        when(materielService.creerEnStock(any(), eq(3L))).thenThrow(new ServiceException("Salle 3 introuvable"));
 
         mockMvc.perform(post("/api/v1/materiels").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
@@ -280,7 +279,7 @@ class MaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void archiver_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(materielService.archiver(1L)).thenThrow(new NotFoundException("Matériel 1 introuvable"));
+        when(materielService.archiver(1L)).thenThrow(new ServiceException("Matériel 1 introuvable"));
 
         mockMvc.perform(patch("/api/v1/materiels/{id}/archiver/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());

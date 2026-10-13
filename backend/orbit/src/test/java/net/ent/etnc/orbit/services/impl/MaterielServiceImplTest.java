@@ -8,7 +8,6 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,7 +108,7 @@ class MaterielServiceImplTest {
         when(salleService.findById(3L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.creerEnStock(m, 3L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     @Test
@@ -169,7 +168,7 @@ class MaterielServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(materielSousGarantie(1L)))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- deleteById ----------
@@ -232,7 +231,7 @@ class MaterielServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteById(1L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- archiver ----------
@@ -289,7 +288,7 @@ class MaterielServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.archiver(1L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 
     // ---------- etatDe ----------

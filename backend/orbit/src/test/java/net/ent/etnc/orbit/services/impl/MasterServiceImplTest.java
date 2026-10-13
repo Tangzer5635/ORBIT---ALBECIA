@@ -2,7 +2,6 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Master;
 import net.ent.etnc.orbit.repositories.MasterRepository;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,7 +80,7 @@ class MasterServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(master(1L)))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
         verify(repository, never()).saveAndFlush(any());
     }
 

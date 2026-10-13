@@ -9,7 +9,6 @@ import net.ent.etnc.orbit.services.DefaillanceService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -40,7 +39,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
             throw new ServiceException("La salle de stockage est obligatoire");
         if (repository.existsByNumSerie(materiel.getNumSerie()))
             throw new ServiceException("Le numéro de série " + materiel.getNumSerie() + " existe déjà");
-        Salle stockage = salleService.findById(idStockage).orElseThrow(() -> new NotFoundException("Salle " + idStockage + " introuvable"));
+        Salle stockage = salleService.findById(idStockage).orElseThrow(() -> new ServiceException("Salle " + idStockage + " introuvable"));
         if (stockage.getType() != TypeSalle.SalleStockage)
             throw new ServiceException("Un matériel se crée dans une salle de stockage");
         materiel.setArchive(false);
@@ -106,6 +105,6 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     }
 
     private Materiel trouver(Long id) {
-        return repository.findById(id).orElseThrow(() -> new NotFoundException("Matériel " + id + " introuvable"));
+        return repository.findById(id).orElseThrow(() -> new ServiceException("Matériel " + id + " introuvable"));
     }
 }

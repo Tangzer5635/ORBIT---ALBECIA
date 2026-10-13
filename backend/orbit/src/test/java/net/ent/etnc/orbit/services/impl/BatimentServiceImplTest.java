@@ -5,7 +5,6 @@ import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,7 +99,7 @@ class BatimentServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(1L, salle(null, "101")))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Bâtiment 1 introuvable");
     }
 
@@ -149,7 +148,7 @@ class BatimentServiceImplTest {
         when(salleService.findById(6L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.affecterSalle(1L, 6L))
-                .isInstanceOf(NotFoundException.class)
+                .isInstanceOf(ServiceException.class)
                 .hasMessage("Salle 6 introuvable");
     }
 
@@ -158,7 +157,7 @@ class BatimentServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.affecterSalle(1L, 6L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
         verify(salleService, never()).findById(any());
     }
 
@@ -193,6 +192,6 @@ class BatimentServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.retirerSalle(1L, 6L))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ServiceException.class);
     }
 }

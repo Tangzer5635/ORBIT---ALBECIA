@@ -4,7 +4,6 @@ import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.PosteRepository;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,7 +43,7 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
     @Transactional
     public Poste update(Poste poste) throws ServiceException {
         Poste existant = repository.findById(poste.getId())
-                .orElseThrow(() -> new NotFoundException("Poste " + poste.getId() + " introuvable"));
+                .orElseThrow(() -> new ServiceException("Poste " + poste.getId() + " introuvable"));
         if (repository.existsByNumPosteAndIdNot(poste.getNumPoste(), poste.getId()))
             throw new ServiceException("Le poste " + poste.getNumPoste() + " existe déjà");
         existant.setNumPoste(poste.getNumPoste());

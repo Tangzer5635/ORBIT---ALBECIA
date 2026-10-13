@@ -3,11 +3,9 @@ package net.ent.etnc.orbit.controllers;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.UserRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
-import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.PersonnelService;
-import net.ent.etnc.orbit.services.commons.NotFoundException;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -204,7 +202,7 @@ class PersonnelControllerTest extends ControllerTestSupport {
 
     @Test
     void verrouiller_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(personnelService.verrouiller(999L)).thenThrow(new NotFoundException("RG-U02", "Utilisateur introuvable"));
+        when(personnelService.verrouiller(999L)).thenThrow(new ServiceException("RG-U02", "Utilisateur introuvable"));
 
         mockMvc.perform(patch("/api/v1/personnels/{id}/verrouiller/", 999L).with(connecte(Role.ADMINISTRATEUR)))
                 .andExpect(status().isNotFound());
@@ -254,7 +252,7 @@ class PersonnelControllerTest extends ControllerTestSupport {
 
     @Test
     void delete_doitRenvoyer404_quandIntrouvable() throws Exception {
-        doThrow(new NotFoundException("Utilisateur introuvable")).when(personnelService).deleteById(999L);
+        doThrow(new ServiceException("Utilisateur introuvable")).when(personnelService).deleteById(999L);
 
         mockMvc.perform(delete("/api/v1/personnels/{id}/", 999L).with(connecte(Role.ADMINISTRATEUR)))
                 .andExpect(status().isNotFound());

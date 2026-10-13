@@ -1,6 +1,5 @@
 package net.ent.etnc.orbit.services.commons;
 
-import jakarta.validation.groups.Default;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.repositories.commons.BaseRepository;
 import org.springframework.data.domain.Page;
@@ -49,7 +48,7 @@ public class AbstractService<T extends AbstractPersistableWithIdSetter<Long>, R 
             throw new ServiceException("L'ID de l'entité ne doit pas être nul pour une mise à jour");
         }
         T existing = repository.findById(entity.getId())
-                .orElseThrow(() -> new NotFoundException("Entité avec l'ID " + entity.getId() + " introuvable"));
+                .orElseThrow(() -> new ServiceException("Entité avec l'ID " + entity.getId() + " introuvable"));
         entity.setVersion(existing.getVersion());
 
         try {
