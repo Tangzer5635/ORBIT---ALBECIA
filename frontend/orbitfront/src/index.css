@@ -1,6 +1,6 @@
 /* =========================================================
    Styles d'ORBIT — tout dans un seul fichier (chargé dans main.tsx)
-   Couleurs reprises de la maquette, thème sombre uniquement.
+   Couleurs reprises de la maquette : thème sombre par défaut, thème clair avec data-theme="light".
    Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments
    ========================================================= */
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
@@ -27,8 +27,10 @@
     --use: #34d399;
     --use-bg: #1f5a4b;
     --chg: #fbbf24;
+    --chg-bg: #3d3216;
     --inc: #60a5fa;
     --def: #fb7185;
+    --def-bg: #46203a;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 
     --radius-card: 30px;
@@ -44,8 +46,31 @@
 }
 
 :root[data-theme="light"] {
+    --bg: #f2f1fa;
+    --bg2: #e7e4f7;
+    --card: #ffffff;
+    --card2: #f5f4fc;
+    --ink: #1a1733;
+    --muted: #6b6789;
+    --line: #e2dff2;
+    --accent: #6c4cf5;
+    --accent-ink: #ffffff;
+    --accent-soft: #ece7ff;
+    --error: #e5484d;
+    --success: #12a66a;
+    --use: #12a66a;
+    --use-bg: #dff6ec;
+    --chg: #e5a800;
+    --chg-bg: #fff3cc;
+    --inc: #3b82c4;
+    --def: #e5484d;
+    --def-bg: #fde4e5;
+    --shadow: 0 6px 22px rgba(40, 30, 110, 0.08);
+
     --logo-filter: none;
     --logo-blend: multiply;
+
+    color-scheme: light;
 }
 
 *,
@@ -235,6 +260,30 @@ h3 {
 
 .navbar-logout:hover {
     background: var(--accent-soft);
+}
+
+/* Bouton mode clair / sombre */
+.theme-button {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card2);
+    color: var(--ink);
+    transition: background 0.15s;
+}
+
+.theme-button:hover {
+    background: var(--accent-soft);
+}
+
+.theme-button svg {
+    width: 19px;
+    height: 19px;
 }
 
 /* Tablette / mobile */

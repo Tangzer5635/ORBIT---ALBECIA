@@ -20,3 +20,11 @@ export const ACCES: Acces[] = [
     { path: "/utilisateurs", label: "Utilisateurs", roles: ["ADMINISTRATEUR"] },
     { path: "/journal",      label: "Journal",      roles: ["ADMINISTRATEUR"] },
 ];
+
+// Page d'accueil de chaque role après la connexion
+export const PAGE_ACCUEIL: Record<Role, string> = {
+    ADMINISTRATEUR: "/batiments",
+    GESTIONNAIRE: "/salles",
+    FORMATEUR: "/salles",
+    STAGIAIRE: "/poste",
+};

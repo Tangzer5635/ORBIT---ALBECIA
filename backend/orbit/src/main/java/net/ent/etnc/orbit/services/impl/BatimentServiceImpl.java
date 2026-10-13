@@ -27,7 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -229,5 +231,11 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
                 .stockages(stockages.getOrDefault(b.getId(), List.of()))
                 .anneau(anneaux.getOrDefault(b.getId(), AnneauDto.VIDE))
                 .build());
+    }
+
+    @Transactional
+    @Override
+    public Optional<Batiment> batimentDeLaSalle(Long idSalle) {
+        return repository.findBySalles_Id(idSalle);
     }
 }

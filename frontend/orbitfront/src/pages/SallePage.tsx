@@ -7,7 +7,7 @@ import Anneau from "../components/Anneau.tsx";
 import Legende from "../components/Legende.tsx";
 import SalleCard from "../components/SalleCard.tsx";
 import StockageCard from "../components/StockageCard.tsx";
-import type { SalleCarte } from "../types/types.ts";
+import type {SalleCarte} from "../types/types.ts";
 import { pourcentageUtilisable, totalMateriels } from "../utils/postes.ts";
 import CreerSallePopup from "../components/CreerSallePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";

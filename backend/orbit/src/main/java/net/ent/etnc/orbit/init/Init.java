@@ -104,8 +104,9 @@ public class Init implements CommandLineRunner {
         }
 
         List<Personnel> stagiaires = new ArrayList<>();
-        stagiaires.add(personnelService.create(buildUser("4000000001", "Le Buhé",
+        Personnel p1 =(personnelService.create(buildUser("4000000001", "Le Buhé",
                 "Tanguy", "t.lebuhe", "1234", Role.STAGIAIRE)));
+        stagiaires.add(p1);
         stagiaires.add(personnelService.create(buildUser("4000000002", "Bernard",
                 "Marc", "m.bernard", "1234", Role.STAGIAIRE)));
         stagiaires.add(personnelService.create(buildUser("4000000003", "Petit",
@@ -120,44 +121,10 @@ public class Init implements CommandLineRunner {
         personnelService.deactivate(inactif.getId());
         verrouille.setVerrouille(true);
 
-        // ---------- Bâtiments, salles, postes, matériel ----------
-        for (String numBatiment : NUMEROS_BATIMENTS) {
-            Batiment batiment = batimentService.create(buildBatiment(numBatiment));
-            Salle stockage = stockageDe(batiment);
-
-            int nbSalles = 2 + random.nextInt(12); // de 2 à 13 salles selon le bâtiment
-            for (int s = 1; s <= nbSalles; s++) {
-                Salle salle = batimentService.create(batiment.getId(), buildSalle(
-                        String.format("%s%02d", numBatiment, s), Integer.toString((s - 1) / 5),
-                        TypeSalle.SalleDeCours));
-                Personnel formateur = choisir(formateurs);
-                salle.addPersonnel(formateur);
-
-                // tout le matériel d'une salle est acheté à peu près en même temps
-                LocalDate equipement = aujourdhui.minusMonths(choisir(ANCIENNETE_MOIS));
-                int nbPostes = choisir(TAILLES_SALLES);
-
-                for (int p = 1; p <= nbPostes; p++) {
-                    // 1 poste sur 4 n'a pas d'occupant
-                    Personnel occupant = random.nextInt(4) == 0 ? null : choisir(stagiaires);
-                    Poste poste = creerPoste(String.format("B%s-S%02d-P%02d", numBatiment, s, p),
-                            salle, occupant);
-                    Personnel signaleur = occupant != null ? occupant : formateur;
-
-                    installerSurPoste(poste, choisir(UC), equipement, stockage, signaleur, gestionnaire);
-                    // 1 poste sur 15 n'a pas d'écran (poste incomplet)
-                    if (random.nextInt(15) != 0) {
-                        installerSurPoste(poste, choisir(ECRANS), equipement, stockage, signaleur, gestionnaire);
-                    }
-                }
-
-                // 2 salles sur 3 ont un vidéoprojecteur ou un tableau interactif
-                if (nbPostes > 0 && random.nextInt(3) != 0) {
-                    Materiel equipementSalle = creerMateriel(choisir(EQUIPEMENTS_SALLE),
-                            acquisitionAutour(equipement), stockage);
-                    affecterMaterielService.affecterASalle(salle.getId(), equipementSalle.getId());
-                }
-            }
+        // ---------- Bâtiment de test 666 ----------
+        // Une salle, un poste occupé par Tanguy Le Buhé avec 1 UC et 2 écrans
+        Batiment batiment666 = batimentService.create(buildBatiment("666"));
+        Salle stockage666 = stockageDe(batiment666);
 
             // stock de rechange : de quoi équiper 1 ou 2 salles complètes, plutôt récent
             remplirStock(stockage, UC, 20 + random.nextInt(21));                 // 20 à 40 UC
@@ -165,16 +132,20 @@ public class Init implements CommandLineRunner {
             remplirStock(stockage, EQUIPEMENTS_SALLE.subList(0, 2), 2 + random.nextInt(3)); // 2 à 4 vidéoprojecteurs
             remplirStock(stockage, EQUIPEMENTS_SALLE.subList(2, 4), 1 + random.nextInt(3)); // 1 à 3 tableaux
 
-            // un vieux matériel archivé dans 1 bâtiment sur 3 (ne doit pas compter dans l'anneau)
-            if (random.nextInt(3) == 0) {
-                Materiel vieux = creerMateriel(choisir(UC), aujourdhui.minusYears(6), stockage);
-                materielService.archiver(vieux.getId());
-            }
-        }
+        Poste poste666 = creerPoste("666", salle999, p1);
+
+        // Matériel créé dans le stockage du bâtiment, puis affecté au poste
+        Materiel uc666 = creerMateriel(UC.get(0), aujourdhui.minusMonths(2), stockage666);
+        Materiel ecran666a = creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockage666);
+        Materiel ecran666b = creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockage666);
+
+        affecterMaterielService.affecterAPoste(poste666.getId(), uc666.getId());
+        affecterMaterielService.affecterAPoste(poste666.getId(), ecran666a.getId());
+        affecterMaterielService.affecterAPoste(poste666.getId(), ecran666b.getId());
 
         // Réserve hors bâtiment, conservée comme avant.
         Salle stockagePrincipal = salleService.create(
-                buildSalle("999", "0", TypeSalle.SalleStockage));
+                buildSalle("996", "0", TypeSalle.SalleStockage));
         creerMateriel(UC.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
         creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
         creerMateriel(EQUIPEMENTS_SALLE.get(0), aujourdhui.minusMonths(2), stockagePrincipal);

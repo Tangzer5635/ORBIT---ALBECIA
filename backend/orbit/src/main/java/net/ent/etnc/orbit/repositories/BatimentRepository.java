@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BatimentRepository extends BaseRepository<Batiment> {
@@ -40,4 +41,7 @@ public interface BatimentRepository extends BaseRepository<Batiment> {
             + " from Batiment b join b.salles s join s.postes p join p.materiels m"
             + " where b.id in :ids group by b.id")
     List<ComptesEtats> comptesEtatsSurPoste(@Param("ids") Collection<Long> ids, @Param("seuil") LocalDate seuil);
+
+    Optional<Batiment> findBySalles_Id(Long idSalle);
+
 }
