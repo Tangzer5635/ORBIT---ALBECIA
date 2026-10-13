@@ -45,10 +45,12 @@ export async function ajouterBatiment(batiment: BatimentRequest): Promise<Batime
 }
 
 // Méthode pour supprimer un bâtiment
-export async function supprimerBatiment(id: number): Promise<void> {
+export async function supprimerBatiment(id: number, stockageCibleId?: number): Promise<void> {
+    const params = stockageCibleId !== undefined ? `?stockageCible=${stockageCibleId}` : "";
+
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, {
+        response = await fetch(`${URL}/${id}/${params}`, {
             method: "DELETE",
             headers: authHeaders(),
         });

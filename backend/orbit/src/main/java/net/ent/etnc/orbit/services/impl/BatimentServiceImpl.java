@@ -4,8 +4,10 @@ import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import net.ent.etnc.orbit.repositories.projections.StockageCompte;
+import net.ent.etnc.orbit.services.PosteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,11 +36,13 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
     private static final String ETAGE_SALLE_STOCKAGE = "0";
 
     private final SalleService salleService;
+    private final PosteService posteService;
 
     @Autowired
-    public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService) {
+    public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService, PosteService posteService) {
         super(batimentRepository);
         this.salleService = salleService;
+        this.posteService = posteService;
     }
 
     /**
@@ -65,6 +70,48 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         Salle creee = salleService.create(salle);
         batiment.addSalle(creee);
         return creee;
+    }
+
+    @Override
+    @Transactional
+    public void supprimer(Long idBatiment, Long idStockageCible) {
+        Batiment batiment = repository.findById(idBatiment)
+                .orElseThrow(() -> new NotFoundException("Bâtiment " + idBatiment + " introuvable"));
+        List<Salle> salles = List.copyOf(batiment.getSalles());
+
+        // 1. Détacher tout le matériel des salles et des postes
+        List<Materiel> materiels = new ArrayList<>();
+        for (Salle salle : salles) {
+            for (Poste poste : salle.getPostes()) {
+                List<Materiel> surPoste = List.copyOf(poste.getMateriels());
+                surPoste.forEach(poste::removeMateriel);
+                materiels.addAll(surPoste);
+            }
+            List<Materiel> enSalle = List.copyOf(salle.getMateriels());
+            enSalle.forEach(salle::removeMateriel);
+            materiels.addAll(enSalle);
+        }
+
+        if (!materiels.isEmpty()) {
+            if (idStockageCible == null)
+                throw new ServiceException("Choisissez une salle de stockage pour le matériel");
+            Salle cible = salleService.findById(idStockageCible)
+                    .orElseThrow(() -> new NotFoundException("Salle " + idStockageCible + " introuvable"));
+            if (cible.getType() != TypeSalle.SalleStockage)
+                throw new ServiceException("La salle cible n'est pas une salle de stockage");
+            if (salles.contains(cible))
+                throw new ServiceException("La salle cible appartient au bâtiment supprimé");
+            materiels.forEach(cible::addMateriel);
+        }
+        for (Salle salle : salles) {
+            for (Poste poste : List.copyOf(salle.getPostes())) {
+                salle.removePoste(poste);
+                posteService.deleteById(poste.getId());
+            }
+            batiment.removeSalle(salle);
+            salleService.deleteById(salle.getId());
+        }
+        repository.delete(batiment);
     }
 
     @Override

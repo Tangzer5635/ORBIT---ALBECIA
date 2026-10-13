@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface BatimentService extends Service<Batiment, Long> {
     Salle create(Long idBatiment, Salle salle);
+    void supprimer(Long idBatiment, Long idStockageCible) throws ServiceException;
     Batiment affecterSalle(Long idBatiment, Long idSalle) throws ServiceException;
     void retirerSalle(Long idBatiment, Long idSalle) throws ServiceException;
     Page<BatimentCarteDto> findCartes(Pageable pageable);

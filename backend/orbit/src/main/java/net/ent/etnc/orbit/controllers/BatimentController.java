@@ -53,9 +53,9 @@ public class BatimentController {
 
     @DeleteMapping("/{id}/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam(required = false) Long stockageCible) {
         if (!batimentService.existsById(id)) return ResponseEntity.notFound().build();
-        batimentService.deleteById(id);
+        batimentService.supprimer(id, stockageCible);
         return ResponseEntity.noContent().build();
     }
 
