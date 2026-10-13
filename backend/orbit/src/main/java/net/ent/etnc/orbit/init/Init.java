@@ -159,12 +159,11 @@ public class Init implements CommandLineRunner {
                 }
             }
 
-            // stock de rechange : de 0 à 12 matériels, plutôt récents
-            int nbStock = random.nextInt(13);
-            for (int i = 0; i < nbStock; i++) {
-                List<Modele> famille = random.nextBoolean() ? UC : ECRANS;
-                creerMateriel(choisir(famille), aujourdhui.minusMonths(random.nextInt(30)), stockage);
-            }
+            // stock de rechange : de quoi équiper 1 ou 2 salles complètes, plutôt récent
+            remplirStock(stockage, UC, 20 + random.nextInt(21));                 // 20 à 40 UC
+            remplirStock(stockage, ECRANS, 30 + random.nextInt(31));             // 30 à 60 écrans
+            remplirStock(stockage, EQUIPEMENTS_SALLE.subList(0, 2), 2 + random.nextInt(3)); // 2 à 4 vidéoprojecteurs
+            remplirStock(stockage, EQUIPEMENTS_SALLE.subList(2, 4), 1 + random.nextInt(3)); // 1 à 3 tableaux
 
             // un vieux matériel archivé dans 1 bâtiment sur 3 (ne doit pas compter dans l'anneau)
             if (random.nextInt(3) == 0) {
@@ -225,6 +224,12 @@ public class Init implements CommandLineRunner {
         materiel.setDateFinGarantie(acquisition.plusYears(3));
         materiel.setType(modele.type());
         return materielService.creerEnStock(materiel, stockage.getId());
+    }
+
+    private void remplirStock(Salle stockage, List<Modele> famille, int nombre) throws ServiceException {
+        for (int i = 0; i < nombre; i++) {
+            creerMateriel(choisir(famille), aujourdhui.minusMonths(random.nextInt(18)), stockage);
+        }
     }
 
     private static String prefixe(TypeMateriel type) {

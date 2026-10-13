@@ -11,11 +11,13 @@ type Props = {
     variant?: "primary" | "danger";
     loading?: boolean;
     disabled?: boolean;
+    cancelLabel?: string;
+    onCancel?: () => void;
 };
 
 export default function Popup({
                                   open, onClose, title, description, children,
-                                  confirmLabel, onConfirm, variant = "primary", loading, disabled,
+                                  confirmLabel, onConfirm, variant = "primary", loading, disabled, cancelLabel, onCancel,
                               }: Props) {
     // Échap pour fermer + bloque le scroll de la page
     useEffect(() => {
@@ -55,7 +57,7 @@ export default function Popup({
                 <div className="popup-body">{children}</div>
 
                 <footer className="popup-footer">
-                    <button type="button" className="btn" onClick={onClose}>Annuler</button>
+                    <button type="button" className="btn" onClick={onCancel ?? onClose}>{cancelLabel ?? "Annuler"}</button>
                     <button type="submit" className={`btn ${variant}`} disabled={disabled || loading}>
                         {loading ? "…" : confirmLabel}
                     </button>

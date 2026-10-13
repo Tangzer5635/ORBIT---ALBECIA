@@ -1087,3 +1087,64 @@ h3 {
     background: var(--def);
     color: var(--accent-ink);
 }
+
+/* Étapes de la popup */
+.popup-etapes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.popup-etapes li {
+    padding-top: 8px;
+    border-top: 4px solid var(--line);
+}
+
+.popup-etapes li.faite {
+    border-color: var(--accent);
+    color: var(--ink);
+}
+
+/* Compteur − / + */
+.compteur {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 8px 8px 14px;
+    border-radius: var(--radius-field);
+    background: var(--card2);
+}
+
+.compteur span {
+    flex: 1;
+}
+
+.compteur b {
+    min-width: 20px;
+    text-align: center;
+}
+
+.compteur button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card);
+}
+
+.compteur button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.popup-recap {
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
