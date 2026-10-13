@@ -98,14 +98,13 @@ export interface Stockage {
     nbMateriels: number;
 }
 
-// BatimentResponseDto
+// BatimentCarteDto (GET /batiments/)
 export interface Batiment {
     id: number;
     numBatiment: string;
-    sallesId: number[];
     nbSalles: number;
     stockages: Stockage[];
-    comptes: Comptes;
+    anneau: ComptesAnneau;
 }
 
 // BatimentRequestDto
@@ -115,13 +114,12 @@ export interface BatimentRequest {
 
 //SALLES
 
-
-export interface Comptes {
-    use: number;    // poste occupé, matériel en ordre
-    dispo: number;  // poste libre, matériel en ordre
-    chg: number;    // un matériel à remplacer bientôt
-    inc: number;    // poste sans matériel
-    def: number;    // un matériel défectueux
+// AnneauDto : matériels comptés par état
+export interface ComptesAnneau {
+    libre: number;       // en stock
+    bonEtat: number;     // affecté, rien à signaler
+    defectueux: number;  // défaillance signalée non résolue
+    aChanger: number;    // acquis il y a plus de 2 ans
 }
 
 // SalleResponseDto
@@ -132,8 +130,17 @@ export interface Salle {
     type: TypeSalle;
     materielsId: number[];
     nbPostes: number;
-    comptes: Comptes;
     materielsParType: Partial<Record<TypeMateriel, number>>;
+}
+
+// SalleCarteDto (GET /salles/?batiment=XX)
+export interface SalleCarte {
+    id: number;
+    numSalle: string;
+    etage: string;
+    type: TypeSalle;
+    nbPostes: number;
+    anneau: ComptesAnneau;
 }
 
 // SalleRequestDto
@@ -143,6 +150,7 @@ export interface SalleRequest {
     type: TypeSalle;
     idBatiment: number;
 }
+
 
 //POSTES
 

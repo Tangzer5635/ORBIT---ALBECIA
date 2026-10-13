@@ -16,7 +16,6 @@ public class BatimentResponseDto {
     private List<Long> sallesId;
     private int nbSalles;
     private List<StockageDto> stockages;
-    private SalleResponseDto.ComptesDto comptes;
 
     @Getter
     @Setter
@@ -26,7 +25,7 @@ public class BatimentResponseDto {
     public static class StockageDto {
         private Long id;
         private String numSalle;
-        private int nbMateriels;
+        private long nbMateriels;
     }
 
 

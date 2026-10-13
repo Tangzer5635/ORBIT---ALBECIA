@@ -2,6 +2,8 @@ import BatimentCard from "../components/BatimentCard.tsx";
 import {type FormEvent, useState} from "react";
 import {ajouterBatiment, BatimentError, supprimerBatiment} from "../services/batimentService.ts";
 import {useBatiments} from "../context/BatimentsContext.tsx";
+import {ANNEAU_VIDE} from "../utils/postes.ts";
+import Legende from "../components/Legende.tsx";
 
 export function BatimentsPage() {
     const {batiments, setBatiments, erreurChargement} = useBatiments(); // liste partagée avec la BatimentBar
@@ -31,7 +33,7 @@ export function BatimentsPage() {
         setEnvoi(true);
         try {
             const nouveau = await ajouterBatiment({ numBatiment: numBatiment.trim() });
-            setBatiments((liste) => [...liste, nouveau]); // on l'ajoute à la liste affichée
+            setBatiments((liste) => [...liste, { ...nouveau, anneau: ANNEAU_VIDE }]);
 
             // //ferme le form
             // setFormOuvert(false);
@@ -65,12 +67,15 @@ export function BatimentsPage() {
     }
 
     const nb = batiments.length;
+    const nbSalles = batiments.reduce((acc, b) => acc + b.nbSalles, 0);
+    const nbSallesStockage = batiments.reduce((acc, b) => acc + b.stockages.length, 0);
+
 
     return (
         <>
             <div className="page-head">
                 <h1>Bâtiments</h1>
-                <span className="muted">{nb} bâtiment{nb > 1 ? "s" : ""}</span>
+                <span className="muted">{nb} bâtiment{nb > 1 ? "s" : ""}, {nbSalles} salles, {nbSallesStockage} salles de stockage</span>
             </div>
 
             {!formOuvert && (
@@ -96,6 +101,8 @@ export function BatimentsPage() {
             )}
 
             {(error ?? erreurChargement) && <p className="error-message" role="alert">{error ?? erreurChargement}</p>}
+<br/><br/>
+            <Legende/>
 
             <div className="bat-grid">
                 {batiments.map((b) => (

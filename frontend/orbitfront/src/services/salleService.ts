@@ -1,4 +1,4 @@
-import type { Page, Salle, SalleRequest } from "../types/types.ts";
+import type { Page, Salle, SalleCarte, SalleRequest } from "../types/types.ts";
 import { authHeaders } from "./api.ts";
 
 const URL = `/api/v1/salles`;
@@ -27,10 +27,10 @@ export async function getSalle(): Promise<Salle[]> {
 }
 
 // Méthode pour récupérer les salles d'un bâtiment (cours et stockage, pas de pagination)
-export async function getSallesDuBatiment(idBatiment: number): Promise<Salle[]> {
+export async function getSallesDuBatiment(idBatiment: number): Promise<SalleCarte[]> {
     let response: Response;
     try {
-        response = await fetch(`/api/v1/batiments/${idBatiment}/salles/`, { headers: authHeaders() });
+        response = await fetch(`${URL}/?batiment=${idBatiment}`, { headers: authHeaders() });
     } catch {
         throw new SalleError(0);
     }

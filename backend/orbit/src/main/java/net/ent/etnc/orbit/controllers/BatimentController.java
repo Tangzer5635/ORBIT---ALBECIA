@@ -1,10 +1,9 @@
 package net.ent.etnc.orbit.controllers;
 
 import net.ent.etnc.orbit.dtos.assemblers.BatimentAssembler;
-import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.BatimentCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
-import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.services.BatimentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,30 +13,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/batiments")
 public class BatimentController {
 
     private final BatimentService batimentService;
     private final BatimentAssembler batimentAssembler;
-    private final SalleAssembler salleAssembler;
 
     @Autowired
-    public BatimentController(BatimentService batimentService, BatimentAssembler batimentAssembler, SalleAssembler salleAssembler) {
+    public BatimentController(BatimentService batimentService, BatimentAssembler batimentAssembler) {
         this.batimentService = batimentService;
         this.batimentAssembler = batimentAssembler;
-        this.salleAssembler = salleAssembler;
     }
 
     @GetMapping("/")
     @PreAuthorize("hasRole('TECHNIQUE')")
-    public ResponseEntity<Page<BatimentResponseDto>> getAll(
+    public ResponseEntity<Page<BatimentCarteDto>> getAll(
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        return ResponseEntity.ok(batimentService.findAll(pageable)
-                .map(batimentAssembler::toDto));
+        return ResponseEntity.ok(batimentService.findCartes(pageable));
     }
 
     @GetMapping("/{id}/")
@@ -45,14 +39,6 @@ public class BatimentController {
     public ResponseEntity<BatimentResponseDto> getById(@PathVariable Long id) {
         return batimentService.findById(id)
                 .map(batiment -> ResponseEntity.ok(batimentAssembler.toDto(batiment)))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{id}/salles/")
-    @PreAuthorize("hasRole('TECHNIQUE')")
-    public ResponseEntity<List<SalleResponseDto>> getSalles(@PathVariable Long id) {
-        return batimentService.findById(id)
-                .map(batiment -> ResponseEntity.ok(salleAssembler.toDtos(batiment.getSalles())))
                 .orElse(ResponseEntity.notFound().build());
     }
 

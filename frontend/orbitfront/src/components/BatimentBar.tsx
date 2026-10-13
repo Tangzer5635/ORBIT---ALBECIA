@@ -107,7 +107,7 @@ export default function BatimentBar() {
                      onPointerUp={onPointerFin} onPointerCancel={onPointerFin}
                      onClickCapture={onClickCapture}>
                     {batiments.map((b) => {
-                        const pct = pourcentageUtilisable(b.comptes);
+                        const pct = pourcentageUtilisable(b.anneau);
                         return (
                             <button key={b.id} type="button"
                                     className={"batiment" + (selection === b.id ? " active" : "")}

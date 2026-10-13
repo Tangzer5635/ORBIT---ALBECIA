@@ -314,12 +314,23 @@ class MaterielServiceImplTest {
     }
 
     @Test
-    void etatDe_doitRenvoyerARemplacer_quandGarantieFinitSous90Jours() {
-        Materiel m = materiel(5L, LocalDate.now().plusDays(30));
+    void etatDe_doitRenvoyerARemplacer_quandAcquisIlYaPlusDe2Ans() {
+        Materiel m = materielSousGarantie(5L);
+        m.setDateAcquisition(LocalDate.now().minusYears(2).minusDays(1));
         when(salleService.estEnStock(5L)).thenReturn(false);
         when(defaillanceService.aUneDefaillanceOuverte(5L)).thenReturn(false);
 
         assertThat(service.etatDe(m)).isEqualTo(EtatMateriel.A_REMPLACER);
+    }
+
+    @Test
+    void etatDe_doitRenvoyerNormal_quandAcquisIlYaPile2Ans() {
+        Materiel m = materielSousGarantie(5L);
+        m.setDateAcquisition(LocalDate.now().minusYears(2));
+        when(salleService.estEnStock(5L)).thenReturn(false);
+        when(defaillanceService.aUneDefaillanceOuverte(5L)).thenReturn(false);
+
+        assertThat(service.etatDe(m)).isEqualTo(EtatMateriel.NORMAL);
     }
 
     @Test

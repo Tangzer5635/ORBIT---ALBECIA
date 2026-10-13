@@ -1,10 +1,13 @@
 package net.ent.etnc.orbit.services.impl;
 
+import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.SalleRepository;
+import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
@@ -14,9 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> implements SalleService {
@@ -123,5 +129,28 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
             return reservesDuBatiment.get(0);
         }
         return repository.findFirstByTypeOrderByIdAsc(TypeSalle.SalleStockage).orElseThrow(() -> new ServiceException("Aucune salle de stockage n'existe"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SalleCarteDto> findCartesDuBatiment(Long idBatiment) {
+        List<Salle> salles = repository.findByBatiment(idBatiment);
+        if (salles.isEmpty()) return List.of();
+        List<Long> ids = salles.stream().map(Salle::getId).toList();
+
+        LocalDate seuil = Materiel.seuilARemplacer();
+        Map<Long, Long> nbPostes = repository.nbPostes(ids).stream()
+                .collect(Collectors.toMap(IdCompte::id, IdCompte::nb));
+        Map<Long, AnneauDto> anneaux = AnneauDto.parId(
+                repository.comptesEtatsEnSalle(ids, seuil), repository.comptesEtatsSurPoste(ids, seuil));
+
+        return salles.stream().map(s -> SalleCarteDto.builder()
+                .id(s.getId())
+                .numSalle(s.getNumSalle())
+                .etage(s.getEtage())
+                .type(s.getType())
+                .nbPostes(nbPostes.getOrDefault(s.getId(), 0L))
+                .anneau(anneaux.getOrDefault(s.getId(), AnneauDto.VIDE))
+                .build()).toList();
     }
 }

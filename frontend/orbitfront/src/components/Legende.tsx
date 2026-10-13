@@ -1,9 +1,9 @@
-import type { Comptes } from "../types/types.ts";
-import { LIBELLE_ETAT_POSTE, ORDRE_ETATS } from "../utils/postes.ts";
+import type { ComptesAnneau } from "../types/types.ts";
+import { CLASSE_ETAT, LIBELLE_ETAT, ORDRE_ETATS } from "../utils/postes.ts";
 
 interface LegendeProps {
-    // avec comptes : affiche le nombre de postes de chaque état + la phrase d'explication
-    comptes?: Comptes;
+    // avec comptes : affiche le nombre de matériels de chaque état + la phrase d'explication
+    comptes?: ComptesAnneau;
 }
 
 // Légende des couleurs de l'anneau (comme la maquette)
@@ -13,16 +13,16 @@ export default function Legende({ comptes }: LegendeProps) {
             <ul className={comptes ? "rleg" : "rleg compact"}>
                 {ORDRE_ETATS.map((k) => (
                     <li key={k}>
-                        <i className={"sw " + k}/>
-                        {LIBELLE_ETAT_POSTE[k]}
+                        <i className={"sw " + CLASSE_ETAT[k]}/>
+                        {LIBELLE_ETAT[k]}
                         {comptes && <b>{comptes[k]}</b>}
                     </li>
                 ))}
             </ul>
             {comptes && (
                 <p className="rleg-note">
-                    Le pourcentage correspond à la partie verte et jaune du cercle : postes utilisés,
-                    disponibles (vert hachuré) et à changer bientôt.
+                    Le pourcentage correspond au matériel utilisable : tout sauf le défectueux
+                    (bon état, libre en stock et à changer bientôt).
                 </p>
             )}
         </>

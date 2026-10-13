@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.controllers;
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -13,6 +14,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/salles")
@@ -44,6 +47,14 @@ public class SalleController {
         return salleService.findById(id)
                 .map(salle -> ResponseEntity.ok(salleAssembler.toDto(salle)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Page /salles?batiment=XX : cartes des salles du bâtiment (pas de pagination). */
+    @GetMapping(value = "/", params = "batiment")
+    @PreAuthorize("hasRole('TECHNIQUE')")
+    public ResponseEntity<List<SalleCarteDto>> getByBatiment(@RequestParam("batiment") Long idBatiment) {
+        if (!batimentService.existsById(idBatiment)) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(salleService.findCartesDuBatiment(idBatiment));
     }
 
     @PostMapping

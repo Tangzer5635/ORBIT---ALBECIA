@@ -1,9 +1,9 @@
 import Anneau from "./Anneau.tsx";
-import type { Salle } from "../types/types.ts";
+import type { SalleCarte } from "../types/types.ts";
 import { libelleEtage } from "../utils/postes.ts";
 
 interface SalleCardProps {
-    salle: Salle;
+    salle: SalleCarte;
 }
 
 function pluriel(n: number, mot: string) {
@@ -11,17 +11,16 @@ function pluriel(n: number, mot: string) {
 }
 
 export default function SalleCard({ salle }: SalleCardProps) {
-    const { def, chg, inc } = salle.comptes;
+    const { defectueux, aChanger } = salle.anneau;
 
     // problèmes à signaler, du plus grave au moins grave
     const alertes: { cle: string; texte: string }[] = [];
-    if (def) alertes.push({ cle: "def", texte: `${def} défectueux` });
-    if (chg) alertes.push({ cle: "chg", texte: `${chg} à changer bientôt` });
-    if (inc) alertes.push({ cle: "inc", texte: `${inc} à compléter` });
+    if (defectueux) alertes.push({ cle: "def", texte: `${defectueux} défectueux` });
+    if (aChanger) alertes.push({ cle: "chg", texte: `${aChanger} à changer bientôt` });
 
     return (
         <article className="room">
-            <Anneau id={salle.id} comptes={salle.comptes}/>
+            <Anneau id={salle.id} comptes={salle.anneau}/>
             <div>
                 <h3>Salle {salle.numSalle}</h3>
                 <p>{libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}</p>

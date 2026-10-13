@@ -20,7 +20,7 @@ export default function BatimentCard({batiment, onSupprime}: BatimentCardProps) 
     return (
         <article className="bat-card">
             <header className="bat-card-head">
-                <Anneau id={`bat-${batiment.id}`} comptes={batiment.comptes}/>
+                <Anneau id={`bat-${batiment.id}`} comptes={batiment.anneau}/>
                 <div>
                     <h2>
                         <Link to={`/salles?batiment=${batiment.id}`}>

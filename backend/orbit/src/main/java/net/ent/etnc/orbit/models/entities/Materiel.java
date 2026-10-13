@@ -70,14 +70,19 @@ public class Materiel extends AbstractPersistableWithIdSetter<Long> {
 
     /**
      * État calculé (non stocké), par ordre de priorité :
-     * archivé, défectueux (défaillance signalée non résolue), à remplacer (garantie finie
-     * ou finissant sous 90 jours), puis disponible (en stock) ou normal (affecté).
+     * archivé, défectueux (défaillance signalée non résolue), à remplacer (acquis il y a
+     * plus de 2 ans), puis disponible (en stock) ou normal (affecté).
      */
     public EtatMateriel calculerEtat(boolean enStock, boolean defaillanceOuverte) {
         if (archive) return EtatMateriel.ARCHIVE;
         if (defaillanceOuverte) return EtatMateriel.DEFECTUEUX;
-        if (!dateFinGarantie.isAfter(LocalDate.now().plusDays(90))) return EtatMateriel.A_REMPLACER;
+        if (dateAcquisition.isBefore(seuilARemplacer())) return EtatMateriel.A_REMPLACER;
         return enStock ? EtatMateriel.DISPONIBLE : EtatMateriel.NORMAL;
+    }
+
+    /** Un matériel acquis avant cette date (il y a plus de 2 ans) est à remplacer. */
+    public static LocalDate seuilARemplacer() {
+        return LocalDate.now().minusYears(2);
     }
 
 }
