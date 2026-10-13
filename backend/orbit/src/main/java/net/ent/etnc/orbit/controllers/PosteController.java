@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -15,6 +16,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -48,6 +50,15 @@ public class PosteController {
         return posteService.findById(id)
                 .map(poste -> ResponseEntity.ok(posteAssembler.toDto(poste)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/me/")
+    @PreAuthorize("hasRole('STAGIAIRE')")
+    public ResponseEntity<PosteResponseDto> getMyPoste(@AuthenticationPrincipal Personnel utilisateur) {
+        return posteService.findMyPoste(utilisateur.getId())
+                .map(poste -> ResponseEntity.ok(posteAssembler.toDto(poste)))
+                .orElse(ResponseEntity.notFound().build());
+
     }
 
     @PostMapping("/")
