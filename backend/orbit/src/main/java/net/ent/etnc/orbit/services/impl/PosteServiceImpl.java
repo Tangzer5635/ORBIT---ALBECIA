@@ -56,4 +56,9 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
     public Optional<Poste> posteDuMateriel(Long idMateriel) {
         return repository.findByMateriels_Id(idMateriel);
     }
+
+    @Override
+    public Optional<Poste> findMyPoste(Long id) {
+        return repository.findByIdUtilisateur(id);
+    }
 }
