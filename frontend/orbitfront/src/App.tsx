@@ -22,7 +22,7 @@ import SalleDetailPage from "./pages/SalleDetailPage.tsx";
 const PAGES: Record<string, ReactElement> = {
     "/batiments": <BatimentsPage />,
     "/salles": <SallePage />,
-    "/salles/$id": <SalleDetailPage />,
+    "/salles/:id": <SalleDetailPage />,
     "/defaillances": <DefaillancePage />,
     "/garanties": <GarantiePage />,
     "/materiel": <MaterielPage />,
@@ -48,6 +48,7 @@ export default function App() {
                             <Route path={path} element={PAGES[path]} />
                         </Route>
                     ))}
+                    <Route path="/salles/:salleId" element={<SalleDetailPage/>}/>
                 </Route>
             </Route>
 

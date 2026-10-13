@@ -57,6 +57,16 @@ export async function getSalle(): Promise<Salle[]> {
     return data.content; //les salles sont dans "content" car on a des pages
 }
 
+export async function getSalleById(id: string): Promise<Salle> {
+    let response: Response;
+    try {
+        response = await fetch(`${URL}/${id}/`, { headers: authHeaders() });
+    } catch {
+        throw new SalleError(0);
+    }
+    return await response.json();
+}
+
 // Méthode pour récupérer les salles d'un bâtiment (cours et stockage, pas de pagination)
 export async function getSallesDuBatiment(idBatiment: number): Promise<SalleCarte[]> {
     let response: Response;

@@ -1,6 +1,7 @@
 import Anneau from "./Anneau.tsx";
 import type { SalleCarte } from "../types/types.ts";
 import { libelleEtage } from "../utils/postes.ts";
+import { Link } from "react-router-dom";
 
 interface SalleCardProps {
     salle: SalleCarte;
@@ -22,7 +23,7 @@ export default function SalleCard({ salle }: SalleCardProps) {
         <article className="room">
             <Anneau id={salle.id} comptes={salle.anneau}/>
             <div>
-                <h3>Salle {salle.numSalle}</h3>
+                <Link to={`/salles/${salle.id}/`}><h3>Salle {salle.numSalle}</h3></Link>
                 <p>{libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}</p>
                 <ul className="room-flags">
                     {salle.nbPostes === 0 ? (
