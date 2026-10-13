@@ -3,10 +3,14 @@ package net.ent.etnc.orbit.repositories;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.commons.BaseRepository;
+import net.ent.etnc.orbit.repositories.projections.ComptesEtats;
+import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +26,23 @@ public interface SalleRepository extends BaseRepository<Salle> {
     Optional<Salle> findByPostes_Id(Long idPoste);
 
     Optional<Salle> findFirstByTypeOrderByIdAsc(TypeSalle type);
+
+    @Query("select s from Batiment b join b.salles s where b.id = :idBatiment order by s.type, s.numSalle")
+    List<Salle> findByBatiment(@Param("idBatiment") Long idBatiment);
+
+    @Query("select " + IdCompte.NEW + "(s.id, count(p)) from Salle s join s.postes p"
+            + " where s.id in :ids group by s.id")
+    List<IdCompte> nbPostes(@Param("ids") Collection<Long> ids);
+
+    /** Matériel posé directement dans la salle (stockage compris). */
+    @Query("select " + ComptesEtats.NEW + "(s.id, " + ComptesEtats.COLONNES + ")"
+            + " from Salle s join s.materiels m where s.id in :ids group by s.id")
+    List<ComptesEtats> comptesEtatsEnSalle(@Param("ids") Collection<Long> ids, @Param("seuil") LocalDate seuil);
+
+    /** Matériel affecté aux postes de la salle. */
+    @Query("select " + ComptesEtats.NEW + "(s.id, " + ComptesEtats.COLONNES + ")"
+            + " from Salle s join s.postes p join p.materiels m where s.id in :ids group by s.id")
+    List<ComptesEtats> comptesEtatsSurPoste(@Param("ids") Collection<Long> ids, @Param("seuil") LocalDate seuil);
 
     @Query("""
             select r

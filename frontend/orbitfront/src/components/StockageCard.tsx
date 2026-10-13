@@ -1,28 +1,25 @@
-import { LIBELLE_TYPE_MATERIEL, type Salle, type TypeMateriel } from "../types/types.ts";
+import type { SalleCarte } from "../types/types.ts";
+import { totalMateriels } from "../utils/postes.ts";
 
 interface StockageCardProps {
-    salle: Salle;
+    salle: SalleCarte;
 }
 
-// "Écran" -> "3 écrans", "Unité centrale" -> "2 unités centrales"
-function quantite(n: number, type: TypeMateriel) {
-    const libelle = LIBELLE_TYPE_MATERIEL[type].toLowerCase();
-    if (n <= 1) return `${n} ${libelle}`;
-    return `${n} ${libelle.split(" ").map((mot) => mot.endsWith("au") ? mot + "x" : mot + "s").join(" ")}`;
-}
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
 export default function StockageCard({ salle }: StockageCardProps) {
-    const types = Object.entries(salle.materielsParType) as [TypeMateriel, number][];
-    const total = salle.materielsId.length;
+    const { libre, defectueux, aChanger } = salle.anneau;
+    const total = totalMateriels(salle.anneau);
 
     return (
         <article className="room stock">
             <div>
                 <h3>Réserve</h3>
-                <p>Salle {salle.numSalle}, {total} matériel{total > 1 ? "s" : ""} disponible{total > 1 ? "s" : ""}</p>
-                {types.length > 0 && (
+                <p>Salle {salle.numSalle}, {pluriel(total, "matériel")}, dont {libre} disponible{libre > 1 ? "s" : ""}</p>
+                {(defectueux > 0 || aChanger > 0) && (
                     <ul className="room-flags">
-                        {types.map(([type, n]) => <li key={type}>{quantite(n, type)}</li>)}
+                        {defectueux > 0 && <li className="def">{defectueux} défectueux</li>}
+                        {aChanger > 0 && <li className="chg">{aChanger} à changer bientôt</li>}
                     </ul>
                 )}
             </div>

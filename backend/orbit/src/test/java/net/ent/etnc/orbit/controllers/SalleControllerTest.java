@@ -2,6 +2,8 @@ package net.ent.etnc.orbit.controllers;
 
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
@@ -193,5 +195,18 @@ class SalleControllerTest extends ControllerTestSupport {
     void delete_doitRenvoyer403_quandFormateur() throws Exception {
         mockMvc.perform(delete("/api/v1/salles/{id}/", 1L).with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getByBatiment_doitRenvoyerLesCartes_quandBatimentTrouve() throws Exception {
+        when(batimentService.existsById(1L)).thenReturn(true);
+        when(salleService.findCartesDuBatiment(1L)).thenReturn(List.of(SalleCarteDto.builder()
+                .id(5L).numSalle("101").etage("1").type(TypeSalle.SalleDeCours).nbPostes(12)
+                .anneau(new AnneauDto(0, 10, 1, 1)).build()));
+
+        mockMvc.perform(get("/api/v1/salles/").param("batiment", "1").with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nbPostes").value(12))
+                .andExpect(jsonPath("$[0].anneau.bonEtat").value(10));
     }
 }

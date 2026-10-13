@@ -3,6 +3,8 @@ package net.ent.etnc.orbit.controllers;
 import net.ent.etnc.orbit.dtos.assemblers.BatimentAssembler;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
+import net.ent.etnc.orbit.dtos.responseDTO.BatimentCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
@@ -43,9 +45,6 @@ class BatimentControllerTest extends ControllerTestSupport {
     @MockitoBean
     private BatimentAssembler batimentAssembler;
 
-    @MockitoBean
-    private SalleAssembler salleAssembler;
-
     private Batiment batiment() {
         Batiment b = new Batiment();
         b.setId(1L);
@@ -57,40 +56,13 @@ class BatimentControllerTest extends ControllerTestSupport {
         return BatimentResponseDto.builder().id(1L).numBatiment("B201").sallesId(List.of()).build();
     }
 
-    // ---------- getSalles ----------
-
-    @Test
-    void getSalles_doitRenvoyer200_quandBatimentTrouve() throws Exception {
-        when(batimentService.findById(1L)).thenReturn(Optional.of(batiment()));
-        when(salleAssembler.toDtos(any())).thenReturn(List.of(
-                SalleResponseDto.builder().id(5L).numSalle("101").etage("1")
-                        .type(TypeSalle.SalleDeCours).materielsId(List.of()).build()));
-
-        mockMvc.perform(get("/api/v1/batiments/{id}/salles/", 1L).with(connecte(Role.FORMATEUR)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].numSalle").value("101"));
-    }
-
-    @Test
-    void getSalles_doitRenvoyer404_quandBatimentIntrouvable() throws Exception {
-        when(batimentService.findById(99L)).thenReturn(Optional.empty());
-
-        mockMvc.perform(get("/api/v1/batiments/{id}/salles/", 99L).with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void getSalles_doitRenvoyer403_quandStagiaire() throws Exception {
-        mockMvc.perform(get("/api/v1/batiments/{id}/salles/", 1L).with(connecte(Role.STAGIAIRE)))
-                .andExpect(status().isForbidden());
-    }
-
     // ---------- getAll ----------
 
     @Test
     void getAll_doitRenvoyer200_quandAdmin() throws Exception {
-        when(batimentService.findAll(any())).thenReturn(new PageImpl<>(List.of(batiment()), PageRequest.of(0, 20), 1));
-        when(batimentAssembler.toDto(any())).thenReturn(dto());
+        when(batimentService.findCartes(any())).thenReturn(new PageImpl<>(List.of(BatimentCarteDto.builder()
+                .id(1L).numBatiment("B201").nbSalles(3).stockages(List.of())
+                .anneau(new AnneauDto(2, 5, 1, 0)).build()), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/v1/batiments/").with(connecte(Role.ADMINISTRATEUR)))
                 .andExpect(status().isOk())
@@ -98,8 +70,8 @@ class BatimentControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void getAll_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(get("/api/v1/batiments/").with(connecte(Role.FORMATEUR)))
+    void getAll_doitRenvoyer403_quandStagiaire() throws Exception {
+        mockMvc.perform(get("/api/v1/batiments/").with(connecte(Role.STAGIAIRE)))
                 .andExpect(status().isForbidden());
     }
 

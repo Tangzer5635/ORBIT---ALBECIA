@@ -7,13 +7,13 @@ import Anneau from "../components/Anneau.tsx";
 import Legende from "../components/Legende.tsx";
 import SalleCard from "../components/SalleCard.tsx";
 import StockageCard from "../components/StockageCard.tsx";
-import type { Salle } from "../types/types.ts";
-import { libelleEtage, pourcentageUtilisable, totalPostes } from "../utils/postes.ts";
+import type { SalleCarte } from "../types/types.ts";
+import { pourcentageUtilisable, totalMateriels } from "../utils/postes.ts";
 
 // résultat du dernier chargement, mémorisé avec le bâtiment concerné
 interface Resultat {
     idBatiment: number;
-    salles: Salle[];
+    salles: SalleCarte[];
     erreur?: string;
 }
 
@@ -21,12 +21,12 @@ type Affichage = "dispo";
 
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
-const parNumero = (a: Salle, b: Salle) => a.numSalle.localeCompare(b.numSalle, "fr", { numeric: true });
+const parNumero = (a: SalleCarte, b: SalleCarte) => a.numSalle.localeCompare(b.numSalle, "fr", { numeric: true });
 
 // les salles les moins disponibles d'abord, celles sans poste à la fin
-function parDisponibilite(a: Salle, b: Salle) {
-    const pa = pourcentageUtilisable(a.comptes) ?? 101;
-    const pb = pourcentageUtilisable(b.comptes) ?? 101;
+function parDisponibilite(a: SalleCarte, b: SalleCarte) {
+    const pa = pourcentageUtilisable(a.anneau) ?? 101;
+    const pb = pourcentageUtilisable(b.anneau) ?? 101;
     return pa - pb || parNumero(a, b);
 }
 
@@ -69,21 +69,20 @@ export default function SallePage() {
     const cours = salles.filter((s) => s.type === "SalleDeCours");
     const stockages = salles.filter((s) => s.type === "SalleStockage").sort(parNumero);
     // salles sous 80 % de postes utilisables (sans compter celles sans poste)
-    const enDifficulte = cours.filter((s) => (pourcentageUtilisable(s.comptes) ?? 100) < 80).length;
+    const enDifficulte = cours.filter((s) => (pourcentageUtilisable(s.anneau) ?? 100) < 80).length;
 
     return (
         <>
             {batiment && (
                 <section className="hero">
-                    <Anneau id={`hero-${batiment.id}`} comptes={batiment.comptes} grand/>
+                    <Anneau id={`hero-${batiment.id}`} comptes={batiment.anneau} grand/>
                     <div>
                         <h1>Bâtiment {batiment.numBatiment}</h1>
                         <p>
-                            {pluriel(totalPostes(batiment.comptes), "poste")} stagiaire
+                            {pluriel(totalMateriels(batiment.anneau), "matériel")}
                             dans {pluriel(batiment.nbSalles, "salle")}
-                            {enDifficulte > 0 && `, dont ${enDifficulte} sous 80 % de postes utilisables`}.
+                            {enDifficulte > 0 && `, dont ${enDifficulte} sous 80 % de matériel utilisable`}.
                         </p>
-                        <Legende comptes={batiment.comptes}/>
                         {(role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && (
                             <div className="hero-row">
                                 <button type="button" className="btn primary">Créer une salle</button>
