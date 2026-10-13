@@ -163,6 +163,18 @@ export interface Poste {
     materielsId: number[];
 }
 
+// MonPosteResponseDto (GET /postes/me/)
+export interface MonPoste {
+    id: number;
+    numPoste: string;
+    idSalle?: number;
+    numSalle?: string;
+    etage?: string;
+    idBatiment?: number;
+    numBatiment?: string;
+    materiels: Materiel[];
+}
+
 // PosteRequestDto
 export interface PosteRequest {
     numPoste: string;

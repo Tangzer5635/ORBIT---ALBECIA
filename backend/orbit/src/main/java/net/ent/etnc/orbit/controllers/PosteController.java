@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.controllers;
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
@@ -54,11 +55,10 @@ public class PosteController {
 
     @GetMapping("/me/")
     @PreAuthorize("hasRole('STAGIAIRE')")
-    public ResponseEntity<PosteResponseDto> getMyPoste(@AuthenticationPrincipal Personnel utilisateur) {
+    public ResponseEntity<MonPosteResponseDto> getMyPoste(@AuthenticationPrincipal Personnel utilisateur) {
         return posteService.findMyPoste(utilisateur.getId())
-                .map(poste -> ResponseEntity.ok(posteAssembler.toDto(poste)))
+                .map(poste -> ResponseEntity.ok(posteAssembler.toDtoMonPoste(poste)))
                 .orElse(ResponseEntity.notFound().build());
-
     }
 
     @PostMapping("/")
