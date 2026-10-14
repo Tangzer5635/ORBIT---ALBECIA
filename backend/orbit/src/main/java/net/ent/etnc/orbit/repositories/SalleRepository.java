@@ -25,6 +25,8 @@ public interface SalleRepository extends BaseRepository<Salle> {
 
     Optional<Salle> findByPostes_Id(Long idPoste);
 
+    List<Salle> findByPersonnels_Id(Long idPersonnel);
+
     /** Charge les matériels des salles dans le contexte de persistance : une requête pour toutes les salles. */
     @Query("select distinct s from Salle s left join fetch s.materiels where s.id in :ids")
     List<Salle> chargerMateriels(@Param("ids") Collection<Long> ids);
