@@ -3,11 +3,9 @@ package net.ent.etnc.orbit.models.entities;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
-import org.hibernate.validator.constraints.Length;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,16 +13,17 @@ import java.util.List;
 
 @Entity
 @Table(name = "poste",
-        uniqueConstraints = @UniqueConstraint(name = "uk_poste_num_poste", columnNames = {"num_poste"}))
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_poste_num_poste", columnNames = {"num_poste"}),
+                // un stagiaire n'occupe qu'un poste à la fois (occupant_id vide = poste libre)
+                @UniqueConstraint(name = "uk_poste_occupant", columnNames = {"occupant_id"})
+        })
 @EqualsAndHashCode(callSuper = false, of = {"numPoste"})
 @ToString(callSuper = true, of = {"numPoste"})
 public class Poste extends AbstractPersistableWithIdSetter<Long> {
     @Getter
-    @Setter
-    @NotNull(message = "numPoste ne doit pas être null")
-    @NotEmpty(message = "numPoste ne doit pas être vide")
-    @NotBlank(message = "numPoste doit contenir des caractères lisibles")
-    @Length(min = 1, max = 50, message = "numPoste doit avoir entre 1 et 50 caractères")
+    @NotBlank
+    @Size(max = 50, message = "numPoste de max 50 caractères")
     @Column(name = "num_poste", length = 50, nullable = false)
     private String numPoste;
 
@@ -39,6 +38,10 @@ public class Poste extends AbstractPersistableWithIdSetter<Long> {
     @JoinColumn(name = "poste_id",
             foreignKey = @ForeignKey(name = "fk_materiel_poste"))
     private List<Materiel> materiels = new ArrayList<>();
+
+    public void setNumPoste(String numPoste) {
+        this.numPoste = numPoste == null ? null : numPoste.trim();
+    }
 
     public List<Materiel> getMateriels() {
         return Collections.unmodifiableList(materiels);

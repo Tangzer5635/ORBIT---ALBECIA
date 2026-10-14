@@ -3,12 +3,11 @@ package net.ent.etnc.orbit.models.entities;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
-import org.hibernate.validator.constraints.Length;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,24 +19,20 @@ import java.util.List;
                 name = "uk_salle_batiment_id_num_salle",
                 columnNames = {"batiment_id", "num_salle"}
         ))
+
 @ToString(callSuper = true, of = {"numSalle", "etage", "type"})
 public class Salle extends AbstractPersistableWithIdSetter<Long> {
 
     @Getter
-    @Setter
-    @NotNull(message = "numSalle ne doit pas être null")
-    @NotEmpty(message = "numSalle ne doit pas être vide")
-    @NotBlank(message = "numSalle doit contenir des caractères lisibles")
-    @Length(min = 1, max = 10, message = "numSalle doit avoir entre 1 et 10 caractères")
+    @NotBlank
+    @Size(max = 10, message = "numSalle de max 10 caractères")
     @Column(name = "num_salle", length = 10, nullable = false)
     private String numSalle;
 
     @Getter
     @Setter
-    @NotNull(message = "etage ne doit pas être null")
-    @NotEmpty(message = "etage ne doit pas être vide")
-    @NotBlank(message = "etage doit contenir des caractères lisibles")
-    @Length(min = 1, max = 5, message = "etage doit avoir entre 1 et 5 caractères")
+    @NotBlank
+    @Size(max = 5, message = "etage de max 5 caractères")
     @Column(name = "etage", length = 5, nullable = false)
     private String etage;
 
@@ -79,6 +74,11 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
             foreignKey = @ForeignKey(name = "fk_poste_salle"))
     private List<Poste> postes = new ArrayList<>();
 
+    /** Le numéro est toujours enregistré sans espaces autour (" 101" et "101" sont la même salle). */
+    public void setNumSalle(String numSalle) {
+        this.numSalle = numSalle == null ? null : numSalle.trim();
+    }
+
     public List<Personnel> getPersonnels() {
         return Collections.unmodifiableList(personnels);
     }
@@ -115,20 +115,4 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
         materiels.remove(materiel);
     }
 
-    /**
-     * Le numéro de salle n'est unique qu'au sein d'un bâtiment (la salle 101 de B201 et
-     * celle de B305 sont deux salles distinctes) : l'égalité repose donc sur l'identifiant.
-     * Deux salles pas encore persistées ne sont égales que si c'est la même instance.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Salle other)) return false;
-        return getId() != null && getId().equals(other.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return Salle.class.hashCode();
-    }
 }

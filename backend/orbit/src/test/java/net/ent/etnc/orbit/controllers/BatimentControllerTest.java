@@ -110,15 +110,15 @@ class BatimentControllerTest extends ControllerTestSupport {
     // ---------- post ----------
 
     @Test
-    void post_doitRenvoyer200_quandValide() throws Exception {
+    void post_doitRenvoyer201_quandValide() throws Exception {
         when(batimentAssembler.toEntity(any(BatimentRequestDto.class))).thenReturn(batiment());
         when(batimentService.create(any(Batiment.class))).thenReturn(batiment());
         when(batimentAssembler.toDto(any())).thenReturn(dto());
 
-        mockMvc.perform(post("/api/v1/batiments").with(connecte(Role.ADMINISTRATEUR))
+        mockMvc.perform(post("/api/v1/batiments/").with(connecte(Role.ADMINISTRATEUR))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numBatiment\":\"B201\"}"))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.numBatiment").value("B201"));
     }
 
@@ -127,7 +127,7 @@ class BatimentControllerTest extends ControllerTestSupport {
         when(batimentAssembler.toEntity(any(BatimentRequestDto.class))).thenReturn(batiment());
         when(batimentService.create(any(Batiment.class))).thenThrow(new ServiceException("Erreur lors de la sauvegarde"));
 
-        mockMvc.perform(post("/api/v1/batiments").with(connecte(Role.ADMINISTRATEUR))
+        mockMvc.perform(post("/api/v1/batiments/").with(connecte(Role.ADMINISTRATEUR))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numBatiment\":\"B201\"}"))
                 .andExpect(status().isBadRequest())
@@ -136,7 +136,7 @@ class BatimentControllerTest extends ControllerTestSupport {
 
     @Test
     void post_doitRenvoyer403_quandGestionnaire() throws Exception {
-        mockMvc.perform(post("/api/v1/batiments").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/batiments/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numBatiment\":\"B201\"}"))
                 .andExpect(status().isForbidden());
@@ -150,7 +150,17 @@ class BatimentControllerTest extends ControllerTestSupport {
 
         mockMvc.perform(delete("/api/v1/batiments/{id}/", 1L).with(connecte(Role.ADMINISTRATEUR)))
                 .andExpect(status().isNoContent());
-        verify(batimentService).deleteById(1L);
+        verify(batimentService).supprimer(1L, null);
+    }
+
+    @Test
+    void delete_doitTransmettreLaSalleDeStockageCible() throws Exception {
+        when(batimentService.existsById(1L)).thenReturn(true);
+
+        mockMvc.perform(delete("/api/v1/batiments/{id}/", 1L).param("stockageCible", "7")
+                        .with(connecte(Role.ADMINISTRATEUR)))
+                .andExpect(status().isNoContent());
+        verify(batimentService).supprimer(1L, 7L);
     }
 
     @Test
@@ -159,7 +169,7 @@ class BatimentControllerTest extends ControllerTestSupport {
 
         mockMvc.perform(delete("/api/v1/batiments/{id}/", 1L).with(connecte(Role.ADMINISTRATEUR)))
                 .andExpect(status().isNotFound());
-        verify(batimentService, never()).deleteById(any());
+        verify(batimentService, never()).supprimer(any(), any());
     }
 
     @Test

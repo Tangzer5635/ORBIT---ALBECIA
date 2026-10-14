@@ -115,12 +115,11 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
      */
     private boolean peutSignaler(Personnel user, Long idMateriel) {
         Optional<Poste> poste = posteService.posteDuMateriel(idMateriel);
-        if (poste.isEmpty()) {
-            return false;
-        }
-        if (memePersonne(poste.get().getOccupant(), user)) {
+        // l'occupant peut signaler le matériel de son poste
+        if (poste.isPresent() && memePersonne(poste.get().getOccupant(), user)) {
             return true;
         }
+        // un formateur peut signaler le matériel de ses salles : sur un poste ou posé dans la salle
         return user.getRole().hasRole(Role.FORMATEUR) && dansSesSalles(user, idMateriel, poste);
     }
 

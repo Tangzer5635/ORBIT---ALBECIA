@@ -195,13 +195,13 @@ class DefaillanceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void signaler_doitRenvoyer404_quandMaterielIntrouvable() throws Exception {
+    void signaler_doitRenvoyer400_quandMaterielIntrouvable() throws Exception {
         when(defaillanceService.signaler(eq(1L), anyString(), any(Personnel.class)))
                 .thenThrow(new ServiceException("RG-D01", "Matériel 1 introuvable"));
 
         mockMvc.perform(post("/api/v1/defaillances/").with(connecte(Role.STAGIAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_SIGNALER))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -272,13 +272,13 @@ class DefaillanceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void resoudre_doitRenvoyer404_quandIntrouvable() throws Exception {
+    void resoudre_doitRenvoyer400_quandIntrouvable() throws Exception {
         when(defaillanceService.resoudre(eq(1L), anyString(), any(Personnel.class)))
                 .thenThrow(new ServiceException("RG-D04", "Défaillance 1 introuvable"));
 
         mockMvc.perform(patch("/api/v1/defaillances/{id}/resoudre/", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_RESOUDRE))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

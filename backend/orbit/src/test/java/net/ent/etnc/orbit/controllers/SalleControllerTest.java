@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
+import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -70,7 +72,7 @@ class SalleControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitRenvoyer200_quandGestionnaire() throws Exception {
-        when(salleService.findAll(any())).thenReturn(new PageImpl<>(List.of(salle()), PageRequest.of(0, 20), 1));
+        when(salleService.findAllAvecDetails(any())).thenReturn(new PageImpl<>(List.of(salle()), PageRequest.of(0, 20), 1));
         reponse();
 
         mockMvc.perform(get("/api/v1/salles/").with(connecte(Role.GESTIONNAIRE)))
@@ -94,7 +96,7 @@ class SalleControllerTest extends ControllerTestSupport {
 
     @Test
     void getById_doitRenvoyer200_quandTrouve() throws Exception {
-        when(salleService.findById(1L)).thenReturn(Optional.of(salle()));
+        when(salleService.findByIdAvecDetails(1L)).thenReturn(Optional.of(salle()));
         reponse();
 
         mockMvc.perform(get("/api/v1/salles/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
@@ -104,7 +106,7 @@ class SalleControllerTest extends ControllerTestSupport {
 
     @Test
     void getById_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(salleService.findById(1L)).thenReturn(Optional.empty());
+        when(salleService.findByIdAvecDetails(1L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/salles/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());
@@ -113,21 +115,21 @@ class SalleControllerTest extends ControllerTestSupport {
     // ---------- post ----------
 
     @Test
-    void post_doitRenvoyer200_quandValide() throws Exception {
+    void post_doitRenvoyer201_quandValide() throws Exception {
         when(salleAssembler.toEntity(any(SalleRequestDto.class))).thenReturn(salle());
-        when(batimentService.create(eq(1L), any(Salle.class))).thenReturn(salle());
+        when(salleService.create(eq(1L), any(Salle.class))).thenReturn(salle());
         reponse();
 
         mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.numSalle").value("101"));
     }
 
     @Test
     void post_doitRenvoyer400_quandNumeroDejaPrisDansLeBatiment() throws Exception {
         when(salleAssembler.toEntity(any(SalleRequestDto.class))).thenReturn(salle());
-        when(batimentService.create(eq(1L), any(Salle.class)))
+        when(salleService.create(eq(1L), any(Salle.class)))
                 .thenThrow(new ServiceException("Une salle 101 existe déjà dans ce bâtiment"));
 
         mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
@@ -137,13 +139,13 @@ class SalleControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void post_doitRenvoyer404_quandBatimentIntrouvable() throws Exception {
+    void post_doitRenvoyer400_quandBatimentIntrouvable() throws Exception {
         when(salleAssembler.toEntity(any(SalleRequestDto.class))).thenReturn(salle());
-        when(batimentService.create(eq(1L), any(Salle.class))).thenThrow(new ServiceException("Bâtiment 1 introuvable"));
+        when(salleService.create(eq(1L), any(Salle.class))).thenThrow(new ServiceException("Bâtiment 1 introuvable"));
 
         mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -152,7 +154,31 @@ class SalleControllerTest extends ControllerTestSupport {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"numSalle\":\"101\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.idBatiment").exists());
-        verify(batimentService, never()).create(any(), any());
+        verify(salleService, never()).create(any(), any());
+    }
+
+    // ---------- postEquipee ----------
+
+    private static final String JSON_EQUIPEE_VALIDE =
+            "{\"idBatiment\":1,\"numSalle\":\"101\",\"etage\":\"1\",\"nbPostes\":%d,\"ecransParPoste\":2,\"nbVideoProjecteurs\":1,\"nbTableaux\":1}";
+
+    @Test
+    void postEquipee_doitRenvoyer201_quandValide() throws Exception {
+        when(salleService.creerSalleEquipee(any())).thenReturn(new SalleEquipeeResponseDto(1L, Map.of()));
+
+        mockMvc.perform(post("/api/v1/salles/equipee/").with(connecte(Role.GESTIONNAIRE))
+                        .contentType(MediaType.APPLICATION_JSON).content(JSON_EQUIPEE_VALIDE.formatted(10)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.idSalle").value(1));
+    }
+
+    @Test
+    void postEquipee_doitRenvoyer400_quandTropDePostes() throws Exception {
+        mockMvc.perform(post("/api/v1/salles/equipee/").with(connecte(Role.GESTIONNAIRE))
+                        .contentType(MediaType.APPLICATION_JSON).content(JSON_EQUIPEE_VALIDE.formatted(51)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.nbPostes").exists());
+        verify(salleService, never()).creerSalleEquipee(any());
     }
 
     @Test

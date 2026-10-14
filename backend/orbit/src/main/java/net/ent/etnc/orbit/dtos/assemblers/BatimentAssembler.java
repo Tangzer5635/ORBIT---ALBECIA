@@ -20,7 +20,6 @@ public class BatimentAssembler {
                 .id(batiment.getId())
                 .numBatiment(batiment.getNumBatiment())
                 .sallesId(batiment.getSalles().stream().map(Salle::getId).toList())
-                .nbSalles(batiment.getSalles().size() - stockages.size())
                 .stockages(stockages.stream()
                         .map(s -> BatimentResponseDto.StockageDto.builder()
                                 .id(s.getId())

@@ -65,44 +65,6 @@ class BatimentServiceImplTest {
         assertThat(stockage.getNumSalle()).isEqualTo("199");
     }
 
-    // ---------- create(idBatiment, salle) ----------
-
-    @Test
-    void create_doitCreerLaSalleEtLAjouterAuBatiment() {
-        Batiment b = batiment();
-        b.addSalle(salle(1L, "101"));
-        Salle nouvelle = salle(null, "102");
-        Salle creee = salle(2L, "102");
-        when(repository.findById(1L)).thenReturn(Optional.of(b));
-        when(salleService.create(nouvelle)).thenReturn(creee);
-
-        Salle resultat = service.create(1L, nouvelle);
-
-        assertThat(resultat).isSameAs(creee);
-        assertThat(b.getSalles()).contains(creee).hasSize(2);
-    }
-
-    @Test
-    void create_doitLeverServiceException_quandNumeroDejaPrisDansLeBatiment() {
-        Batiment b = batiment();
-        b.addSalle(salle(1L, "101"));
-        when(repository.findById(1L)).thenReturn(Optional.of(b));
-
-        assertThatThrownBy(() -> service.create(1L, salle(null, "101")))
-                .isInstanceOf(ServiceException.class)
-                .hasMessage("Une salle 101 existe déjà dans ce bâtiment");
-        verify(salleService, never()).create(any());
-    }
-
-    @Test
-    void create_doitLeverNotFound_quandBatimentIntrouvable() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.create(1L, salle(null, "101")))
-                .isInstanceOf(ServiceException.class)
-                .hasMessage("Bâtiment 1 introuvable");
-    }
-
     // ---------- affecterSalle ----------
 
     @Test
@@ -184,6 +146,20 @@ class BatimentServiceImplTest {
         assertThatThrownBy(() -> service.retirerSalle(1L, 6L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Cette salle n'appartient pas à ce bâtiment");
+        assertThat(b.getSalles()).hasSize(1);
+    }
+
+    @Test
+    void retirerSalle_doitRefuser_quandSalleDeStockage() {
+        Batiment b = batiment();
+        Salle stockage = salle(6L, "199");
+        stockage.setType(TypeSalle.SalleStockage);
+        b.addSalle(stockage);
+        when(repository.findById(1L)).thenReturn(Optional.of(b));
+
+        assertThatThrownBy(() -> service.retirerSalle(1L, 6L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
         assertThat(b.getSalles()).hasSize(1);
     }
 
