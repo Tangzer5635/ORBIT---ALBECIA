@@ -14,7 +14,7 @@ export class UtilisateurError extends Error {
 
 // Méthode pour récupérer la liste des utilisateurs
 export async function getUtilisateurs(filter: string, page = 0, size = 30): Promise<Page<Utilisateur>> {
-    // URLSearchParams encode les caractères spéciaux du filtre RSQL (; = " espaces)
+    // URLSearchParams encode les caractères spéciaux du filtre RSQL ( & ; = espace ...)
     const params = new URLSearchParams({ page: String(page), size: String(size) });
     if (filter) params.set("filter", filter);
 
@@ -35,11 +35,10 @@ export async function compterUtilisateurs(filter = ""): Promise<number> {
     return (await getUtilisateurs(filter, 0, 1)).totalElements;
 }
 
-// Méthode pour ajouter un utilisateur
 export async function ajouterUtilisateur(utilisateur: UtilisateurRequest): Promise<Utilisateur> {
     let response: Response;
     try {
-        response = await fetch(URL, {
+        response = await fetch(`${URL}/`, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(utilisateur),
@@ -52,7 +51,8 @@ export async function ajouterUtilisateur(utilisateur: UtilisateurRequest): Promi
 
     return await response.json();
 }
-// Méthode pour modifier un utilisateur (sans motDePasse, le mot de passe ne change pas)
+// (le mot de passe ne change pas)
+// TODO possibilité de modifier le mdp pour l'admin ?
 export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRequest): Promise<Utilisateur> {
     let response: Response;
     try {
@@ -70,7 +70,7 @@ export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRe
     return await response.json();
 }
 
-// Méthode pour verrouiller ou déverrouiller un compte
+
 export async function changerVerrou(id: number, verrouiller: boolean): Promise<Utilisateur> {
     let response: Response;
     try {
@@ -87,7 +87,7 @@ export async function changerVerrou(id: number, verrouiller: boolean): Promise<U
     return await response.json();
 }
 
-// Méthode pour supprimer un utilisateur
+
 export async function supprimerUtilisateur(id: number): Promise<void> {
     let response: Response;
     try {

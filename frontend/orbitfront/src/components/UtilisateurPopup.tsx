@@ -27,44 +27,75 @@ export default function UtilisateurPopup({utilisateur, estMoi, onClose, onEnregi
 
     const creation = utilisateur === undefined;
 
-    // Mêmes règles que l'entité Personnel côté back
-    function verifier(): string {
+    // regle commune à la création et modification d'un utilisateur
+    function verifierChamps(): string {
         if (prenom.trim() === "" || prenom.trim().length > 30) return "Le prénom est obligatoire (30 caractères maximum).";
         if (nom.trim() === "" || nom.trim().length > 50) return "Le nom est obligatoire (50 caractères maximum).";
         if (login.trim().length < 3 || login.trim().length > 50) return "L'identifiant doit faire entre 3 et 50 caractères.";
-        if (creation && !/^[0-9]{10}$/.test(nid.trim())) return "Le NID doit contenir exactement 10 chiffres.";
-        if (creation && motDePasse === "") return "Le mot de passe provisoire est obligatoire.";
         return "";
     }
 
-    async function enregistrer() {
-        const message = verifier();
+    function messageErreur(err: unknown, message404: string): string {
+        if (err instanceof UtilisateurError) {
+            if (err.status === 403) return "Vous n'avez pas le droit de gérer les utilisateurs.";
+            if (err.status === 400) return err.detail || "Informations invalides.";
+            if (err.status === 404) return message404;
+        }
+        return "Le service est indisponible. Réessayez plus tard.";
+    }
+
+    // NID et mot de passe provisoire obligatoires
+    async function ajouter() {
+        const message = verifierChamps()
+            || (!/^[0-9]{10}$/.test(nid.trim()) ? "Le NID doit contenir exactement 10 chiffres." : "")
+            || (motDePasse === "" ? "Le mot de passe provisoire est obligatoire." : "");
         if (message) {
             setErreur(message);
             return;
         }
 
         const dto: UtilisateurRequest = {
-            ...(creation ? {nid: nid.trim()} : {}), // en modification, le back garde le NID existant
+            nid: nid.trim(),
             nom: nom.trim(),
             prenom: prenom.trim(),
             login: login.trim(),
             role,
             active: actif,
-            ...(motDePasse ? {motDePasse} : {}), // vide = mot de passe inchangé
+            motDePasse,
         };
 
         setEnvoi(true);
         try {
-            const enregistre = utilisateur
-                ? await modifierUtilisateur(utilisateur.id, dto)
-                : await ajouterUtilisateur(dto);
-            onEnregistre(enregistre);
+            onEnregistre(await ajouterUtilisateur(dto));
         } catch (err) {
-            if (err instanceof UtilisateurError && err.status === 403) setErreur("Vous n'avez pas le droit de gérer les utilisateurs.");
-            else if (err instanceof UtilisateurError && err.status === 400) setErreur(err.detail || "Informations invalides.");
-            else if (err instanceof UtilisateurError && err.status === 404) setErreur("Cet utilisateur n'existe plus.");
-            else setErreur("Le service est indisponible. Réessayez plus tard.");
+            setErreur(messageErreur(err, "La création a échoué : service introuvable."));
+        } finally {
+            setEnvoi(false);
+        }
+    }
+
+    // Modification : le back garde le NID existant, mot de passe vide = inchangé
+    async function modifier(aModifier: Utilisateur) {
+        const message = verifierChamps();
+        if (message) {
+            setErreur(message);
+            return;
+        }
+
+        const dto: UtilisateurRequest = {
+            nom: nom.trim(),
+            prenom: prenom.trim(),
+            login: login.trim(),
+            role,
+            active: actif,
+            ...(motDePasse ? {motDePasse} : {}),
+        };
+
+        setEnvoi(true);
+        try {
+            onEnregistre(await modifierUtilisateur(aModifier.id, dto));
+        } catch (err) {
+            setErreur(messageErreur(err, "Cet utilisateur n'existe plus."));
         } finally {
             setEnvoi(false);
         }
@@ -87,7 +118,7 @@ export default function UtilisateurPopup({utilisateur, estMoi, onClose, onEnregi
                 ? <>Identifiant actuel : <b>{utilisateur.login}</b> (ID {utilisateur.id})</>
                 : "Donnez un mot de passe provisoire, à changer à la première connexion."}
             confirmLabel={creation ? "Créer l’utilisateur" : "Enregistrer"}
-            onConfirm={enregistrer}
+            onConfirm={utilisateur ? () => modifier(utilisateur) : ajouter}
             loading={envoi}
         >
             <div className="user-grille">

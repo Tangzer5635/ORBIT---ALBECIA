@@ -43,7 +43,7 @@ export async function creerSalleEquipee(dto: SalleEquipeeRequest): Promise<Salle
     return response.json();
 }
 
-// Méthode pour récupérer la liste de toutes les salles
+// liste de toutes les salles
 export async function getSalle(): Promise<Salle[]> {
     let response: Response;
     try {
@@ -110,7 +110,7 @@ export async function getPostesBySalle(idSalle: string): Promise<Poste[]> {
     return await response.json();
 }
 
-// Méthode pour ajouter une salle (idBatiment est dans la requête)
+//(idBatiment est dans la requête)
 export async function ajouterSalle(salle: SalleRequest): Promise<Salle> {
     let response: Response;
     try {
@@ -128,7 +128,7 @@ export async function ajouterSalle(salle: SalleRequest): Promise<Salle> {
     return await response.json();
 }
 
-// Méthode pour supprimer une salle
+
 export async function supprimerSalle(id: number): Promise<void> {
     let response: Response;
     try {
