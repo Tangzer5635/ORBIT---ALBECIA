@@ -8,6 +8,7 @@ import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
@@ -22,6 +23,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * CRUD des postes. Un poste est créé dans une salle de cours ; à sa suppression,
@@ -84,5 +86,14 @@ public class PosteController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         salleService.supprimerPoste(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/", params = "salle")
+    @PreAuthorize("hasRole('TECHNIQUE')")
+    public ResponseEntity<List<PosteResponseDto>> getBySalle(@RequestParam("salle") Long idSalle) {
+        List<Poste> postes = posteService.findBySalleAvecDetails(idSalle);
+        Map<Long, EtatPoste> etats = posteService.etats(postes);
+        return ResponseEntity.ok(postes.stream()
+                .map(p -> posteAssembler.toDto(p, etats.get(p.getId()))).toList());
     }
 }
