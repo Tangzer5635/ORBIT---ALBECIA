@@ -1,32 +1,51 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.dtos.requestDTO.MaterielRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.commons.PageResponse;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
 import net.ent.etnc.orbit.dtos.assemblers.MaterielAssembler;
+import net.ent.etnc.orbit.models.enums.EtatMateriel;
+import net.ent.etnc.orbit.models.enums.LocalisationMateriel;
+import net.ent.etnc.orbit.repositories.specifications.MaterielSpecifications;
 import net.ent.etnc.orbit.services.MaterielService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/materiels")
 public class MaterielController {
 
+    private static final Map<String, String> FILTERABLE = Map.of(
+            "type", "type",
+            "modele", "modele",
+            "numSerie", "numSerie",
+            "dateAcquisition", "dateAcquisition",
+            "dateFinGarantie", "dateFinGarantie",
+            "archive", "archive");
+
+
     private final MaterielService materielService;
     private final MaterielAssembler materielAssembler;
+    private final RsqlFilterUtils rsqlFilterUtils;
 
     @Autowired
-    public MaterielController(MaterielService materielService, MaterielAssembler materielAssembler) {
+    public MaterielController(MaterielService materielService, MaterielAssembler materielAssembler, RsqlFilterUtils rsqlFilterUtils) {
         this.materielService = materielService;
         this.materielAssembler = materielAssembler;
+        this.rsqlFilterUtils = rsqlFilterUtils;
     }
 
     private MaterielResponseDto dto(Materiel m) {
@@ -35,10 +54,21 @@ public class MaterielController {
 
     @GetMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<Page<MaterielResponseDto>> getAll(
-            @PageableDefault(size = 20) Pageable pageable
-    ) {
-        return ResponseEntity.ok(materielService.findAll(pageable).map(this::dto));
+    public ResponseEntity<PageResponse<MaterielResponseDto>> getAll(
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) EtatMateriel etat,
+            @RequestParam(required = false) LocalisationMateriel localisation,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+
+        List<Specification<Materiel>> specs = new ArrayList<>();
+        Specification<Materiel> rsql = rsqlFilterUtils.build(filter, FILTERABLE);
+        if (rsql != null) specs.add(rsql);
+        if (etat != null) specs.add(MaterielSpecifications.etat(etat));
+        if (localisation != null) specs.add(MaterielSpecifications.localisation(localisation));
+
+        // allOf d'une liste vide = aucun filtre
+        Page<Materiel> page = materielService.findAll(Specification.allOf(specs), pageable);
+        return ResponseEntity.ok(PageResponse.of(page, this::dto));
     }
 
     @GetMapping("/{id}/")

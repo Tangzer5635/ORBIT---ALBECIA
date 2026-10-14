@@ -1,5 +1,6 @@
-import type {Materiel, MaterielRequest, Page} from "../types/types.ts";
+import type {EtatMateriel, Materiel, MaterielRequest, Page} from "../types/types.ts";
 import { authHeaders } from "./api.ts";
+import type {Localisation} from "../utils/materiels.ts";
 
 const URL = `/api/v1/materiels`;
 
@@ -11,19 +12,37 @@ export class MaterielError extends Error {
     }
 }
 
-// Méthode pour récupérer la liste des materiels
-export async function getMateriel(): Promise<Materiel[]> {
+// Filtres acceptés par GET /materiels/ (tous facultatifs)
+export interface FiltresMateriel {
+    filter?: string;               // filtre RSQL, ex. type==Ecran;modele=ilike="dell"
+    etat?: EtatMateriel | null;    // état calculé par le back
+    localisation?: Localisation;
+}
+
+
+// Méthode pour récupérer une page de matériels filtrés
+export async function getMateriels(filtres: FiltresMateriel, page = 0, size = 20): Promise<Page<Materiel>> {
+    // URLSearchParams encode les caractères spéciaux du filtre RSQL (; = " espaces)
+    const params = new URLSearchParams({ page: String(page), size: String(size), sort: "id" });
+    if (filtres.filter) params.set("filter", filtres.filter);
+    if (filtres.etat) params.set("etat", filtres.etat);
+    if (filtres.localisation) params.set("localisation", filtres.localisation);
+
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });
+        response = await fetch(`${URL}/?${params}`, { headers: authHeaders() });
     } catch {
         throw new MaterielError(0); // serveur injoignable
     }
 
     if (!response.ok) throw new MaterielError(response.status);
 
-    const data: Page<Materiel> = await response.json();
-    return data.content; //les materiels sont dans "content" car on a des pages
+    return await response.json();
+}
+
+// Méthode pour compter les matériels d'un filtre, on lit totalElements
+export async function compterMateriels(filtres: FiltresMateriel): Promise<number> {
+    return (await getMateriels(filtres, 0, 1)).totalElements;
 }
 
 // Méthode pour récupérer un matériel par son id

@@ -42,10 +42,10 @@ export type StatutDefaillance = keyof typeof LIBELLE_STATUT_DEFAILLANCE;
 
 export interface Page<T> {
     content: T[];
-    totalElements: number;
+    page: number;          // numéro de la page courante (commence à 0)
+    size: number;          // nombre d'éléments par page
+    totalElements: number; // nombre total d'éléments (toutes pages confondues)
     totalPages: number;
-    number: number;   // numéro de la page (commence à 0)
-    size: number;
     first: boolean;
     last: boolean;
 }

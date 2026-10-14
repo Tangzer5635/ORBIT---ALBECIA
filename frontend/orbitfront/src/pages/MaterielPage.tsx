@@ -1,57 +1,96 @@
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useState} from "react";
 import {
     LIBELLE_ETAT_MATERIEL,
     LIBELLE_TYPE_MATERIEL,
     type EtatMateriel,
     type Materiel,
-    type TypeMateriel,
+    type TypeMateriel, type Page,
 } from "../types/types.ts";
-import {getMateriel} from "../services/materielService.ts";
+import {compterMateriels, getMateriels} from "../services/materielService.ts";
 import {
-    filtrerMateriels,
     LIBELLE_LOCALISATION,
     ORDRE_ETATS,
     ORDRE_TYPES,
-    type Localisation, compterStock,
+    type Localisation, versRsql, NOM_TYPE,
 } from "../utils/materiels.ts";
 import {pluriel} from "../utils/postes.ts";
 
+
+const TAILLE_PAGE = 20;
+
+interface Compteurs {
+    total: number;      // tout le matériel en service
+    archives: number;
+    stock: number[];    // en stock, dans l'ordre de ORDRE_TYPES pour l'affichage du stock
+}
+
 const LOCALISATIONS: Localisation[] = ["PARTOUT", "SALLE", "STOCK", "ARCHIVE"];
 
-export default function MaterielPage() {
-    const [materiels, setMateriels] = useState<Materiel[]>();
-    const [erreur, setErreur] = useState("");
+// Les compteurs sont indépendants des filtres
+async function chargerCompteurs(): Promise<Compteurs> {
+    const [total, archives, ...stock] = await Promise.all([
+        compterMateriels({localisation: "PARTOUT"}),
+        compterMateriels({localisation: "ARCHIVE"}),
+        ...ORDRE_TYPES.map((t) => compterMateriels({localisation: "STOCK", filter: `type==${t}`})),
+    ]);
+    return {total, archives, stock};
+}
 
-    // un état par filtre
-    const [recherche, setRecherche] = useState("");
+
+export default function MaterielPage() {
+    // filtres
+    const [saisie, setSaisie] = useState("");         // ce qui est tapé dans le champ
+    const [recherche, setRecherche] = useState("");   // ce qui est envoyé au back
     const [type, setType] = useState<TypeMateriel | null>(null);
     const [etat, setEtat] = useState<EtatMateriel | null>(null);
     const [localisation, setLocalisation] = useState<Localisation>("PARTOUT");
+    const [page, setPage] = useState(0);
 
-    const uc = compterStock(materiels ?? [], "UC")
-    const ecran = compterStock(materiels ?? [], "Ecran")
-    const vp = compterStock(materiels ?? [], "VideoProjecteur")
-    const ti = compterStock(materiels ?? [], "TableauInteractif")
+    // données
+    const [resultat, setResultat] = useState<Page<Materiel>>();
+    const [compteurs, setCompteurs] = useState<Compteurs>();
+    const [erreur, setErreur] = useState("");
 
+    // la recherche part 300 ms après la dernière frappe pour pas faire de requête à chaque saisie
     useEffect(() => {
-        getMateriel()
-            .then(setMateriels)
-            .catch(() => setErreur("Impossible de charger le matériel."));
+        const minuteur = setTimeout(() => {
+            setRecherche(saisie);
+            setPage(0);
+        }, 300);
+        return () => clearTimeout(minuteur);
+    }, [saisie]);
+
+    // recharge la page à chaque changement de filtre ou de page
+    useEffect(() => {
+        let actif = true; // pour ignorer une réponse qui arrive après un chagement de filtre
+        getMateriels({filter: versRsql(recherche, type), etat, localisation}, page, TAILLE_PAGE)
+            .then((p) => {
+                if (actif) {
+                    setResultat(p);
+                    setErreur("");
+                }
+            })
+            .catch(() => {
+                if (actif) setErreur("Impossible de charger le matériel.");
+            });
+        return () => { actif = false; };
+    }, [recherche, type, etat, localisation, page]);
+
+    // Les compteurs n'ont pas besoin de changer au changement de filtre, c'est le matériel en stock
+    //TODO le changer quand on pourra affecter ou supprimer
+    useEffect(() => {
+        chargerCompteurs().then(setCompteurs).catch(() => {});
     }, []);
 
-    const resultats = useMemo(
-        () => filtrerMateriels(materiels ?? [], {recherche, type, etat, localisation}, (t) => LIBELLE_TYPE_MATERIEL[t]),
-        [materiels, recherche, type, etat, localisation]
-    );
-    const nbArchives = useMemo(
-        () => (materiels ?? []).filter((m) => m.etat === "ARCHIVE").length,
-        [materiels]
-    );
+    // changer un filtre ramène toujours à la première pagination
+    function changerType(t: TypeMateriel | null) { setType(t); setPage(0); }
+    function changerEtat(e: EtatMateriel | null) { setEtat(e); setPage(0); }
+    function changerLocalisation(l: Localisation) { setLocalisation(l); setPage(0); }
 
     return (
         <>
             <h1>Matériel</h1>
-            <p>{resultats.length} sur {materiels?.length}</p>
+            {resultat && compteurs && <p>{resultat.totalElements} sur {compteurs.total}</p>}
 
             <button type="button" className="btn primary">
                 Ajouter un matériel
@@ -60,26 +99,31 @@ export default function MaterielPage() {
                 Exporter l'inventaire
             </button>
 
-            <div>
-                <p>En stock {pluriel(uc,"unité centrale")} {pluriel(ecran, "écran")} {pluriel(vp, "vidéoprojecteur")} {pluriel(ti, "tableau interactif")}</p>
-            </div>
+            {compteurs && (
+                <div>
+                    <span>En stock</span>
+                    <ul>
+                        {ORDRE_TYPES.map((t, i) => (
+                            <li key={t}>{pluriel(compteurs.stock[i], NOM_TYPE[t][0], NOM_TYPE[t][1])}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             <div role="search">
                 <input
                     type="search"
-                    className="filtres-recherche"
-                    placeholder="Rechercher un matériel : numéro, type, modèle, n° de série, salle"
-                    aria-label="Rechercher un matériel"
-                    value={recherche}
-                    onChange={(e) => setRecherche(e.target.value)}
+                    placeholder="Rechercher un matériel : modèle, n° de série"
+                    value={saisie}
+                    onChange={(e) => setSaisie(e.target.value)}
                 />
 
                 <div>
-                    <button type="button" aria-pressed={type === null} onClick={() => setType(null)}>
+                    <button type="button" aria-pressed={type === null} onClick={() => changerType(null)}>
                         Tous les types
                     </button>
                     {ORDRE_TYPES.map((t) => (
-                        <button key={t} type="button" aria-pressed={type === t} onClick={() => setType(t)}>
+                        <button key={t} type="button" aria-pressed={type === t} onClick={() => changerType(t)}>
                             {LIBELLE_TYPE_MATERIEL[t]}
                         </button>
                     ))}
@@ -87,11 +131,11 @@ export default function MaterielPage() {
 
                 <div>
                     <div>
-                        <button type="button" aria-pressed={etat === null} onClick={() => setEtat(null)}>
+                        <button type="button" aria-pressed={etat === null} onClick={() => changerEtat(null)}>
                             Tous les états
                         </button>
                         {ORDRE_ETATS.map((e) => (
-                            <button key={e} type="button" aria-pressed={etat === e} onClick={() => setEtat(e)}>
+                            <button key={e} type="button" aria-pressed={etat === e} onClick={() => changerEtat(e)}>
                                 {LIBELLE_ETAT_MATERIEL[e]}
                             </button>
                         ))}
@@ -100,9 +144,9 @@ export default function MaterielPage() {
                     <div>
                         {LOCALISATIONS.map((l) => (
                             <button key={l} type="button" aria-pressed={localisation === l}
-                                    onClick={() => setLocalisation(l)}>
+                                    onClick={() => changerLocalisation(l)}>
                                 {LIBELLE_LOCALISATION[l]}
-                                {l === "ARCHIVE" && ` (${nbArchives})`}
+                                {l === "ARCHIVE" && compteurs && ` (${compteurs.archives})`}
                             </button>
                         ))}
                     </div>
@@ -121,7 +165,21 @@ export default function MaterielPage() {
                             {LIBELLE_TYPE_MATERIEL[m.type]}{m.nomMachine && ` (${m.nomMachine})`} - {m.modele} -- {LIBELLE_ETAT_MATERIEL[m.etat]}{" "} - {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
                         </div>
                     ))}
-                </div>
+                </ul>
+            )}
+
+            {/*Affichage des boutons de changement de page
+            https://developer.mozilla.org/fr/docs/Web/Accessibility/ARIA/Reference/Roles/navigation_role */}
+            {resultat && resultat.totalPages > 1 && (
+                <nav aria-label="Pagination">
+                    <button type="button" disabled={resultat.first} onClick={() => setPage((p) => p - 1)}>
+                        Précédent
+                    </button>
+                    <span>Page {resultat.page + 1} sur {resultat.totalPages}</span>
+                    <button type="button" disabled={resultat.last} onClick={() => setPage((p) => p + 1)}>
+                        Suivant
+                    </button>
+                </nav>
             )}
         </>
     );

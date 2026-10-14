@@ -3,6 +3,8 @@ package net.ent.etnc.orbit.services.commons;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -55,6 +57,9 @@ public interface Service<T, ID> {
      * @throws ServiceException en cas d'erreur
      */
     Page<T> findAll(Pageable pageable) throws ServiceException;
+
+    @Transactional(readOnly = true)
+    Page<T> findAll(Specification<T> spec, Pageable pageable) throws ServiceException;
 
     /**
      * Supprime une entité par son identifiant.

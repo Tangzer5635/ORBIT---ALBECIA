@@ -14,6 +14,15 @@ export const ORDRE_TYPES: TypeMateriel[] = ["UC", "Ecran", "VideoProjecteur", "T
 
 export const ORDRE_ETATS: EtatMateriel[] = ["NORMAL", "A_REMPLACER", "DEFECTUEUX", "DISPONIBLE"];
 
+// [singulier, pluriel] pour les phrases du type "3 unités centrales" pour la fonction pluriel
+export const NOM_TYPE: Record<TypeMateriel, [string, string]> = {
+    UC: ["unité centrale", "unités centrales"],
+    Ecran: ["écran", "écrans"],
+    VideoProjecteur: ["vidéoprojecteur", "vidéoprojecteurs"],
+    Imprimante: ["imprimante", "imprimantes"],
+    TableauInteractif: ["tableau interactif", "tableaux interactifs"],
+};
+
 export const LIBELLE_LOCALISATION: Record<Localisation, string> = {
     PARTOUT: "Partout",
     SALLE: "En salle",
@@ -48,4 +57,21 @@ export function filtrerMateriels(materiels: Materiel[], f: Filtres, libelleType:
 // nombre de matériels en stock pour un type donné
 export function compterStock(materiels: Materiel[], type: TypeMateriel): number {
     return materiels.filter((m) => m.type === type && localisationDe(m) === "STOCK").length;
+}
+
+/**
+ * Traduit la recherche et le type en filtre RSQL pour le back.
+ * ";" = ET, "," = OU. Chaque mot tapé doit se trouver dans le modèle OU le n° de série.
+ * Ex. versRsql("dell 70", "UC") -> type==UC;(modele=ilike="dell",numSerie=ilike="dell");(modele=ilike="70",numSerie=ilike="70")
+ */
+export function versRsql(recherche: string, type: TypeMateriel | null): string {
+    const conditions: string[] = [];
+    if (type) conditions.push(`type==${type}`);
+
+    for (const mot of recherche.trim().split(/\s+/)) {
+        const valeur = mot.replace(/["\\]/g, ""); // un guillemet casserait la syntaxe RSQL
+        if (valeur) conditions.push(`(modele=ilike="${valeur}",numSerie=ilike="${valeur}")`);
+    }
+
+    return conditions.join(";");
 }
