@@ -79,7 +79,7 @@ export interface Utilisateur {
 
 // UserRequestDto
 export interface UtilisateurRequest {
-    nid: string;
+    nid?: string; //Seulement a la création : en modif le back garde le NID existant
     nom: string;
     prenom: string;
     login: string;
