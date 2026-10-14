@@ -51,12 +51,12 @@ export default function MaterielPage() {
     const [compteurs, setCompteurs] = useState<Compteurs>();
     const [erreur, setErreur] = useState("");
 
-    // la recherche part 300 ms après la dernière frappe pour pas faire de requête à chaque saisie
+    // la recherche part 500 ms après la dernière frappe pour pas faire de requête à chaque saisie
     useEffect(() => {
         const minuteur = setTimeout(() => {
             setRecherche(saisie);
             setPage(0);
-        }, 300);
+        }, 500);
         return () => clearTimeout(minuteur);
     }, [saisie]);
 
