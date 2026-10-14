@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -25,6 +26,9 @@ public class Init implements CommandLineRunner {
 
     private static final String[] NUMEROS_BATIMENTS = {"351", "352", "215", "216", "208",
             "209", "213", "214", "207", "206", "205", "204", "203", "202", "201"};
+
+    /** Stagiaires générés en plus des 3 fixes. Chacun occupe au plus un poste (mot de passe chiffré : ~80 ms chacun). */
+    private static final int NB_STAGIAIRES_GENERES = 300;
 
     private static final String[] PRENOMS = {"Lucas", "Emma", "Hugo", "Lea", "Nathan", "Chloe", "Louis",
             "Manon", "Theo", "Camille", "Enzo", "Sarah", "Mathis", "Ines", "Tom", "Jade", "Noah", "Lina"};
@@ -43,21 +47,22 @@ public class Init implements CommandLineRunner {
             new Modele("Dell P2422H", TypeMateriel.Ecran, 0.02),
             new Modele("Iiyama ProLite XU2493", TypeMateriel.Ecran, 0.20),  // série à problèmes
             new Modele("HP E24 G5", TypeMateriel.Ecran, 0.04));
-    private static final List<Modele> EQUIPEMENTS_SALLE = List.of(
+    private static final List<Modele> VIDEOPROJECTEURS = List.of(
             new Modele("Epson EB-W51", TypeMateriel.VideoProjecteur, 0.05),
-            new Modele("BenQ MW560", TypeMateriel.VideoProjecteur, 0.30),   // série à problèmes
+            new Modele("BenQ MW560", TypeMateriel.VideoProjecteur, 0.30));  // série à problèmes
+    private static final List<Modele> TABLEAUX = List.of(
             new Modele("Samsung Flip Pro", TypeMateriel.TableauInteractif, 0.10),
             new Modele("Promethean ActivPanel", TypeMateriel.TableauInteractif, 0.04));
 
-    /** Nombre de postes possible par salle : 0 = salle sans poste (réunion, travaux). */
-    private static final int[] TAILLES_SALLES = {0, 4, 6, 8, 10, 12, 12, 14, 16, 16, 20, 24};
-
-    /** Âge (en mois) du matériel installé dans une salle : au-delà de 24 mois, il est à remplacer. */
-    private static final int[] ANCIENNETE_MOIS = {1, 3, 6, 9, 12, 15, 18, 21, 27, 33, 40, 50};
+    /** Nombre de postes stagiaires par salle : 0 = salle sans poste (réunion, travaux), rare. */
+    private static final int[] TAILLES_SALLES = {0, 6, 8, 10, 12, 12, 14, 16, 16, 20};
 
     private static final String[] PANNES = {"L'écran reste noir au démarrage",
             "Le poste redémarre tout seul", "Ventilateur très bruyant", "Pixels morts sur l'écran",
             "Le poste ne s'allume plus", "Image qui scintille", "Lenteurs importantes au démarrage"};
+
+    /** Ce qu'on veut voir sur un poste. Chaque salle en a un peu de chaque. */
+    private enum Profil { NORMAL, VIDE, DEFECTUEUX, A_CHANGER, INCOMPLET }
 
     private final PersonnelService personnelService;
     private final MaterielService materielService;
@@ -99,20 +104,18 @@ public class Init implements CommandLineRunner {
                 "Kevin", "k.ledeme", "1234", Role.FORMATEUR)));
         formateurs.add(personnelService.create(buildUser("2000000002", "Durand",
                 "Sophie", "s.durand", "1234", Role.FORMATEUR)));
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 6; i++) {
             formateurs.add(personnelService.create(personneGeneree("2", 10 + i, Role.FORMATEUR)));
         }
 
-        List<Personnel> stagiaires = new ArrayList<>();
-        Personnel p1 =(personnelService.create(buildUser("4000000001", "Le Buhé",
-                "Tanguy", "t.lebuhe", "1234", Role.STAGIAIRE)));
-        stagiaires.add(p1);
-        stagiaires.add(personnelService.create(buildUser("4000000002", "Bernard",
-                "Marc", "m.bernard", "1234", Role.STAGIAIRE)));
-        stagiaires.add(personnelService.create(buildUser("4000000003", "Petit",
-                "Julie", "j.petit", "1234", Role.STAGIAIRE)));
-        for (int i = 0; i < 40; i++) {
-            stagiaires.add(personnelService.create(personneGeneree("4", 10 + i, Role.STAGIAIRE)));
+        // Les 3 stagiaires fixes passent en premier : ils ont toujours un poste (page « Mon poste »).
+        List<Personnel> stagiairesFixes = List.of(
+                personnelService.create(buildUser("4000000001", "Le Buhé", "Tanguy", "t.lebuhe", "1234", Role.STAGIAIRE)),
+                personnelService.create(buildUser("4000000002", "Bernard", "Marc", "m.bernard", "1234", Role.STAGIAIRE)),
+                personnelService.create(buildUser("4000000003", "Petit", "Julie", "j.petit", "1234", Role.STAGIAIRE)));
+        List<Personnel> stagiairesGeneres = new ArrayList<>();
+        for (int i = 0; i < NB_STAGIAIRES_GENERES; i++) {
+            stagiairesGeneres.add(personnelService.create(personneGeneree("4", 10 + i, Role.STAGIAIRE)));
         }
         Personnel inactif = personnelService.create(buildUser("4000000004", "Inactif",
                 "Paul", "p.inactif", "1234", Role.STAGIAIRE));
@@ -121,55 +124,166 @@ public class Init implements CommandLineRunner {
         personnelService.deactivate(inactif.getId());
         verrouille.setVerrouille(true);
 
-        // ---------- Bâtiment de test 666 ----------
-        // Une salle, un poste occupé par Tanguy Le Buhé avec 1 UC et 2 écrans
-        Batiment batiment666 = batimentService.create(buildBatiment("666"));
-        Salle stockage666 = stockageDe(batiment666);
+        // Postes à occuper, remplis à la fin pour répartir les stagiaires sur tout le parc
+        List<Poste> aOccuper = new ArrayList<>();
 
+        // ---------- Bâtiments, salles, postes, matériel ----------
+        for (String numBatiment : NUMEROS_BATIMENTS) {
+            Batiment batiment = batimentService.create(buildBatiment(numBatiment));
+            Salle stockage = stockageDe(batiment);
 
-        // Matériel créé dans le stockage du bâtiment, puis affecté au poste
-        Materiel uc666 = creerMateriel(UC.get(0), aujourdhui.minusMonths(2), stockage666);
-        Materiel ecran666a = creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockage666);
-        Materiel ecran666b = creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockage666);
+            // de 2 à 4 niveaux (rez-de-chaussée au 3e), 1 à 3 salles par niveau
+            int nbNiveaux = 2 + random.nextInt(3);
+            for (int etage = 0; etage < nbNiveaux; etage++) {
+                int nbSallesEtage = 1 + random.nextInt(3);
+                for (int n = 1; n <= nbSallesEtage; n++) {
+                    String numSalle = String.format("%d%02d", etage, n); // 001, 002, 101, 102...
+                    creerSalleEquipee(batiment, numSalle, etage, stockage, formateurs, gestionnaire, aOccuper);
+                }
+            }
+
+            // stock de rechange : de quoi équiper 3 ou 4 salles, plutôt récent
+            remplirStock(stockage, UC, 40 + random.nextInt(21));               // 40 à 60 UC
+            remplirStock(stockage, ECRANS, 60 + random.nextInt(41));           // 60 à 100 écrans
+            remplirStock(stockage, VIDEOPROJECTEURS, 3 + random.nextInt(4));   // 3 à 6 vidéoprojecteurs
+            remplirStock(stockage, TABLEAUX, 2 + random.nextInt(3));           // 2 à 4 tableaux
+
+            // un vieux matériel archivé dans 1 bâtiment sur 3 (ne doit pas compter dans l'anneau)
+            if (random.nextInt(3) == 0) {
+                Materiel vieux = creerMateriel(choisir(UC), aujourdhui.minusYears(6), stockage);
+                materielService.archiver(vieux.getId());
+            }
+        }
+
+        // ---------- Occupants : un stagiaire n'a qu'un seul poste ----------
+        Collections.shuffle(aOccuper, random);
+        Collections.shuffle(stagiairesGeneres, random);
+        List<Personnel> stagiaires = new ArrayList<>(stagiairesFixes);
+        stagiaires.addAll(stagiairesGeneres);
+        // les postes en trop (plus de postes que de stagiaires) restent vides
+        for (int i = 0; i < Math.min(aOccuper.size(), stagiaires.size()); i++) {
+            aOccuper.get(i).setOccupant(stagiaires.get(i));
+        }
 
         // Réserve hors bâtiment, conservée comme avant.
         Salle stockagePrincipal = salleService.create(
-                buildSalle("996", "0", TypeSalle.SalleStockage));
+                buildSalle("999", "0", TypeSalle.SalleStockage));
         creerMateriel(UC.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
         creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
-        creerMateriel(EQUIPEMENTS_SALLE.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
+        creerMateriel(VIDEOPROJECTEURS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
     }
 
     /**
-     * Crée un matériel, le pose sur le poste et, selon le taux de panne de son modèle,
-     * lui signale une défaillance (1 sur 3 est déjà résolue, pour avoir de l'historique).
+     * Crée une salle de cours avec son poste formateur et ses postes stagiaires.
+     * Chaque salle d'au moins 5 postes a au moins un poste vide, défectueux, à changer et incomplet.
      */
-    private void installerSurPoste(Poste poste, Modele modele, LocalDate equipement, Salle stockage,
-                                   Personnel signaleur, Personnel gestionnaire) throws ServiceException {
-        Materiel materiel = creerMateriel(modele, acquisitionAutour(equipement), stockage);
-        affecterMaterielService.affecterAPoste(poste.getId(), materiel.getId());
+    private void creerSalleEquipee(Batiment batiment, String numSalle, int etage, Salle stockage,
+                                   List<Personnel> formateurs, Personnel gestionnaire,
+                                   List<Poste> aOccuper) throws ServiceException {
+        Salle salle = salleService.create(batiment.getId(),
+                buildSalle(numSalle, Integer.toString(etage), TypeSalle.SalleDeCours));
+        Personnel formateur = choisir(formateurs);
+        salle.addPersonnel(formateur);
 
-        if (random.nextDouble() < modele.tauxPanne()) {
-            Defaillance defaillance = defaillanceService.signaler(materiel.getId(), choisir(PANNES), signaleur);
-            if (random.nextInt(3) == 0) {
-                defaillanceService.resoudre(defaillance.getId(), "Pièce remplacée", gestionnaire);
+        int nbPostes = choisir(TAILLES_SALLES);
+        if (nbPostes == 0) return; // salle de réunion : ni poste ni matériel
+
+        // tout le matériel d'une salle est acheté à peu près en même temps, il y a moins de 18 mois
+        LocalDate equipement = aujourdhui.minusMonths(1 + random.nextInt(18));
+        int ecransParPoste = random.nextInt(4) == 0 ? 2 : 1;
+        String prefixe = "B" + batiment.getNumBatiment() + "-S" + numSalle + "-";
+
+        // poste formateur : toujours complet, sans occupant stagiaire
+        Poste posteFormateur = creerPoste(prefixe + "F", salle);
+        installer(posteFormateur, choisir(UC), equipement, stockage);
+        for (int e = 0; e < ecransParPoste; e++) installer(posteFormateur, choisir(ECRANS), equipement, stockage);
+
+        int numero = 0;
+        for (Profil profil : profilsDeSalle(nbPostes)) {
+            Poste poste = creerPoste(prefixe + String.format("P%02d", ++numero), salle);
+            LocalDate achat = profil == Profil.A_CHANGER
+                    ? aujourdhui.minusMonths(26 + random.nextInt(30)) // plus de 2 ans : à remplacer
+                    : equipement.minusDays(random.nextInt(20));
+
+            Materiel uc = installer(poste, choisir(UC), achat, stockage);
+            List<Materiel> ecrans = new ArrayList<>();
+            int nbEcrans = profil == Profil.INCOMPLET ? ecransParPoste - 1 : ecransParPoste;
+            for (int e = 0; e < nbEcrans; e++) ecrans.add(installer(poste, choisir(ECRANS), achat, stockage));
+
+            switch (profil) {
+                case DEFECTUEUX -> {
+                    Materiel enPanne = ecrans.isEmpty() || random.nextBoolean() ? uc : choisir(ecrans);
+                    signaler(enPanne, formateur, gestionnaire, false);
+                }
+                // un peu d'historique : de temps en temps une panne déjà réparée
+                case NORMAL -> {
+                    if (random.nextInt(10) == 0) signaler(uc, formateur, gestionnaire, true);
+                }
+                default -> { }
             }
+            if (profil != Profil.VIDE) aOccuper.add(poste);
         }
+
+        // 2 salles sur 3 ont un vidéoprojecteur, 1 sur 3 un tableau interactif (1 sur 4 en panne)
+        if (random.nextInt(3) != 0) equiperSalle(salle, choisir(VIDEOPROJECTEURS), equipement, stockage, formateur, gestionnaire);
+        if (random.nextInt(3) == 0) equiperSalle(salle, choisir(TABLEAUX), equipement, stockage, formateur, gestionnaire);
     }
 
-    /** Date d'achat proche de l'équipement de la salle ; 1 matériel sur 6 a été changé depuis (plus récent). */
-    private LocalDate acquisitionAutour(LocalDate equipement) {
-        if (random.nextInt(6) == 0) {
-            return aujourdhui.minusDays(random.nextInt(365));
+    /**
+     * Profils des postes d'une salle, mélangés : au moins un de chaque cas particulier
+     * (si la salle est assez grande), le reste majoritairement normal.
+     */
+    private List<Profil> profilsDeSalle(int nbPostes) {
+        List<Profil> profils = new ArrayList<>();
+        if (nbPostes >= 5) {
+            profils.addAll(List.of(Profil.VIDE, Profil.DEFECTUEUX, Profil.A_CHANGER, Profil.INCOMPLET));
         }
-        return equipement.minusDays(random.nextInt(20));
+        while (profils.size() < nbPostes) {
+            int tirage = random.nextInt(20);
+            if (tirage < 13) profils.add(Profil.NORMAL);           // 65 %
+            else if (tirage < 16) profils.add(Profil.VIDE);        // 15 %
+            else if (tirage < 18) profils.add(Profil.DEFECTUEUX);  // 10 %
+            else if (tirage < 19) profils.add(Profil.A_CHANGER);   //  5 %
+            else profils.add(Profil.INCOMPLET);                    //  5 %
+        }
+        Collections.shuffle(profils, random);
+        return profils;
     }
 
-    private Poste creerPoste(String numPoste, Salle salle, Personnel occupant)
+    /** Crée un matériel dans la réserve du bâtiment puis le pose sur le poste. */
+    private Materiel installer(Poste poste, Modele modele, LocalDate achat, Salle stockage) throws ServiceException {
+        Materiel materiel = creerMateriel(modele, achat, stockage);
+        affecterMaterielService.affecterAPoste(poste.getId(), materiel.getId());
+        return materiel;
+    }
+
+    /** Vidéoprojecteur ou tableau posé dans la salle ; tombe en panne selon le taux du modèle. */
+    private void equiperSalle(Salle salle, Modele modele, LocalDate equipement, Salle stockage,
+                              Personnel signaleur, Personnel gestionnaire) throws ServiceException {
+        Materiel materiel = creerMateriel(modele, equipement.minusDays(random.nextInt(20)), stockage);
+        affecterMaterielService.affecterASalle(salle.getId(), materiel.getId());
+        if (random.nextDouble() < modele.tauxPanne()) signaler(materiel, signaleur, gestionnaire, false);
+    }
+
+    private void signaler(Materiel materiel, Personnel signaleur, Personnel gestionnaire, boolean resolue)
             throws ServiceException {
+        Defaillance defaillance = defaillanceService.signaler(materiel.getId(), choisir(PANNES), signaleur);
+        if (resolue) defaillanceService.resoudre(defaillance.getId(), "Pièce remplacée", gestionnaire);
+    }
+
+    /** Ajoute `nombre` matériels récents dans la réserve (1 sur 10 a plus de 2 ans). */
+    private void remplirStock(Salle stockage, List<Modele> famille, int nombre) throws ServiceException {
+        for (int i = 0; i < nombre; i++) {
+            LocalDate achat = random.nextInt(10) == 0
+                    ? aujourdhui.minusMonths(26 + random.nextInt(20))
+                    : aujourdhui.minusMonths(random.nextInt(18));
+            creerMateriel(choisir(famille), achat, stockage);
+        }
+    }
+
+    private Poste creerPoste(String numPoste, Salle salle) throws ServiceException {
         Poste poste = new Poste();
         poste.setNumPoste(numPoste);
-        poste.setOccupant(occupant);
         Poste cree = posteService.create(poste);
         salle.addPoste(cree);
         return cree;
@@ -184,12 +298,6 @@ public class Init implements CommandLineRunner {
         materiel.setDateFinGarantie(acquisition.plusYears(3));
         materiel.setType(modele.type());
         return materielService.creerEnStock(materiel, stockage.getId());
-    }
-
-    private void remplirStock(Salle stockage, List<Modele> famille, int nombre) throws ServiceException {
-        for (int i = 0; i < nombre; i++) {
-            creerMateriel(choisir(famille), aujourdhui.minusMonths(random.nextInt(18)), stockage);
-        }
     }
 
     private static String prefixe(TypeMateriel type) {

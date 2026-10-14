@@ -1,9 +1,11 @@
 package net.ent.etnc.orbit.services.impl;
 
+import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
+import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.repositories.SalleRepository;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -12,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +35,9 @@ class SalleServiceImplTest {
 
     @Mock
     private PosteService posteService;
+
+    @Mock
+    private BatimentRepository batimentRepository;
 
     @InjectMocks
     private SalleServiceImpl service;
@@ -173,12 +180,35 @@ class SalleServiceImplTest {
     }
 
     @Test
-    void deleteById_doitLeverServiceException_quandReserveNonVide() {
+    void deleteById_doitRefuser_quandSalleDeStockage() {
+        Salle reserve = salle(3L, TypeSalle.SalleStockage);
+        when(repository.findById(3L)).thenReturn(Optional.of(reserve));
+
+        assertThatThrownBy(() -> service.deleteById(3L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
+        verify(repository, never()).delete(any());
+    }
+
+    // ---------- supprimerAvecBatiment ----------
+
+    @Test
+    void supprimerAvecBatiment_doitSupprimerLaReserveVide() {
+        Salle reserve = salle(3L, TypeSalle.SalleStockage);
+        when(repository.findById(3L)).thenReturn(Optional.of(reserve));
+
+        service.supprimerAvecBatiment(3L);
+
+        verify(repository).delete(reserve);
+    }
+
+    @Test
+    void supprimerAvecBatiment_doitLeverServiceException_quandReserveNonVide() {
         Salle reserve = salle(3L, TypeSalle.SalleStockage);
         reserve.addMateriel(materiel(9L));
         when(repository.findById(3L)).thenReturn(Optional.of(reserve));
 
-        assertThatThrownBy(() -> service.deleteById(3L))
+        assertThatThrownBy(() -> service.supprimerAvecBatiment(3L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Vide la salle de stockage avant de la supprimer");
         verify(repository, never()).delete(any());
@@ -192,6 +222,101 @@ class SalleServiceImplTest {
                 .isInstanceOf(ServiceException.class);
     }
 
+    // ---------- create(idBatiment, salle) ----------
+
+    private Batiment batiment() {
+        Batiment b = new Batiment();
+        b.setId(1L);
+        b.setNumBatiment("B201");
+        return b;
+    }
+
+    @Test
+    void create_doitCreerLaSalleEtLAjouterAuBatiment() {
+        Batiment b = batiment();
+        b.addSalle(salle(1L, TypeSalle.SalleDeCours));
+        Salle nouvelle = salle(null, TypeSalle.SalleDeCours);
+        nouvelle.setNumSalle("102");
+        Salle creee = salle(2L, TypeSalle.SalleDeCours);
+        creee.setNumSalle("102");
+        when(batimentRepository.findById(1L)).thenReturn(Optional.of(b));
+        when(repository.saveAndFlush(nouvelle)).thenReturn(creee);
+
+        Salle resultat = service.create(1L, nouvelle);
+
+        assertThat(resultat).isSameAs(creee);
+        assertThat(b.getSalles()).contains(creee).hasSize(2);
+    }
+
+    @Test
+    void create_doitLeverServiceException_quandNumeroDejaPrisDansLeBatiment() {
+        Batiment b = batiment();
+        Salle existante = salle(1L, TypeSalle.SalleDeCours);
+        existante.setNumSalle("101");
+        b.addSalle(existante);
+        Salle doublon = salle(null, TypeSalle.SalleDeCours);
+        doublon.setNumSalle("101");
+        when(batimentRepository.findById(1L)).thenReturn(Optional.of(b));
+
+        assertThatThrownBy(() -> service.create(1L, doublon))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Une salle 101 existe déjà dans ce bâtiment");
+        verify(repository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void create_doitLeverServiceException_quandBatimentIntrouvable() {
+        when(batimentRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(1L, salle(null, TypeSalle.SalleDeCours)))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Bâtiment 1 introuvable");
+    }
+
+    // ---------- findAllAvecDetails / findByIdAvecDetails ----------
+
+    @Test
+    void findAllAvecDetails_doitChargerMaterielsEtPostesEnUneRequeteChacun() {
+        PageRequest pageable = PageRequest.of(0, 30);
+        when(repository.findAll(pageable)).thenReturn(new PageImpl<>(
+                List.of(salle(1L, TypeSalle.SalleDeCours), salle(2L, TypeSalle.SalleStockage)), pageable, 2));
+
+        service.findAllAvecDetails(pageable);
+
+        verify(repository).chargerMateriels(List.of(1L, 2L));
+        verify(repository).chargerPostes(List.of(1L, 2L));
+    }
+
+    @Test
+    void findAllAvecDetails_neChargeRien_quandPageVide() {
+        PageRequest pageable = PageRequest.of(0, 30);
+        when(repository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        service.findAllAvecDetails(pageable);
+
+        verify(repository, never()).chargerMateriels(any());
+        verify(repository, never()).chargerPostes(any());
+    }
+
+    @Test
+    void findByIdAvecDetails_doitChargerMaterielsEtPostes() {
+        when(repository.findById(1L)).thenReturn(Optional.of(salle(1L, TypeSalle.SalleDeCours)));
+
+        assertThat(service.findByIdAvecDetails(1L)).isPresent();
+
+        verify(repository).chargerMateriels(List.of(1L));
+        verify(repository).chargerPostes(List.of(1L));
+    }
+
+    @Test
+    void findByIdAvecDetails_neChargeRien_quandIntrouvable() {
+        when(repository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThat(service.findByIdAvecDetails(1L)).isEmpty();
+
+        verify(repository, never()).chargerMateriels(any());
+    }
+
     // ---------- trouverStockage ----------
 
     @Test
@@ -200,26 +325,15 @@ class SalleServiceImplTest {
         when(repository.findSallesDuBatiment(1L, TypeSalle.SalleStockage)).thenReturn(List.of(reserve, salle(5L, TypeSalle.SalleStockage)));
 
         assertThat(service.trouverStockage(1L)).isSameAs(reserve);
-        verify(repository, never()).findFirstByTypeOrderByIdAsc(any());
-    }
-
-    @Test
-    void trouverStockage_doitPrendreLaPremiereReserve_quandAucuneDansLeBatiment() {
-        Salle reserveGlobale = salle(6L, TypeSalle.SalleStockage);
-        when(repository.findSallesDuBatiment(1L, TypeSalle.SalleStockage)).thenReturn(List.of());
-        when(repository.findFirstByTypeOrderByIdAsc(TypeSalle.SalleStockage)).thenReturn(Optional.of(reserveGlobale));
-
-        assertThat(service.trouverStockage(1L)).isSameAs(reserveGlobale);
     }
 
     @Test
     void trouverStockage_doitLeverServiceException_quandAucuneReserve() {
         when(repository.findSallesDuBatiment(1L, TypeSalle.SalleStockage)).thenReturn(List.of());
-        when(repository.findFirstByTypeOrderByIdAsc(TypeSalle.SalleStockage)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.trouverStockage(1L))
                 .isInstanceOf(ServiceException.class)
-                .hasMessage("Aucune salle de stockage n'existe");
+                .hasMessage("Aucune salle de stockage dans le bâtiment");
     }
 
     @Test

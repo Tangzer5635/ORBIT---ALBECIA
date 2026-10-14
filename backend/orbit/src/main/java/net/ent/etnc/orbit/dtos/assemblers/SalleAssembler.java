@@ -6,7 +6,6 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -23,12 +22,6 @@ public class SalleAssembler {
                 .materielsParType(salle.getMateriels().stream()
                         .collect(Collectors.groupingBy(Materiel::getType, Collectors.counting())))
                 .build();
-    }
-
-    public List<SalleResponseDto> toDtos(List<Salle> salles) {
-        return salles.stream()
-                .map(this::toDto)
-                .toList();
     }
 
     public Salle toEntity(SalleRequestDto salleDto) {

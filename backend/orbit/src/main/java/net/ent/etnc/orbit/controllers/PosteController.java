@@ -3,13 +3,14 @@ package net.ent.etnc.orbit.controllers;
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.PosteUpdateRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
-import net.ent.etnc.orbit.services.commons.ServiceException;
+import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * CRUD des postes. Un poste est créé dans une salle de cours ; à sa suppression,
@@ -41,14 +44,14 @@ public class PosteController {
 
     @GetMapping("/")
     @PreAuthorize("hasRole('TECHNIQUE')")
-    public ResponseEntity<Page<PosteResponseDto>> getAll(@PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(posteService.findAll(pageable).map(posteAssembler::toDto));
+    public ResponseEntity<Page<PosteResponseDto>> getAll(@PageableDefault(size = 50, sort = "numPoste") Pageable pageable) {
+        return ResponseEntity.ok(posteService.findAllAvecDetails(pageable).map(posteAssembler::toDto));
     }
 
     @GetMapping("/{id}/")
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<PosteResponseDto> getById(@PathVariable Long id) {
-        return posteService.findById(id)
+        return posteService.findByIdAvecDetails(id)
                 .map(poste -> ResponseEntity.ok(posteAssembler.toDto(poste)))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -56,23 +59,21 @@ public class PosteController {
     @GetMapping("/me/")
     @PreAuthorize("hasRole('STAGIAIRE')")
     public ResponseEntity<MonPosteResponseDto> getMyPoste(@AuthenticationPrincipal Personnel utilisateur) {
-        return posteService.findMyPoste(utilisateur.getId())
-                .map(poste -> ResponseEntity.ok(posteAssembler.toDtoMonPoste(poste)))
-                .orElse(ResponseEntity.notFound().build());
+        List<MonPosteLigne> lignes = posteService.lignesMonPoste(utilisateur.getId());
+        if (lignes.isEmpty()) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(posteAssembler.toDtoMonPoste(lignes));
     }
 
     @PostMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<PosteResponseDto> post(@Valid @RequestBody PosteRequestDto posteDto) {
-        if (posteDto.getIdSalle() == null)
-            throw new ServiceException("idSalle est obligatoire pour créer un poste");
         Poste cree = salleService.creerPoste(posteDto.getIdSalle(), posteAssembler.toEntity(posteDto));
         return ResponseEntity.status(HttpStatus.CREATED).body(posteAssembler.toDto(cree));
     }
 
     @PutMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<PosteResponseDto> put(@PathVariable Long id, @Valid @RequestBody PosteRequestDto posteDto) {
+    public ResponseEntity<PosteResponseDto> put(@PathVariable Long id, @Valid @RequestBody PosteUpdateRequestDto posteDto) {
         Poste poste = posteAssembler.toEntity(posteDto);
         poste.setId(id);
         return ResponseEntity.ok(posteAssembler.toDto(posteService.update(poste)));

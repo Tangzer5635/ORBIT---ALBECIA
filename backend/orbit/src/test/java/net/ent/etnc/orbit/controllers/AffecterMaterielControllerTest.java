@@ -66,12 +66,12 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void affecterASalle_doitRenvoyer404_quandSalleIntrouvable() throws Exception {
+    void affecterASalle_doitRenvoyer400_quandSalleIntrouvable() throws Exception {
         when(affecterMaterielService.affecterASalle(999L, 11L)).thenThrow(new ServiceException("Salle 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 11L).param("salleId", "999")
                         .with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isBadRequest())
                 .andExpect(content().string("Salle 999 introuvable"));
     }
 
@@ -141,12 +141,12 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void affecterAPoste_doitRenvoyer404_quandPosteIntrouvable() throws Exception {
+    void affecterAPoste_doitRenvoyer400_quandPosteIntrouvable() throws Exception {
         when(affecterMaterielService.affecterAPoste(999L, 8L)).thenThrow(new ServiceException("Poste 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 8L).param("posteId", "999")
                         .with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

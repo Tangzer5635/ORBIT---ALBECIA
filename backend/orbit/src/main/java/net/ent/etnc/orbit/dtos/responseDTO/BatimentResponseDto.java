@@ -14,7 +14,6 @@ public class BatimentResponseDto {
     private Long id;
     private String numBatiment;
     private List<Long> sallesId;
-    private int nbSalles;
     private List<StockageDto> stockages;
 
     @Getter

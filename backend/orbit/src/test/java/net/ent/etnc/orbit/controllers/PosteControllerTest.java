@@ -2,9 +2,12 @@ package net.ent.etnc.orbit.controllers;
 
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.PosteUpdateRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -66,7 +69,7 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitRenvoyer200_quandFormateur() throws Exception {
-        when(posteService.findAll(any())).thenReturn(new PageImpl<>(List.of(poste()), PageRequest.of(0, 20), 1));
+        when(posteService.findAllAvecDetails(any())).thenReturn(new PageImpl<>(List.of(poste()), PageRequest.of(0, 20), 1));
         reponse();
 
         mockMvc.perform(get("/api/v1/postes/").with(connecte(Role.FORMATEUR)))
@@ -76,7 +79,7 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitRenvoyer200_quandGestionnaire() throws Exception {
-        when(posteService.findAll(any())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        when(posteService.findAllAvecDetails(any())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/v1/postes/").with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isOk());
@@ -98,7 +101,7 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void getById_doitRenvoyer200_quandTrouve() throws Exception {
-        when(posteService.findById(1L)).thenReturn(Optional.of(poste()));
+        when(posteService.findByIdAvecDetails(1L)).thenReturn(Optional.of(poste()));
         reponse();
 
         mockMvc.perform(get("/api/v1/postes/{id}/", 1L).with(connecte(Role.FORMATEUR)))
@@ -109,10 +112,34 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void getById_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(posteService.findById(1L)).thenReturn(Optional.empty());
+        when(posteService.findByIdAvecDetails(1L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());
+    }
+
+    // ---------- getMyPoste ----------
+
+    @Test
+    void getMyPoste_doitRenvoyer200_quandLeStagiaireAUnPoste() throws Exception {
+        when(posteService.lignesMonPoste(1L)).thenReturn(List.of(
+                new MonPosteLigne(1L, "P101-01", 2L, "101", "1", 3L, "B201", null, false)));
+        when(posteAssembler.toDtoMonPoste(any())).thenReturn(MonPosteResponseDto.builder()
+                .id(1L).numPoste("P101-01").numSalle("101").numBatiment("B201").materiels(List.of()).build());
+
+        mockMvc.perform(get("/api/v1/postes/me/").with(connecte(Role.STAGIAIRE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.numPoste").value("P101-01"))
+                .andExpect(jsonPath("$.numBatiment").value("B201"));
+    }
+
+    @Test
+    void getMyPoste_doitRenvoyer404_quandAucunPoste() throws Exception {
+        when(posteService.lignesMonPoste(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/postes/me/").with(connecte(Role.STAGIAIRE)))
+                .andExpect(status().isNotFound());
+        verify(posteAssembler, never()).toDtoMonPoste(any());
     }
 
     // ---------- post ----------
@@ -132,13 +159,11 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void post_doitRenvoyer400_quandSalleManquante() throws Exception {
-        when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(poste());
-
         mockMvc.perform(post("/api/v1/postes/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numPoste\":\"P101-01\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("idSalle est obligatoire pour créer un poste"));
+                .andExpect(jsonPath("$.idSalle").exists());
         verify(salleService, never()).creerPoste(any(), any());
     }
 
@@ -164,14 +189,14 @@ class PosteControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void post_doitRenvoyer404_quandSalleIntrouvable() throws Exception {
+    void post_doitRenvoyer400_quandSalleIntrouvable() throws Exception {
         when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(poste());
         when(salleService.creerPoste(eq(999L), any(Poste.class))).thenThrow(new ServiceException("Salle 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/postes/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numPoste\":\"X-01\",\"idSalle\":999}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -200,7 +225,7 @@ class PosteControllerTest extends ControllerTestSupport {
 
     @Test
     void put_doitRenvoyer200_etTransmettreLId() throws Exception {
-        when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(new Poste());
+        when(posteAssembler.toEntity(any(PosteUpdateRequestDto.class))).thenReturn(new Poste());
         when(posteService.update(any())).thenReturn(poste());
         reponse();
 
@@ -215,19 +240,19 @@ class PosteControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void put_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(new Poste());
+    void put_doitRenvoyer400_quandIntrouvable() throws Exception {
+        when(posteAssembler.toEntity(any(PosteUpdateRequestDto.class))).thenReturn(new Poste());
         when(posteService.update(any())).thenThrow(new ServiceException("Poste 1 introuvable"));
 
         mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numPoste\":\"P101-01\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void put_doitRenvoyer400_quandNumeroDejaPris() throws Exception {
-        when(posteAssembler.toEntity(any(PosteRequestDto.class))).thenReturn(new Poste());
+        when(posteAssembler.toEntity(any(PosteUpdateRequestDto.class))).thenReturn(new Poste());
         when(posteService.update(any())).thenThrow(new ServiceException("Le poste P101-02 existe déjà"));
 
         mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
@@ -254,11 +279,11 @@ class PosteControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void delete_doitRenvoyer404_quandIntrouvable() throws Exception {
+    void delete_doitRenvoyer400_quandIntrouvable() throws Exception {
         doThrow(new ServiceException("Poste 1 introuvable")).when(salleService).supprimerPoste(1L);
 
         mockMvc.perform(delete("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -168,7 +168,22 @@ class DefaillanceServiceImplTest {
 
         assertThatThrownBy(() -> service.signaler(ID_MATERIEL, "Tableau HS", personnel(4L, Role.FORMATEUR)))
                 .isInstanceOf(AccessDeniedException.class);
-        verify(salleService, never()).salleDuMateriel(any());
+        verify(salleService).salleDuMateriel(ID_MATERIEL);
+    }
+
+    @Test
+    void signaler_doitCreerUneDefaillance_quandFormateurSurMaterielPoseDansSaSalle() {
+        Personnel formateur = personnel(4L, Role.FORMATEUR);
+        when(materielService.findById(ID_MATERIEL)).thenReturn(Optional.of(materiel()));
+        when(posteService.posteDuMateriel(ID_MATERIEL)).thenReturn(Optional.empty());
+        when(salleService.salleDuMateriel(ID_MATERIEL)).thenReturn(Optional.of(salleAvecFormateur(formateur)));
+        when(repository.existsByMateriel_IdAndStatut(ID_MATERIEL, StatutDefaillance.SIGNALEE)).thenReturn(false);
+        sauvegardeRenvoieLArgument();
+
+        Defaillance d = service.signaler(ID_MATERIEL, "Tableau HS", formateur);
+
+        assertThat(d.getStatut()).isEqualTo(StatutDefaillance.SIGNALEE);
+        assertThat(d.getSignalePar()).isSameAs(formateur);
     }
 
     @Test
