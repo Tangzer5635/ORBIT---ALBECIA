@@ -31,7 +31,7 @@ export function SalleProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         getSalle()
             .then(setSalles)
-            .catch(() => setErreurChargement("Impossible de charger les bâtiments."));
+            .catch(() => setErreurChargement("Impossible de charger les salles."));
     }, []);
 
     return (
@@ -43,6 +43,6 @@ export function SalleProvider({ children }: { children: ReactNode }) {
 
 export function useSalles() {
     const ctx = useContext(SalleContext);
-    if (!ctx) throw new Error("useBatiments doit être utilisé dans un BatimentsProvider");
+    if (!ctx) throw new Error("useSalles doit être utilisé dans un SallesProvider");
     return ctx;
 }

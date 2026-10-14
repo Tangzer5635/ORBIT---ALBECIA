@@ -1,15 +1,12 @@
 import Anneau from "./Anneau.tsx";
 import type { SalleCarte } from "../types/types.ts";
-import { libelleEtage } from "../utils/postes.ts";
+import {libelleEtage, pluriel} from "../utils/postes.ts";
 import { Link } from "react-router-dom";
 
 interface SalleCardProps {
     salle: SalleCarte;
 }
 
-function pluriel(n: number, mot: string) {
-    return `${n} ${mot}${n > 1 ? "s" : ""}`;
-}
 
 export default function SalleCard({ salle }: SalleCardProps) {
     const { defectueux, aChanger } = salle.anneau;

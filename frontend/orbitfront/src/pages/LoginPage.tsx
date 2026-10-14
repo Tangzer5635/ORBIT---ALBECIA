@@ -33,7 +33,6 @@ export function LoginPage() {
         setError("");
         setChargement(true);
         try {
-            await login(identifiant.trim(), motDePasse);
             //Redirection sur les differentes pages en fonction du role du personnel
             const utilisateur = await login(identifiant.trim(), motDePasse);
             navigate(PAGE_ACCUEIL[utilisateur.role], { replace: true });

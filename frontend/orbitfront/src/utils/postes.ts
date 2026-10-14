@@ -44,3 +44,5 @@ export function niveau(pct: number): "def" | "chg" | "use" {
     if (pct < 90) return "chg";
     return "use";
 }
+
+export const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
