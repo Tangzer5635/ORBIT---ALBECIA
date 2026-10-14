@@ -30,7 +30,7 @@ public class MaterielController {
     }
 
     private MaterielResponseDto dto(Materiel m) {
-        return materielAssembler.toDto(m, materielService.etatDe(m));
+        return materielAssembler.toDto(m, materielService.etatDe(m), materielService.salleDe(m).orElse(null));
     }
 
     @GetMapping("/")
@@ -77,6 +77,5 @@ public class MaterielController {
     public ResponseEntity<MaterielResponseDto> archiver(@PathVariable Long id) {
         return ResponseEntity.ok(dto(materielService.archiver(id)));
     }
-
 
 }

@@ -44,4 +44,7 @@ public interface SalleService extends Service<Salle, Long> {
 
     /** Page /salles?batiment=XX : tout est compté en base, nombre de requêtes fixe. */
     List<SalleCarteDto> findCartesDuBatiment(Long idBatiment);
+
+    /** Salle où se trouve le matériel : posé directement dans la salle (stockage compris) ou sur un de ses postes. */
+    Optional<Salle> localiser(Long idMateriel);
 }

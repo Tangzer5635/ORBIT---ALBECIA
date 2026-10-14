@@ -14,10 +14,9 @@ export const LIBELLE_TYPE_SALLE = {
 } as const;
 export type TypeSalle = keyof typeof LIBELLE_TYPE_SALLE;
 
-// TypeMateriel.java
+// Sous-classes de Materiel.java (UC, Ecran...) : valeur du champ "type" du JSON
 export const LIBELLE_TYPE_MATERIEL = {
     TableauInteractif: "Tableau interactif",
-    Imprimante: "Imprimante",
     Ecran: "Écran",
     VideoProjecteur: "Vidéoprojecteur",
     UC: "Unité centrale",
@@ -198,6 +197,12 @@ export interface Materiel {
     type: TypeMateriel;
     etat: EtatMateriel;
     dateArchivage: string | null;
+    // UC uniquement
+    nomMachine?: string;
+    processus?: Processus[];
+    // Salle où se trouve le matériel (absents s'il est archivé)
+    numSalle?: string;
+    typeSalle?: TypeSalle;
 }
 
 // MaterielRequestDto
@@ -207,5 +212,29 @@ export interface MaterielRequest {
     dateFinGarantie: string;
     dateAcquisition: string;
     type: TypeMateriel;
+    nomMachine?: string;   // UC uniquement
     idStockage?: number;
+}
+
+//==========================================
+//      PROCESSUS
+//==========================================
+// ListeProcessus.java
+export const LIBELLE_LISTE_PROCESSUS = {
+    BLANCHE: "Liste blanche",
+    NOIRE: "Liste noire",
+} as const;
+export type ListeProcessus = keyof typeof LIBELLE_LISTE_PROCESSUS;
+
+// ProcessusResponseDto
+export interface Processus {
+    id: number;
+    nom: string;
+    liste: ListeProcessus;
+}
+
+// ProcessusRequestDto
+export interface ProcessusRequest {
+    nom: string;
+    liste: ListeProcessus;
 }

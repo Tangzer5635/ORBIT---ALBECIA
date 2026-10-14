@@ -118,7 +118,7 @@ export default function MaterielPage() {
                 <div>
                     {resultats.map((m) => (
                         <div>
-                            {LIBELLE_TYPE_MATERIEL[m.type]} - {m.modele} -- {LIBELLE_ETAT_MATERIEL[m.etat]}{" "} - {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
+                            {LIBELLE_TYPE_MATERIEL[m.type]}{m.nomMachine && ` (${m.nomMachine})`} - {m.modele} -- {LIBELLE_ETAT_MATERIEL[m.etat]}{" "} - {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
                         </div>
                     ))}
                 </div>

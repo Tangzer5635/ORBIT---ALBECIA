@@ -40,7 +40,7 @@ export function filtrerMateriels(materiels: Materiel[], f: Filtres, libelleType:
         if (f.etat && m.etat !== f.etat) return false;
 
         if (mots.length === 0) return true;
-        const texte = normaliser([m.id, libelleType(m.type), m.modele, m.numSerie, m.numSalle ?? ""].join(" "));
+        const texte = normaliser([m.id, libelleType(m.type), m.modele, m.numSerie, m.nomMachine ?? "", m.numSalle ?? ""].join(" "));
         return mots.every((mot) => texte.includes(mot)); // chaque mot doit être trouvé
     });
 }

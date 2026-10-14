@@ -142,7 +142,7 @@ export default function UtilisateurPage() {
         } catch (err) {
             if (err instanceof UtilisateurError && err.status === 403) setErreur("Vous n'avez pas le droit de gérer les utilisateurs.");
             else if (err instanceof UtilisateurError && err.status === 400) setErreur(err.detail || "Informations invalides.");
-            else if (err instanceof UtilisateurError && err.status === 404) setErreur("Cet utilisateur n'existe plus.");
+            else if (err instanceof UtilisateurError && err.status === 404) setErreur("Cet utilisateur n'a pas été créer.");
             else setErreur("Le service est indisponible. Réessayez plus tard.");
         } finally {
             setEnvoi(false);

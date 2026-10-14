@@ -2,6 +2,7 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Defaillance;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
@@ -59,7 +60,7 @@ class DefaillanceServiceImplTest {
     }
 
     private Materiel materiel() {
-        Materiel m = new Materiel();
+        Materiel m = new UC();
         m.setId(ID_MATERIEL);
         m.setNumSerie("UC-0001");
         return m;

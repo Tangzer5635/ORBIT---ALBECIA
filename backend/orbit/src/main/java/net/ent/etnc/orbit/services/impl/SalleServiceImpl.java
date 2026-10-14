@@ -6,10 +6,13 @@ import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
+import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
+import net.ent.etnc.orbit.models.entities.TableauInteractif;
+import net.ent.etnc.orbit.models.entities.UC;
+import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.repositories.SalleRepository;
@@ -28,7 +31,8 @@ import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -145,7 +149,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         Batiment batiment = trouverBatiment(dto.getIdBatiment());
 
         // Stock du bâtiment, rangé par type (matériel archivé exclu)
-        Map<TypeMateriel, Deque<EnStock>> stock = new EnumMap<>(TypeMateriel.class);
+        Map<String, Deque<EnStock>> stock = new HashMap<>();
         for (Salle reserve : batiment.getSalles()) {
             if (reserve.getType() != TypeSalle.SalleStockage) continue;
             for (Materiel m : reserve.getMateriels()) {
@@ -153,7 +157,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
                     stock.computeIfAbsent(m.getType(), t -> new ArrayDeque<>()).add(new EnStock(m, reserve));
             }
         }
-        Map<TypeMateriel, Integer> manquants = new EnumMap<>(TypeMateriel.class);
+        Map<String, Integer> manquants = new LinkedHashMap<>();
 
         // numPoste est unique sur tout le parc : on préfixe par bâtiment + salle
         String prefixe = "B" + batiment.getNumBatiment() + "-S" + creee.getNumSalle() + "-";
@@ -165,11 +169,11 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
             Poste poste = new Poste();
             poste.setNumPoste(numero);
             Poste cree = creerPoste(creee.getId(), poste);
-            prendre(stock, TypeMateriel.UC, 1, manquants).forEach(cree::addMateriel);
-            prendre(stock, TypeMateriel.Ecran, dto.getEcransParPoste(), manquants).forEach(cree::addMateriel);
+            prendre(stock, UC.TYPE, 1, manquants).forEach(cree::addMateriel);
+            prendre(stock, Ecran.TYPE, dto.getEcransParPoste(), manquants).forEach(cree::addMateriel);
         }
-        prendre(stock, TypeMateriel.VideoProjecteur, dto.getNbVideoProjecteurs(), manquants).forEach(creee::addMateriel);
-        prendre(stock, TypeMateriel.TableauInteractif, dto.getNbTableaux(), manquants).forEach(creee::addMateriel);
+        prendre(stock, VideoProjecteur.TYPE, dto.getNbVideoProjecteurs(), manquants).forEach(creee::addMateriel);
+        prendre(stock, TableauInteractif.TYPE, dto.getNbTableaux(), manquants).forEach(creee::addMateriel);
 
         if (!manquants.isEmpty()) {
             boolean plusRien = stock.values().stream().allMatch(Deque::isEmpty);
@@ -181,8 +185,8 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     }
 
     /** Retire jusqu'à `quantite` matériels du stock ; note ce qui manque. */
-    private List<Materiel> prendre(Map<TypeMateriel, Deque<EnStock>> stock, TypeMateriel type,
-                                   int quantite, Map<TypeMateriel, Integer> manquants) {
+    private List<Materiel> prendre(Map<String, Deque<EnStock>> stock, String type,
+                                   int quantite, Map<String, Integer> manquants) {
         Deque<EnStock> dispo = stock.getOrDefault(type, new ArrayDeque<>());
         List<Materiel> pris = new ArrayList<>();
         for (int i = 0; i < quantite; i++) {
@@ -282,5 +286,13 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
                 .nbPostes(nbPostes.getOrDefault(s.getId(), 0L))
                 .anneau(anneaux.getOrDefault(s.getId(), AnneauDto.VIDE))
                 .build()).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Salle> localiser(Long idMateriel) {
+        return repository.findByMateriels_Id(idMateriel)
+                .or(() -> posteService.posteDuMateriel(idMateriel)
+                        .flatMap(poste -> repository.findByPostes_Id(poste.getId())));
     }
 }

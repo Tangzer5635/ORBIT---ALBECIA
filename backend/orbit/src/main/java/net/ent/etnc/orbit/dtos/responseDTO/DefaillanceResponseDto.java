@@ -2,7 +2,6 @@ package net.ent.etnc.orbit.dtos.responseDTO;
 
 import lombok.*;
 import net.ent.etnc.orbit.models.enums.StatutDefaillance;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +18,7 @@ public class DefaillanceResponseDto {
 
     private Long idMateriel;
     private String numSerieMateriel;
-    private TypeMateriel typeMateriel;
+    private String typeMateriel;
 
     private Long idSignalePar;
     private String signalePar;

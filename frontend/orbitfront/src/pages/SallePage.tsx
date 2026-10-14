@@ -38,8 +38,7 @@ export default function SallePage() {
     const role = getUtilisateur()?.role;
 
     const [resultat, setResultat] = useState<Resultat>();
-    const [affichage, setAffichage] = useState<string>("dispo");
-
+    const [affichage] = useState<string>("dispo");
     // recharge les salles à chaque changement de bâtiment
     useEffect(() => {
         if (!idBatiment) return;

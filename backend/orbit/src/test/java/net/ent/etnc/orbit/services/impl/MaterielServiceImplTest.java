@@ -1,9 +1,10 @@
 package net.ent.etnc.orbit.services.impl;
 
+import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
@@ -42,11 +43,10 @@ class MaterielServiceImplTest {
     private MaterielServiceImpl service;
 
     private Materiel materiel(Long id, LocalDate finGarantie) {
-        Materiel m = new Materiel();
+        Materiel m = new UC();
         m.setId(id);
         m.setNumSerie("UC-" + id);
         m.setModele("Dell OptiPlex 7010");
-        m.setType(TypeMateriel.UC);
         m.setDateAcquisition(finGarantie.minusYears(3));
         m.setDateFinGarantie(finGarantie);
         return m;
@@ -149,6 +149,18 @@ class MaterielServiceImplTest {
         assertThatThrownBy(() -> service.update(materielSousGarantie(1L)))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Un matériel archivé ne peut pas être modifié");
+    }
+
+    @Test
+    void update_doitLeverServiceException_quandLeTypeChange() {
+        when(repository.findById(1L)).thenReturn(Optional.of(materielSousGarantie(1L))); // une UC
+        Materiel ecran = new Ecran();
+        ecran.setId(1L);
+
+        assertThatThrownBy(() -> service.update(ecran))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Le type d'un matériel ne peut pas être modifié");
+        verify(repository, never()).save(any());
     }
 
     @Test
