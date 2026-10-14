@@ -12,8 +12,9 @@ import {
     LIBELLE_LOCALISATION,
     ORDRE_ETATS,
     ORDRE_TYPES,
-    type Localisation,
+    type Localisation, compterStock,
 } from "../utils/materiels.ts";
+import {pluriel} from "../utils/postes.ts";
 
 const LOCALISATIONS: Localisation[] = ["PARTOUT", "SALLE", "STOCK", "ARCHIVE"];
 
@@ -26,6 +27,11 @@ export default function MaterielPage() {
     const [type, setType] = useState<TypeMateriel | null>(null);
     const [etat, setEtat] = useState<EtatMateriel | null>(null);
     const [localisation, setLocalisation] = useState<Localisation>("PARTOUT");
+
+    const uc = compterStock(materiels ?? [], "UC")
+    const ecran = compterStock(materiels ?? [], "Ecran")
+    const vp = compterStock(materiels ?? [], "VideoProjecteur")
+    const ti = compterStock(materiels ?? [], "TableauInteractif")
 
     useEffect(() => {
         getMateriel()
@@ -45,6 +51,7 @@ export default function MaterielPage() {
     return (
         <>
             <h1>Matériel</h1>
+            <p>{resultats.length} sur {materiels?.length}</p>
 
             <button type="button" className="btn primary">
                 Ajouter un matériel
@@ -54,7 +61,7 @@ export default function MaterielPage() {
             </button>
 
             <div>
-                <p>En stock</p>
+                <p>En stock {pluriel(uc,"unité centrale")} {pluriel(ecran, "écran")} {pluriel(vp, "vidéoprojecteur")} {pluriel(ti, "tableau interactif")}</p>
             </div>
 
             <div role="search">

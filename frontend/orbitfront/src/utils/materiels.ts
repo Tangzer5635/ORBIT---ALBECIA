@@ -9,9 +9,9 @@ export interface Filtres {
     localisation: Localisation;
 }
 
-// Ordre d'affichage des boutons (différent de l'ordre des clés dans types.ts)
+// ordre d'affichage des boutons
 export const ORDRE_TYPES: TypeMateriel[] = ["UC", "Ecran", "VideoProjecteur", "TableauInteractif"];
-// ARCHIVE n'est pas un filtre d'état : c'est la localisation "Archivés"
+
 export const ORDRE_ETATS: EtatMateriel[] = ["NORMAL", "A_REMPLACER", "DEFECTUEUX", "DISPONIBLE"];
 
 export const LIBELLE_LOCALISATION: Record<Localisation, string> = {
@@ -21,7 +21,7 @@ export const LIBELLE_LOCALISATION: Record<Localisation, string> = {
     ARCHIVE: "Archivés",
 };
 
-// "Écran" -> "ecran" : la recherche ignore les majuscules et les accents
+// "Écran" -> "ecran" on ignore majuscule et accent
 const normaliser = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 export function localisationDe(m: Materiel): Exclude<Localisation, "PARTOUT"> {
@@ -34,7 +34,7 @@ export function filtrerMateriels(materiels: Materiel[], f: Filtres, libelleType:
 
     return materiels.filter((m) => {
         const loc = localisationDe(m);
-        // "Partout" = tout le matériel en service, les archivés ont leur propre filtre
+        // "Partout" = tout le materiel en service
         if (f.localisation === "PARTOUT" ? loc === "ARCHIVE" : loc !== f.localisation) return false;
         if (f.type && m.type !== f.type) return false;
         if (f.etat && m.etat !== f.etat) return false;
@@ -43,4 +43,9 @@ export function filtrerMateriels(materiels: Materiel[], f: Filtres, libelleType:
         const texte = normaliser([m.id, libelleType(m.type), m.modele, m.numSerie, m.numSalle ?? ""].join(" "));
         return mots.every((mot) => texte.includes(mot)); // chaque mot doit être trouvé
     });
+}
+
+// nombre de matériels en stock pour un type donné
+export function compterStock(materiels: Materiel[], type: TypeMateriel): number {
+    return materiels.filter((m) => m.type === type && localisationDe(m) === "STOCK").length;
 }
