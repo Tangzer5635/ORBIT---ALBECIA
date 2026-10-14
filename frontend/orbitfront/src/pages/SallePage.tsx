@@ -93,9 +93,6 @@ export default function SallePage() {
                             <div className="hero-row">
                                 <button type="button" className="btn primary" onClick={() => setCreerOuvert(true)}>Créer une salle</button>
                                 <button type="button" className="btn">Importer une salle</button>
-                                {role === "ADMINISTRATEUR" && (
-                                    <button type="button" className="btn">Modifier le bâtiment</button>
-                                )}
                             </div>
                         )}
                     </div>
