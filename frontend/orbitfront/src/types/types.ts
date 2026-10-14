@@ -87,9 +87,9 @@ export interface UtilisateurRequest {
     role: Role;
     active?: boolean;
 }
-
-//BÂTIMENTS
-
+//==========================================
+//      BÂTIMENTS
+//==========================================
 
 // BatimentResponseDto.StockageDto
 export interface Stockage {
@@ -111,9 +111,9 @@ export interface Batiment {
 export interface BatimentRequest {
     numBatiment: string;
 }
-
-//SALLES
-
+//==========================================
+//      SALLES
+//==========================================
 // AnneauDto : matériels comptés par état
 export interface ComptesAnneau {
     libre: number;       // en stock
@@ -151,17 +151,22 @@ export interface SalleRequest {
     idBatiment: number;
 }
 
-
-//POSTES
-
+//==========================================
+//      POSTES
+//==========================================
 
 // PosteResponseDto
+export type EtatPoste = "DEFECTUEUX" | "A_COMPLETER" | "A_CHANGER" | "UTILISE" | "DISPONIBLE";
+
 export interface Poste {
     id: number;
     numPoste: string;
     occupantId: number | null;
     materielsId: number[];
+    etat?: EtatPoste;
 }
+
+
 
 // MonPosteResponseDto (GET /postes/me/)
 export interface MonPoste {
@@ -180,9 +185,9 @@ export interface PosteRequest {
     numPoste: string;
     idSalle?: number;
 }
-
-//MATÉRIELS
-
+//==========================================
+//      MATÉRIELS
+//==========================================
 // MaterielResponseDto
 export interface Materiel {
     id: number;

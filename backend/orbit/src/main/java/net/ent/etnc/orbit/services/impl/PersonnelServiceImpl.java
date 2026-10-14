@@ -2,7 +2,10 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.repositories.DefaillanceRepository;
 import net.ent.etnc.orbit.repositories.PersonnelRepository;
+import net.ent.etnc.orbit.repositories.PosteRepository;
+import net.ent.etnc.orbit.repositories.SalleRepository;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
@@ -21,13 +24,20 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final PosteRepository posteRepository;
+    private final SalleRepository salleRepository;
+    private final DefaillanceRepository defaillanceRepository;
 
     @Autowired
     public PersonnelServiceImpl(PersonnelRepository personnelRepository, PasswordEncoder passwordEncoder,
-                                RefreshTokenService refreshTokenService) {
+                                RefreshTokenService refreshTokenService, PosteRepository posteRepository,
+                                SalleRepository salleRepository, DefaillanceRepository defaillanceRepository) {
         super(personnelRepository);
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
+        this.posteRepository = posteRepository;
+        this.salleRepository = salleRepository;
+        this.defaillanceRepository = defaillanceRepository;
     }
 
     @Override
@@ -38,12 +48,17 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         return super.create(entity);
     }
 
+    /**
+     * Modifie l'identité et le mot de passe (inchangé s'il n'est pas fourni). Le rôle, l'activation et
+     * le verrouillage ne se changent que par {@link #changeRole}, {@link #activer}/{@link #desactiver}
+     * et {@link #verrouiller}/{@link #deverrouiller}.
+     */
     @Override
     @Transactional
     public Personnel update(Personnel entity) throws ServiceException {
-        Personnel existant = repository.findById(entity.getId())
-                .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
-        // le verrouillage ne se change que par verrouiller()/deverrouiller()
+        Personnel existant = trouver(entity.getId());
+        entity.setRole(existant.getRole());
+        entity.setActive(existant.isActive());
         entity.setVerrouille(existant.isVerrouille());
         if (entity.getPassword() == null || entity.getPassword().isBlank()) {
             entity.setMotDePasse(existant.getPassword());
@@ -53,17 +68,29 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         return super.update(entity);
     }
 
+    /**
+     * Supprime un compte et le retire de partout : son poste est libéré, il quitte ses salles et les
+     * défaillances qu'il a traitées perdent leur technicien. On ne supprime ni son propre compte, ni le
+     * dernier administrateur, ni un compte ayant signalé des défaillances (on garde leur trace).
+     */
     @Override
     @Transactional
     public void deleteById(Long id) throws ServiceException {
-        Personnel user = repository.findById(id).orElseThrow(() -> new ServiceException("Utilisateur introuvable"));
-        if (user.getRole() == Role.ADMINISTRATEUR) {
-            long nombreAdmins = repository.countByRole(Role.ADMINISTRATEUR);
-            if (nombreAdmins <= 1) {
-                throw new ServiceException("Impossible de supprimer le dernier administrateur.");
-            }
+        Personnel user = trouver(id);
+        if (estUtilisateurCourant(id)) {
+            throw new ServiceException("RG-U09", "Impossible de supprimer son propre compte.");
+        }
+        if (user.getRole() == Role.ADMINISTRATEUR && repository.countByRole(Role.ADMINISTRATEUR) <= 1) {
+            throw new ServiceException("Impossible de supprimer le dernier administrateur.");
+        }
+        if (defaillanceRepository.existsBySignalePar_Id(id)) {
+            throw new ServiceException("RG-U13", "Impossible de supprimer un compte ayant signalé des défaillances.");
         }
 
+        posteRepository.liberer(id);
+        salleRepository.findByPersonnels_Id(id).forEach(salle -> salle.removePersonnel(user));
+        defaillanceRepository.retirerTechnicien(id);
+        refreshTokenService.revokeAllForUser(user.getUsername());
         repository.deleteById(id);
     }
 
@@ -73,14 +100,31 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         return repository.findByUsername(username);
     }
 
+    /** Désactive un compte : connexion refusée, jetons d'accès ignorés par le filtre JWT et sessions de refresh révoquées. */
     @Override
-    public Personnel deactivate(Long id) throws ServiceException {
-        Personnel user = repository.findById(id)
-                .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
+    @Transactional
+    public Personnel desactiver(Long id) throws ServiceException {
+        Personnel user = trouver(id);
         if (user.getRole() == Role.ADMINISTRATEUR) {
             throw new ServiceException("RG-U05", "Impossible de désactiver un administrateur.");
         }
+        if (!user.isActive()) {
+            throw new ServiceException("RG-U11", "Ce compte est déjà désactivé.");
+        }
         user.setActive(false);
+        refreshTokenService.revokeAllForUser(user.getUsername());
+        return repository.save(user);
+    }
+
+    /** Active un compte, par exemple créé en amont pour le début d'un stage. */
+    @Override
+    @Transactional
+    public Personnel activer(Long id) throws ServiceException {
+        Personnel user = trouver(id);
+        if (user.isActive()) {
+            throw new ServiceException("RG-U12", "Ce compte est déjà actif.");
+        }
+        user.setActive(true);
         return repository.save(user);
     }
 
@@ -91,8 +135,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     @Override
     @Transactional
     public Personnel verrouiller(Long id) throws ServiceException {
-        Personnel user = repository.findById(id)
-                .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
+        Personnel user = trouver(id);
         if (user.getRole() == Role.ADMINISTRATEUR) {
             throw new ServiceException("RG-U06", "Impossible de verrouiller un administrateur.");
         }
@@ -107,8 +150,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     @Override
     @Transactional
     public Personnel deverrouiller(Long id) throws ServiceException {
-        Personnel user = repository.findById(id)
-                .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
+        Personnel user = trouver(id);
         if (!user.isVerrouille()) {
             throw new ServiceException("RG-U08", "Ce compte n'est pas verrouillé.");
         }
@@ -116,18 +158,33 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         return repository.save(user);
     }
 
+    /**
+     * Change le rôle d'un compte et révoque ses sessions de refresh : il doit se reconnecter.
+     * On ne change pas son propre rôle, ni celui du dernier administrateur.
+     */
     @Override
     @Transactional
     public Personnel changeRole(Long id, Role role) throws ServiceException {
-        Personnel user = repository.findById(id).orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            Personnel currentUser = auth.getPrincipal() instanceof Personnel ? (Personnel) auth.getPrincipal() : null;
-            if (currentUser != null && currentUser.getId().equals(user.getId())) {
-                throw new ServiceException("RG-U05", "Impossible de changer son propre rôle");
-            }
+        Personnel user = trouver(id);
+        if (estUtilisateurCourant(id)) {
+            throw new ServiceException("RG-U05", "Impossible de changer son propre rôle");
+        }
+        if (user.getRole() == Role.ADMINISTRATEUR && role != Role.ADMINISTRATEUR
+                && repository.countByRole(Role.ADMINISTRATEUR) <= 1) {
+            throw new ServiceException("RG-U10", "Impossible de changer le rôle du dernier administrateur.");
         }
         user.setRole(role);
+        refreshTokenService.revokeAllForUser(user.getUsername());
         return repository.save(user);
+    }
+
+    private Personnel trouver(Long id) throws ServiceException {
+        return repository.findById(id)
+                .orElseThrow(() -> new ServiceException("RG-U02", "Utilisateur introuvable"));
+    }
+
+    private boolean estUtilisateurCourant(Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof Personnel courant && id.equals(courant.getId());
     }
 }

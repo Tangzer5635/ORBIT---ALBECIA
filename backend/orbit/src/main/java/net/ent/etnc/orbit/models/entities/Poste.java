@@ -6,10 +6,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
+import net.ent.etnc.orbit.models.enums.EtatMateriel;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "poste",
@@ -53,5 +56,17 @@ public class Poste extends AbstractPersistableWithIdSetter<Long> {
 
     public void removeMateriel(Materiel materiel) {
         materiels.remove(materiel);
+    }
+
+    public EtatPoste calculerEtat(Set<Long> materielsDefectueux) {
+        List<EtatMateriel> etats = materiels.stream()
+                .map(m -> m.calculerEtat(false, materielsDefectueux.contains(m.getId())))
+                .filter(e -> e != EtatMateriel.ARCHIVE)
+                .toList();
+
+        if (etats.isEmpty()) return EtatPoste.A_COMPLETER;
+        if (etats.contains(EtatMateriel.DEFECTUEUX)) return EtatPoste.DEFECTUEUX;
+        if (etats.contains(EtatMateriel.A_REMPLACER)) return EtatPoste.A_CHANGER;
+        return occupant != null ? EtatPoste.UTILISE : EtatPoste.DISPONIBLE;
     }
 }

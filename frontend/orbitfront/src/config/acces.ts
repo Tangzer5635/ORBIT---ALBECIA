@@ -5,11 +5,17 @@ export type Acces = {
     label: string;
     roles: Role[];
     labelParRole?: Partial<Record<Role, string>>;
+    // false : route protégée avec le role mais pas present dans la navbar
+    menu?: boolean;
 };
+
+const ROLES_SALLES: Role[] = ["ADMINISTRATEUR", "GESTIONNAIRE", "FORMATEUR"];
+
 
 export const ACCES: Acces[] = [
     { path: "/batiments",    label: "Bâtiments",    roles: ["ADMINISTRATEUR"] },
-    { path: "/salles",       label: "Salles",       roles: ["ADMINISTRATEUR", "GESTIONNAIRE", "FORMATEUR"], labelParRole: { FORMATEUR: "Mes salles" } },
+    { path: "/salles",       label: "Salles",       roles: ROLES_SALLES, labelParRole: { FORMATEUR: "Mes salles" } },
+    { path: "/salles/:salleId", label: "Détail d'une salle", roles: ROLES_SALLES, menu: false },
     { path: "/defaillances", label: "Défaillances", roles: ["ADMINISTRATEUR", "GESTIONNAIRE", "FORMATEUR"] },
     { path: "/garanties",    label: "Garanties",    roles: ["ADMINISTRATEUR", "GESTIONNAIRE"] },
     { path: "/materiel",     label: "Matériel",     roles: ["ADMINISTRATEUR", "GESTIONNAIRE"] },

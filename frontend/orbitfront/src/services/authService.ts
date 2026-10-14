@@ -36,9 +36,27 @@ export async function login(username: string, password: string): Promise<Utilisa
   return data.utilisateur;
 }
 
-export function logout() {
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(USER_KEY);
+// Méthode pour se déconnecter, la session locale est vidée dans tous les cas,
+export async function logout(): Promise<void> {
+  let response: Response;
+  try {
+    try {
+      response = await fetch(`${API_URL}/logout/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`, // le serveur doit savoir quel token révoquer
+        },
+      });
+    } catch {
+      throw new AuthError(0); // serveur injoignable
+    }
+
+    if (!response.ok) throw new AuthError(response.status);
+  } finally {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
+  }
 }
 
 export function getToken(): string | null {

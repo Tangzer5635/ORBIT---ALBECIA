@@ -121,7 +121,7 @@ public class Init implements CommandLineRunner {
                 "Paul", "p.inactif", "1234", Role.STAGIAIRE));
         Personnel verrouille = personnelService.create(buildUser("4000000005", "Verrouille",
                 "Paul", "p.verrouille", "1234", Role.STAGIAIRE));
-        personnelService.deactivate(inactif.getId());
+        personnelService.desactiver(inactif.getId());
         verrouille.setVerrouille(true);
 
         // Postes à occuper, remplis à la fin pour répartir les stagiaires sur tout le parc

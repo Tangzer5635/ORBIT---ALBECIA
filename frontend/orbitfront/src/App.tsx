@@ -21,7 +21,7 @@ import { ACCES } from "./config/acces.ts";
 const PAGES: Record<string, ReactElement> = {
     "/batiments": <BatimentsPage />,
     "/salles": <SallePage />,
-    "/salles/:id": <SalleDetailPage />,
+    "/salles/:salleId": <SalleDetailPage />,
     "/defaillances": <DefaillancePage />,
     "/garanties": <GarantiePage />,
     "/materiel": <MaterielPage />,
@@ -49,7 +49,6 @@ export default function App() {
                             <Route path={path} element={PAGES[path]} />
                         </Route>
                     ))}
-                    <Route path="/salles/:salleId" element={<SalleDetailPage/>}/>
                 </Route>
             </Route>
 

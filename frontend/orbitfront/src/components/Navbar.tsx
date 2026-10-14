@@ -11,11 +11,17 @@ export default function Navbar() {
     // si personne n'est connecté, pas de navbar (page de connexion)
     if (!utilisateur) return null;
 
-    const liensVisibles = ACCES.filter((a) => a.roles.includes(utilisateur.role));
+    //on filtre en fonction du role et de l'apparition dans la navbar
+    const liensVisibles = ACCES.filter((a) => a.menu !== false && a.roles.includes(utilisateur.role));
 
-    function handleLogout() {
-        logout();
-        navigate("/connexion");
+    async function handleLogout() {
+        try {
+            await logout();
+        } catch {
+            // s'il y a une erreur serveur la session locale est déjà vidée, on redirige quand même
+        } finally {
+            navigate("/connexion", { replace: true });
+        }
     }
 
     return (
