@@ -20,6 +20,11 @@ public interface PosteRepository extends BaseRepository<Poste> {
 
     boolean existsByNumPosteAndIdNot(String numPoste, Long id);
 
+    /** Libère le poste occupé par cette personne (suppression de son compte). */
+    @Modifying(flushAutomatically = true)
+    @Query("update Poste p set p.occupant = null where p.occupant.id = :idOccupant")
+    int liberer(@Param("idOccupant") Long idOccupant);
+
     /** Charge les matériels des postes dans le contexte de persistance : une requête pour tous les postes. */
     @Query("select distinct p from Poste p left join fetch p.materiels where p.id in :ids")
     List<Poste> chargerMateriels(@Param("ids") Collection<Long> ids);

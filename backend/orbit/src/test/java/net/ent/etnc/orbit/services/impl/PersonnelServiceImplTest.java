@@ -1,8 +1,12 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Personnel;
+import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.repositories.DefaillanceRepository;
 import net.ent.etnc.orbit.repositories.PersonnelRepository;
+import net.ent.etnc.orbit.repositories.PosteRepository;
+import net.ent.etnc.orbit.repositories.SalleRepository;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.AfterEach;
@@ -15,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +41,15 @@ class PersonnelServiceImplTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private PosteRepository posteRepository;
+
+    @Mock
+    private SalleRepository salleRepository;
+
+    @Mock
+    private DefaillanceRepository defaillanceRepository;
+
     @InjectMocks
     private PersonnelServiceImpl service;
 
@@ -54,6 +68,11 @@ class PersonnelServiceImplTest {
         p.setRole(role);
         p.setActive(true);
         return p;
+    }
+
+    private void connecteEnTantQue(Personnel courant) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(courant, null, courant.getAuthorities()));
     }
 
     private void sauvegardeRenvoieLArgument() {
@@ -91,15 +110,29 @@ class PersonnelServiceImplTest {
     void update_doitConserverLeMotDePasse_quandNonFourni() {
         Personnel existant = personnel(7L, Role.STAGIAIRE);
         existant.setMotDePasse("ancien-hash");
-        Personnel modifie = personnel(7L, Role.FORMATEUR);
+        when(repository.findById(7L)).thenReturn(Optional.of(existant));
+        sauvegardeRenvoieLArgument();
+
+        Personnel resultat = service.update(personnel(7L, Role.STAGIAIRE));
+
+        assertThat(resultat.getPassword()).isEqualTo("ancien-hash");
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    void update_doitConserverLeRoleEtLActivation() {
+        Personnel existant = personnel(7L, Role.FORMATEUR);
+        existant.setActive(false);
+        existant.setMotDePasse("hash");
+        Personnel modifie = personnel(7L, Role.ADMINISTRATEUR);
+        modifie.setActive(true);
         when(repository.findById(7L)).thenReturn(Optional.of(existant));
         sauvegardeRenvoieLArgument();
 
         Personnel resultat = service.update(modifie);
 
-        assertThat(resultat.getPassword()).isEqualTo("ancien-hash");
         assertThat(resultat.getRole()).isEqualTo(Role.FORMATEUR);
-        verify(passwordEncoder, never()).encode(any());
+        assertThat(resultat.isActive()).isFalse();
     }
 
     @Test
@@ -142,7 +175,49 @@ class PersonnelServiceImplTest {
 
         service.deleteById(7L);
 
+        verify(refreshTokenService).revokeAllForUser("user7");
         verify(repository).deleteById(7L);
+    }
+
+    @Test
+    void deleteById_doitLeRetirerDePartout() {
+        Personnel p = personnel(7L, Role.FORMATEUR);
+        Salle salle = new Salle();
+        salle.addPersonnel(p);
+        when(repository.findById(7L)).thenReturn(Optional.of(p));
+        when(salleRepository.findByPersonnels_Id(7L)).thenReturn(List.of(salle));
+
+        service.deleteById(7L);
+
+        verify(posteRepository).liberer(7L);
+        assertThat(salle.getPersonnels()).isEmpty();
+        verify(defaillanceRepository).retirerTechnicien(7L);
+        verify(repository).deleteById(7L);
+    }
+
+    @Test
+    void deleteById_doitLeverServiceException_quandDefaillancesSignalees() {
+        when(repository.findById(7L)).thenReturn(Optional.of(personnel(7L, Role.STAGIAIRE)));
+        when(defaillanceRepository.existsBySignalePar_Id(7L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteById(7L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Impossible de supprimer un compte ayant signalé des défaillances.");
+        verify(posteRepository, never()).liberer(any());
+        verify(repository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteById_doitLeverServiceException_quandPropreCompte() {
+        Personnel admin = personnel(1L, Role.ADMINISTRATEUR);
+        connecteEnTantQue(admin);
+        when(repository.findById(1L)).thenReturn(Optional.of(personnel(1L, Role.ADMINISTRATEUR)));
+
+        assertThatThrownBy(() -> service.deleteById(1L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Impossible de supprimer son propre compte.");
+        verify(posteRepository, never()).liberer(any());
+        verify(repository, never()).deleteById(any());
     }
 
     @Test
@@ -158,6 +233,7 @@ class PersonnelServiceImplTest {
 
     @Test
     void deleteById_doitSupprimer_quandIlResteUnAutreAdministrateur() {
+        connecteEnTantQue(personnel(2L, Role.ADMINISTRATEUR));
         when(repository.findById(1L)).thenReturn(Optional.of(personnel(1L, Role.ADMINISTRATEUR)));
         when(repository.countByRole(Role.ADMINISTRATEUR)).thenReturn(2L);
 
@@ -171,27 +247,71 @@ class PersonnelServiceImplTest {
         when(repository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteById(7L))
-                .isInstanceOf(ServiceException.class);
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Utilisateur introuvable");
     }
 
-    // ---------- deactivate ----------
+    // ---------- desactiver / activer ----------
 
     @Test
-    void deactivate_doitDesactiverLeCompte() {
+    void desactiver_doitDesactiverLeCompteEtRevoquerLesSessions() {
         Personnel p = personnel(9L, Role.STAGIAIRE);
         when(repository.findById(9L)).thenReturn(Optional.of(p));
         when(repository.save(p)).thenReturn(p);
 
-        assertThat(service.deactivate(9L).isActive()).isFalse();
+        assertThat(service.desactiver(9L).isActive()).isFalse();
+        verify(refreshTokenService).revokeAllForUser("user9");
     }
 
     @Test
-    void deactivate_doitLeverServiceException_quandAdministrateur() {
+    void desactiver_doitLeverServiceException_quandAdministrateur() {
         when(repository.findById(1L)).thenReturn(Optional.of(personnel(1L, Role.ADMINISTRATEUR)));
 
-        assertThatThrownBy(() -> service.deactivate(1L))
+        assertThatThrownBy(() -> service.desactiver(1L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Impossible de désactiver un administrateur.");
+    }
+
+    @Test
+    void desactiver_doitLeverServiceException_quandDejaInactif() {
+        Personnel p = personnel(9L, Role.STAGIAIRE);
+        p.setActive(false);
+        when(repository.findById(9L)).thenReturn(Optional.of(p));
+
+        assertThatThrownBy(() -> service.desactiver(9L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Ce compte est déjà désactivé.");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void activer_doitActiverLeCompte() {
+        Personnel p = personnel(9L, Role.STAGIAIRE);
+        p.setActive(false);
+        when(repository.findById(9L)).thenReturn(Optional.of(p));
+        when(repository.save(p)).thenReturn(p);
+
+        Personnel resultat = service.activer(9L);
+
+        assertThat(resultat.isActive()).isTrue();
+        assertThat(resultat.isEnabled()).isTrue();
+    }
+
+    @Test
+    void activer_doitLeverServiceException_quandDejaActif() {
+        when(repository.findById(9L)).thenReturn(Optional.of(personnel(9L, Role.STAGIAIRE)));
+
+        assertThatThrownBy(() -> service.activer(9L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Ce compte est déjà actif.");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void activer_doitLeverNotFound_quandIntrouvable() {
+        when(repository.findById(9L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.activer(9L)).isInstanceOf(ServiceException.class);
     }
 
     // ---------- verrouiller ----------
@@ -262,25 +382,54 @@ class PersonnelServiceImplTest {
     // ---------- changeRole ----------
 
     @Test
-    void changeRole_doitChangerLeRole() {
+    void changeRole_doitChangerLeRoleEtRevoquerLesSessions() {
         Personnel p = personnel(7L, Role.STAGIAIRE);
         when(repository.findById(7L)).thenReturn(Optional.of(p));
         when(repository.save(p)).thenReturn(p);
 
         assertThat(service.changeRole(7L, Role.FORMATEUR).getRole()).isEqualTo(Role.FORMATEUR);
+        verify(refreshTokenService).revokeAllForUser("user7");
     }
 
     @Test
     void changeRole_doitLeverServiceException_quandOnChangeSonPropreRole() {
-        Personnel admin = personnel(1L, Role.ADMINISTRATEUR);
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(admin, null, admin.getAuthorities()));
+        connecteEnTantQue(personnel(1L, Role.ADMINISTRATEUR));
         when(repository.findById(1L)).thenReturn(Optional.of(personnel(1L, Role.ADMINISTRATEUR)));
 
         assertThatThrownBy(() -> service.changeRole(1L, Role.STAGIAIRE))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Impossible de changer son propre rôle");
         verify(repository, never()).save(any());
+        verify(refreshTokenService, never()).revokeAllForUser(any());
+    }
+
+    @Test
+    void changeRole_doitLeverServiceException_quandDernierAdministrateur() {
+        when(repository.findById(1L)).thenReturn(Optional.of(personnel(1L, Role.ADMINISTRATEUR)));
+        when(repository.countByRole(Role.ADMINISTRATEUR)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.changeRole(1L, Role.GESTIONNAIRE))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Impossible de changer le rôle du dernier administrateur.");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void changeRole_doitChanger_quandIlResteUnAutreAdministrateur() {
+        connecteEnTantQue(personnel(2L, Role.ADMINISTRATEUR));
+        Personnel p = personnel(1L, Role.ADMINISTRATEUR);
+        when(repository.findById(1L)).thenReturn(Optional.of(p));
+        when(repository.countByRole(Role.ADMINISTRATEUR)).thenReturn(2L);
+        when(repository.save(p)).thenReturn(p);
+
+        assertThat(service.changeRole(1L, Role.GESTIONNAIRE).getRole()).isEqualTo(Role.GESTIONNAIRE);
+    }
+
+    @Test
+    void changeRole_doitLeverNotFound_quandIntrouvable() {
+        when(repository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeRole(7L, Role.FORMATEUR)).isInstanceOf(ServiceException.class);
     }
 
     // ---------- findByUsername ----------
