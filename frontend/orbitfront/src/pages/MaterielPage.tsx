@@ -31,7 +31,7 @@ async function chargerCompteurs(): Promise<Compteurs> {
     const [total, archives, ...stock] = await Promise.all([
         compterMateriels({localisation: "PARTOUT"}),
         compterMateriels({localisation: "ARCHIVE"}),
-        ...ORDRE_TYPES.map((t) => compterMateriels({localisation: "STOCK", filter: `type==${t}`})),
+        ...ORDRE_TYPES.map((t) => compterMateriels({localisation: "STOCK", type: t})),
     ]);
     return {total, archives, stock};
 }
@@ -63,7 +63,7 @@ export default function MaterielPage() {
     // recharge la page à chaque changement de filtre ou de page
     useEffect(() => {
         let actif = true; // pour ignorer une réponse qui arrive après un chagement de filtre
-        getMateriels({filter: versRsql(recherche, type), etat, localisation}, page, TAILLE_PAGE)
+        getMateriels({filter: versRsql(recherche), type, etat, localisation}, page, TAILLE_PAGE)
             .then((p) => {
                 if (actif) {
                     setResultat(p);
@@ -153,17 +153,17 @@ export default function MaterielPage() {
                 </div>
             </div>
 
-            {erreur && <p>{erreur}</p>}
-            {!materiels && !erreur && <p>Chargement du matériel…</p>}
-            {materiels && resultats.length === 0 && <p>Aucun matériel ne correspond à ces filtres.</p>}
+            {erreur && <p role="alert">{erreur}</p>}
+            {!resultat && !erreur && <p>Chargement du matériel…</p>}
+            {resultat && resultat.totalElements === 0 && <p>Aucun matériel ne correspond à ces filtres.</p>}
 
-
-            {resultats.length>0 && (
-                <div>
-                    {resultats.map((m) => (
-                        <div>
-                            {LIBELLE_TYPE_MATERIEL[m.type]}{m.nomMachine && ` (${m.nomMachine})`} - {m.modele} -- {LIBELLE_ETAT_MATERIEL[m.etat]}{" "} - {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
-                        </div>
+            {resultat && resultat.content.length > 0 && (
+                <ul>
+                    {resultat.content.map((m) => (
+                        <li key={m.id}>
+                            {LIBELLE_TYPE_MATERIEL[m.type]} - {m.modele} - {LIBELLE_ETAT_MATERIEL[m.etat]}
+                            {" "}- garantie jusqu'au {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
+                        </li>
                     ))}
                 </ul>
             )}
