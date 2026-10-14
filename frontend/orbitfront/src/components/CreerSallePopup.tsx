@@ -2,6 +2,7 @@ import {useState} from "react";
 import Popup from "./Popup.tsx";
 import type {Batiment} from "../types/types.ts";
 import {creerSalleEquipee, SalleError} from "../services/salleService.ts";
+import {pluriel} from "../utils/postes.ts";
 
 const ETAGES = ["Rez-de-chaussée", "1er étage", "2e étage", "3e étage"]; // l'index est la valeur envoyée
 const ETAPES = ["Identité", "Composition", "Récapitulatif"];
@@ -124,9 +125,9 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                 <>
                     <p>Bâtiment {batiment.numBatiment}, salle {numSalle.trim()}, {ETAGES[Number(etage)].toLowerCase()} :</p>
                     <ul className="popup-recap">
-                        <li>{nbPostes} poste{nbPostes > 1 ? "s" : ""} stagiaire + 1 poste formateur</li>
-                        <li>{ecransParPoste} écran{ecransParPoste > 1 ? "s" : ""} par poste</li>
-                        <li>{nbVideoProjecteurs} vidéoprojecteur{nbVideoProjecteurs > 1 ? "s" : ""}</li>
+                        <li>{nbPostes} {pluriel(nbPostes, "poste")} stagiaire + 1 poste formateur</li>
+                        <li>{ecransParPoste} {pluriel(ecransParPoste, "écran")} par poste</li>
+                        <li>{nbVideoProjecteurs} {pluriel(nbVideoProjecteurs, "vidéo-projecteur")}</li>
                         <li>{nbTableaux} tableau{nbTableaux > 1 ? "x" : ""} interactif{nbTableaux > 1 ? "s" : ""}</li>
                     </ul>
                     <p className="muted small">

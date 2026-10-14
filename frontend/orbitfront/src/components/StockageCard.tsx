@@ -1,11 +1,10 @@
 import type { SalleCarte } from "../types/types.ts";
-import { totalMateriels } from "../utils/postes.ts";
+import {pluriel, totalMateriels} from "../utils/postes.ts";
 
 interface StockageCardProps {
     salle: SalleCarte;
 }
 
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
 export default function StockageCard({ salle }: StockageCardProps) {
     const { libre, defectueux, aChanger } = salle.anneau;

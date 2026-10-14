@@ -29,7 +29,7 @@ export interface SalleEquipeeResponse {
 export async function creerSalleEquipee(dto: SalleEquipeeRequest): Promise<SalleEquipeeResponse> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/equipee`, {
+        response = await fetch(`${URL}/equipee/`, {
             method: "POST",
             headers: {...authHeaders(), "Content-Type": "application/json"},
             body: JSON.stringify(dto),
@@ -64,6 +64,9 @@ export async function getSalleById(id: string): Promise<Salle> {
     } catch {
         throw new SalleError(0);
     }
+
+    if (!response.ok) throw new SalleError(response.status);
+
     return await response.json();
 }
 
@@ -71,7 +74,7 @@ export async function getSalleById(id: string): Promise<Salle> {
 export async function getSallesDuBatiment(idBatiment: number): Promise<SalleCarte[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/?batiment=${idBatiment}`, { headers: authHeaders() });
+        response = await fetch(`${URL}/?batiment=${idBatiment}/`, { headers: authHeaders() });
     } catch {
         throw new SalleError(0);
     }

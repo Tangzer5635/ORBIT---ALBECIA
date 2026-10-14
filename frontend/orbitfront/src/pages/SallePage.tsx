@@ -8,7 +8,7 @@ import Legende from "../components/Legende.tsx";
 import SalleCard from "../components/SalleCard.tsx";
 import StockageCard from "../components/StockageCard.tsx";
 import type {SalleCarte} from "../types/types.ts";
-import { pourcentageUtilisable, totalMateriels } from "../utils/postes.ts";
+import {pluriel, pourcentageUtilisable, totalMateriels} from "../utils/postes.ts";
 import CreerSallePopup from "../components/CreerSallePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";
 
@@ -18,10 +18,6 @@ interface Resultat {
     salles: SalleCarte[];
     erreur?: string;
 }
-
-type Affichage = "dispo";
-
-const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
 const parNumero = (a: SalleCarte, b: SalleCarte) => a.numSalle.localeCompare(b.numSalle, "fr", { numeric: true });
 
@@ -42,7 +38,7 @@ export default function SallePage() {
     const role = getUtilisateur()?.role;
 
     const [resultat, setResultat] = useState<Resultat>();
-    const [affichage] = useState<Affichage>("dispo");
+    const [affichage, setAffichage] = useState<string>("dispo");
 
     // recharge les salles à chaque changement de bâtiment
     useEffect(() => {
