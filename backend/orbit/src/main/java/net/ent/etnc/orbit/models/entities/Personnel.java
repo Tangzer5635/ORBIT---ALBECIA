@@ -2,13 +2,12 @@ package net.ent.etnc.orbit.models.entities;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.models.enums.Role;
-import org.hibernate.validator.constraints.Length;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,38 +23,28 @@ import java.util.Collection;
 public class Personnel extends AbstractPersistableWithIdSetter<Long> implements UserDetails {
 
     @Getter
-    @Setter
-    @NotNull(message = "nid ne doit pas être null")
-    @NotEmpty(message = "nid ne doit pas être vide")
-    @NotBlank(message = "nid doit contenir des caractères lisibles")
+    @NotBlank
     @Pattern(regexp = "^[0-9]{10}$", message = "nid doit contenir exactement 10 chiffres")
     @Column(name = "nid", length = 10, nullable = false)
     private String nid;
 
     @Getter
     @Setter
-    @NotNull(message = "nom ne doit pas être null")
-    @NotEmpty(message = "nom ne doit pas être vide")
-    @NotBlank(message = "nom doit contenir des caractères lisibles")
-    @Length(min = 1, max = 50, message = "nom doit avoir entre 1 et 50 caractères")
+    @NotBlank
+    @Size(max = 50, message = "nom de max 50 caractères")
     @Column(name = "nom", length = 50, nullable = false)
     private String nom;
 
     @Getter
     @Setter
-    @NotNull(message = "prenom ne doit pas être null")
-    @NotEmpty(message = "prenom ne doit pas être vide")
-    @NotBlank(message = "prenom doit contenir des caractères lisibles")
-    @Length(min = 1, max = 30, message = "prenom doit avoir entre 1 et 30 caractères")
+    @NotBlank
+    @Size(max = 30, message = "prenom de max 30 caractères")
     @Column(name = "prenom", length = 30, nullable = false)
     private String prenom;
 
     @Getter
-    @Setter
-    @NotNull(message = "login ne doit pas être null")
-    @NotEmpty(message = "login ne doit pas être vide")
-    @NotBlank(message = "login doit contenir des caractères lisibles")
-    @Length(min = 3, max = 50, message = "login doit avoir entre 3 et 50 caractères")
+    @NotBlank
+    @Size(min = 3, max = 50, message = "login doit avoir entre 3 et 50 caractères")
     @Column(name = "login", length = 50, nullable = false)
     private String login;
 
@@ -81,6 +70,16 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     @Column(name = "verrouille", nullable = false)
     private boolean verrouille = false;
 
+
+    /** Le nid est toujours enregistré sans espaces autour. */
+    public void setNid(String nid) {
+        this.nid = nid == null ? null : nid.trim();
+    }
+
+    /** Le login est toujours enregistré sans espaces autour. */
+    public void setLogin(String login) {
+        this.login = login == null ? null : login.trim();
+    }
 
     /**
      * Retourne les autorités Spring Security de cet utilisateur.

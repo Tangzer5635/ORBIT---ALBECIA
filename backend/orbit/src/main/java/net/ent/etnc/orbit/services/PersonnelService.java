@@ -11,7 +11,9 @@ import java.util.Optional;
 public interface PersonnelService extends Service<Personnel, Long> {
     Optional<Personnel> findByUsername(String username);
 
-    Personnel deactivate(Long id) throws ServiceException;
+    Personnel desactiver(Long id) throws ServiceException;
+
+    Personnel activer(Long id) throws ServiceException;
 
     Personnel changeRole(Long id, Role role) throws ServiceException;
 

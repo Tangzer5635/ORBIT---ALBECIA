@@ -1,15 +1,18 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
-import net.ent.etnc.orbit.dtos.requestDTO.UserRequestDto;
-import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
+import net.ent.etnc.orbit.dtos.requestDTO.RoleRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.UserCreateRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.UserUpdateRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.services.PersonnelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +33,7 @@ public class PersonnelController {
     @GetMapping("/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
     public ResponseEntity<Page<UserResponseDto>> getAll(
-            @PageableDefault(size = 20) Pageable pageable
+            @PageableDefault(size = 20, sort = {"nom", "prenom", "id"}) Pageable pageable
     ) {
         return ResponseEntity.ok(personnelService.findAll(pageable)
                 .map(userAssembler::toDto));
@@ -44,20 +47,37 @@ public class PersonnelController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping("/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<UserResponseDto> post(@Valid @RequestBody UserRequestDto userDto) {
-        return ResponseEntity.ok(
+    public ResponseEntity<UserResponseDto> post(@Valid @RequestBody UserCreateRequestDto userDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
                 userAssembler.toDto(personnelService.create(userAssembler.toEntity(userDto))));
     }
 
     @PutMapping("/{id}/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<UserResponseDto> put(@PathVariable Long id, @Valid @RequestBody UserRequestDto userRequestDto) {
-        if (!personnelService.existsById(id)) return ResponseEntity.notFound().build();
-        Personnel user = userAssembler.toEntity(userRequestDto);
+    public ResponseEntity<UserResponseDto> put(@PathVariable Long id, @Valid @RequestBody UserUpdateRequestDto userDto) {
+        Personnel user = userAssembler.toEntity(userDto);
         user.setId(id);
         return ResponseEntity.ok(userAssembler.toDto(personnelService.update(user)));
+    }
+
+    @PatchMapping("/{id}/role/")
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public ResponseEntity<UserResponseDto> changerRole(@PathVariable Long id, @Valid @RequestBody RoleRequestDto roleDto) {
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.changeRole(id, roleDto.getRole())));
+    }
+
+    @PatchMapping("/{id}/activer/")
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public ResponseEntity<UserResponseDto> activer(@PathVariable Long id) {
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.activer(id)));
+    }
+
+    @PatchMapping("/{id}/desactiver/")
+    @PreAuthorize("hasRole('ADMINISTRATEUR')")
+    public ResponseEntity<UserResponseDto> desactiver(@PathVariable Long id) {
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.desactiver(id)));
     }
 
     @PatchMapping("/{id}/verrouiller/")
