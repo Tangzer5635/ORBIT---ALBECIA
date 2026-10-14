@@ -2,15 +2,14 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
-import net.ent.etnc.orbit.repositories.DefaillanceRepository;
-import net.ent.etnc.orbit.repositories.PersonnelRepository;
-import net.ent.etnc.orbit.repositories.PosteRepository;
-import net.ent.etnc.orbit.repositories.SalleRepository;
+import net.ent.etnc.orbit.repositories.*;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,23 +26,27 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     private final PosteRepository posteRepository;
     private final SalleRepository salleRepository;
     private final DefaillanceRepository defaillanceRepository;
+    private final StageRepository stageRepository;
 
     @Autowired
     public PersonnelServiceImpl(PersonnelRepository personnelRepository, PasswordEncoder passwordEncoder,
                                 RefreshTokenService refreshTokenService, PosteRepository posteRepository,
-                                SalleRepository salleRepository, DefaillanceRepository defaillanceRepository) {
+                                SalleRepository salleRepository, DefaillanceRepository defaillanceRepository, StageRepository stageRepository) {
         super(personnelRepository);
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
         this.posteRepository = posteRepository;
         this.salleRepository = salleRepository;
         this.defaillanceRepository = defaillanceRepository;
+        this.stageRepository = stageRepository;
     }
 
     @Override
     @Transactional
     public Personnel create(Personnel entity) throws ServiceException {
-        if (entity.getPassword() == null || entity.getPassword().isBlank()) {throw new ServiceException("RG-U03", "Le mot de passe est obligatoire");}
+        if (entity.getPassword() == null || entity.getPassword().isBlank()) {
+            throw new ServiceException("RG-U03", "Le mot de passe est obligatoire");
+        }
         entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
         return super.create(entity);
     }
@@ -86,6 +89,9 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         if (defaillanceRepository.existsBySignalePar_Id(id)) {
             throw new ServiceException("RG-U13", "Impossible de supprimer un compte ayant signalé des défaillances.");
         }
+        if (stageRepository.existsByFormateur_Id(id)) {
+            throw new ServiceException("Impossible de supprimer un formateur qui gère un stage.");
+        }
 
         posteRepository.liberer(id);
         salleRepository.findByPersonnels_Id(id).forEach(salle -> salle.removePersonnel(user));
@@ -100,7 +106,9 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         return repository.findByUsername(username);
     }
 
-    /** Désactive un compte : connexion refusée, jetons d'accès ignorés par le filtre JWT et sessions de refresh révoquées. */
+    /**
+     * Désactive un compte : connexion refusée, jetons d'accès ignorés par le filtre JWT et sessions de refresh révoquées.
+     */
     @Override
     @Transactional
     public Personnel desactiver(Long id) throws ServiceException {
@@ -116,7 +124,9 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         return repository.save(user);
     }
 
-    /** Active un compte, par exemple créé en amont pour le début d'un stage. */
+    /**
+     * Active un compte, par exemple créé en amont pour le début d'un stage.
+     */
     @Override
     @Transactional
     public Personnel activer(Long id) throws ServiceException {
@@ -173,7 +183,11 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
                 && repository.countByRole(Role.ADMINISTRATEUR) <= 1) {
             throw new ServiceException("RG-U10", "Impossible de changer le rôle du dernier administrateur.");
         }
+        if (user.getRole() == Role.FORMATEUR && role != Role.FORMATEUR && stageRepository.existsByFormateur_Id(id)) {
+            throw new ServiceException("Impossible de changer le rôle d'un formateur qui gère un stage.");
+        }
         user.setRole(role);
+        if (role != Role.STAGIAIRE) user.setStage(null); // seul un stagiaire est dans un stage
         refreshTokenService.revokeAllForUser(user.getUsername());
         return repository.save(user);
     }
@@ -187,4 +201,17 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth != null && auth.getPrincipal() instanceof Personnel courant && id.equals(courant.getId());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Personnel> findByRole(Role role, Pageable pageable) {
+        return repository.findByRole(role, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existeDansStage(Long idStage) {
+        return repository.existsByStage_Id(idStage);
+    }
+
 }

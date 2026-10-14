@@ -20,4 +20,6 @@ public class SalleResponseDto {
     private int nbPostes;
     private Map<String, Long> materielsParType;
     private AnneauDto anneau;
+    private Long stageId;     // stage accueilli par la salle, absent s'il n'y en a pas
+    private String stageNom;
 }

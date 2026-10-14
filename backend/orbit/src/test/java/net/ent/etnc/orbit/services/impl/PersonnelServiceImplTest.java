@@ -3,10 +3,7 @@ package net.ent.etnc.orbit.services.impl;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
-import net.ent.etnc.orbit.repositories.DefaillanceRepository;
-import net.ent.etnc.orbit.repositories.PersonnelRepository;
-import net.ent.etnc.orbit.repositories.PosteRepository;
-import net.ent.etnc.orbit.repositories.SalleRepository;
+import net.ent.etnc.orbit.repositories.*;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.AfterEach;
@@ -52,6 +49,9 @@ class PersonnelServiceImplTest {
 
     @InjectMocks
     private PersonnelServiceImpl service;
+
+    @Mock
+    private StageRepository stageRepository;
 
     @AfterEach
     void viderLeContexteDeSecurite() {

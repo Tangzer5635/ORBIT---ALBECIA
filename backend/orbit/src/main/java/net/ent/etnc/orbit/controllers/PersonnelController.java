@@ -7,6 +7,7 @@ import net.ent.etnc.orbit.dtos.requestDTO.UserCreateRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.UserUpdateRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
+import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.services.PersonnelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -97,5 +98,15 @@ public class PersonnelController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         personnelService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Liste par rôle (ex. ?role=STAGIAIRE ou ?role=FORMATEUR) : ouverte au gestionnaire pour les stages. */
+    @GetMapping(value = "/", params = "role")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<Page<UserResponseDto>> getByRole(
+            @RequestParam Role role,
+            @PageableDefault(size = 200, sort = {"nom", "prenom", "id"}) Pageable pageable
+    ) {
+        return ResponseEntity.ok(personnelService.findByRole(role, pageable).map(userAssembler::toDto));
     }
 }

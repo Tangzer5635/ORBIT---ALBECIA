@@ -18,6 +18,7 @@ public class UserAssembler {
                 .prenom(personnel.getPrenom())
                 .active(personnel.isActive())
                 .verrouille(personnel.isVerrouille())
+                .stageId(personnel.getStage() != null ? personnel.getStage().getId() : null)
                 .build();
     }
 

@@ -15,10 +15,11 @@ import java.util.List;
 
 @Entity
 @Table(name = "salle",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_salle_batiment_id_num_salle",
-                columnNames = {"batiment_id", "num_salle"}
-        ))
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_salle_batiment_id_num_salle", columnNames = {"batiment_id", "num_salle"}),
+                // un stage n'est que dans une salle (stage_id vide = pas de stage)
+                @UniqueConstraint(name = "uk_salle_stage", columnNames = {"stage_id"})
+        })
 
 @ToString(callSuper = true, of = {"numSalle", "etage", "type"})
 public class Salle extends AbstractPersistableWithIdSetter<Long> {
@@ -67,6 +68,13 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "master_id", foreignKey = @ForeignKey(name = "fk_salle_master"))
     private Master master;
+
+    /** Stage accueilli par la salle (salle de cours seulement, un seul à la fois). */
+    @Getter
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stage_id", foreignKey = @ForeignKey(name = "fk_salle_stage"))
+    private Stage stage;
 
     @Valid
     @OneToMany(fetch = FetchType.LAZY)

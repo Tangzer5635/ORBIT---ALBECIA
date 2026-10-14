@@ -74,6 +74,7 @@ export interface Utilisateur {
     nom: string;
     active: boolean;
     verrouille: boolean;
+    stageId?: number | null; // stage du stagiaire, absent s'il n'est dans aucun stage
 }
 
 // UserRequestDto
@@ -131,6 +132,8 @@ export interface Salle {
     nbPostes: number;
     materielsParType: Partial<Record<TypeMateriel, number>>;
     anneau?: ComptesAnneau;
+    stageId?: number | null; // stage accueilli (salle de cours)
+    stageNom?: string | null;
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)
@@ -238,4 +241,31 @@ export interface Processus {
 export interface ProcessusRequest {
     nom: string;
     liste: ListeProcessus;
+}
+
+//==========================================
+//      STAGES
+//==========================================
+
+export const LIBELLE_TYPE_FORMATION = {
+    ESR: "Réseaux",
+    ESI: "Admin Système",
+    PDI: "Développement",
+    CYB: "Cybersécurité",
+    EST: "Télécommunication",
+} as const;
+export type TypeFormation = keyof typeof LIBELLE_TYPE_FORMATION;
+
+// StageResponseDto
+export interface Stage {
+    id: number;
+    nom: string;
+    type: TypeFormation;
+    dateDebut: string; // "2026-08-07"
+    dateFin: string;
+    formateurId: number;
+    formateur: string; // "Prénom Nom"
+    salleId?: number | null; // salle qui accueille le stage
+    numSalle?: string | null;
+    numBatiment?: string | null;
 }
