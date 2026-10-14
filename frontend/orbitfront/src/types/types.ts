@@ -156,12 +156,17 @@ export interface SalleRequest {
 //==========================================
 
 // PosteResponseDto
+export type EtatPoste = "DEFECTUEUX" | "A_COMPLETER" | "A_CHANGER" | "UTILISE" | "DISPONIBLE";
+
 export interface Poste {
     id: number;
     numPoste: string;
     occupantId: number | null;
     materielsId: number[];
+    etat?: EtatPoste;
 }
+
+
 
 // MonPosteResponseDto (GET /postes/me/)
 export interface MonPoste {

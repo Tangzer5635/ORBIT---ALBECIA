@@ -1197,3 +1197,58 @@ h3 {
     margin: 0 0 10px;
     padding-left: 18px;
 }
+
+/* Tuiles d'état de la salle : servent aussi de filtre */
+.tuiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tuile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 108px;
+    padding: 8px 14px;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--c) 16%, var(--card));
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.tuile b {
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.tuile.dispo {
+    background: repeating-linear-gradient(45deg, var(--use-bg) 0 6px, color-mix(in srgb, var(--use) 30%, var(--card)) 6px 12px);
+}
+
+.tuile[aria-pressed="true"] {
+    border-color: var(--ink);
+}
+
+/* Liste des postes : ceux hors filtre sont estompés */
+.postes {
+    display: grid;
+    gap: 6px;
+    margin-top: 18px;
+    padding: 0;
+    list-style: none;
+}
+
+.postes li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity 0.15s;
+}
+
+.postes li.estompe {
+    opacity: 0.25;
+}
