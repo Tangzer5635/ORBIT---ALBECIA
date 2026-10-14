@@ -45,4 +45,5 @@ export function niveau(pct: number): "def" | "chg" | "use" {
     return "use";
 }
 
-export const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
+// pluriel(3, "salle") -> "3 salles" ; pluriel(2, "unité centrale", "unités centrales") pour les pluriels irréguliers
+export const pluriel = (n: number, mot: string, motPluriel = `${mot}s`) => `${n} ${n > 1 ? motPluriel : mot}`;
