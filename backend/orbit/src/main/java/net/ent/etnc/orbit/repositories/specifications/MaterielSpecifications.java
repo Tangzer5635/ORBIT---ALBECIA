@@ -3,7 +3,7 @@ package net.ent.etnc.orbit.repositories.specifications;
 
 import jakarta.persistence.criteria.*;
 import net.ent.etnc.orbit.models.entities.Defaillance;
-import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.*;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.LocalisationMateriel;
@@ -39,6 +39,18 @@ public final class MaterielSpecifications {
                 cb.equal(contenu, materiel),
                 cb.equal(salle.get("type"), TypeSalle.SalleStockage));
         return cb.exists(sousRequete);
+    }
+
+    /** Filtre sur la classe du matériel (UC, Ecran, VideoProjecteur, TableauInteractif). */
+    public static Specification<Materiel> type(String type) {
+        Class<? extends Materiel> classe = switch (type) {
+            case UC.TYPE -> UC.class;
+            case Ecran.TYPE -> Ecran.class;
+            case VideoProjecteur.TYPE -> VideoProjecteur.class;
+            case TableauInteractif.TYPE -> TableauInteractif.class;
+            default -> throw new IllegalArgumentException("Type de matériel inconnu : " + type);
+        };
+        return (materiel, query, cb) -> cb.equal(materiel.type(), classe);
     }
 
     public static Specification<Materiel> localisation(LocalisationMateriel localisation) {
