@@ -14,10 +14,9 @@ export const LIBELLE_TYPE_SALLE = {
 } as const;
 export type TypeSalle = keyof typeof LIBELLE_TYPE_SALLE;
 
-// TypeMateriel.java
+// Sous-classes de Materiel.java (UC, Ecran...) : valeur du champ "type" du JSON
 export const LIBELLE_TYPE_MATERIEL = {
     TableauInteractif: "Tableau interactif",
-    Imprimante: "Imprimante",
     Ecran: "Écran",
     VideoProjecteur: "Vidéoprojecteur",
     UC: "Unité centrale",
@@ -79,7 +78,7 @@ export interface Utilisateur {
 
 // UserRequestDto
 export interface UtilisateurRequest {
-    nid: string;
+    nid?: string; //Seulement a la création : en modif le back garde le NID existant
     nom: string;
     prenom: string;
     login: string;
@@ -131,6 +130,7 @@ export interface Salle {
     materielsId: number[];
     nbPostes: number;
     materielsParType: Partial<Record<TypeMateriel, number>>;
+    anneau?: ComptesAnneau;
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)
@@ -156,12 +156,17 @@ export interface SalleRequest {
 //==========================================
 
 // PosteResponseDto
+export type EtatPoste = "DEFECTUEUX" | "A_COMPLETER" | "A_CHANGER" | "UTILISE" | "DISPONIBLE";
+
 export interface Poste {
     id: number;
     numPoste: string;
     occupantId: number | null;
     materielsId: number[];
+    etat?: EtatPoste;
 }
+
+
 
 // MonPosteResponseDto (GET /postes/me/)
 export interface MonPoste {
@@ -193,6 +198,12 @@ export interface Materiel {
     type: TypeMateriel;
     etat: EtatMateriel;
     dateArchivage: string | null;
+    // UC uniquement
+    nomMachine?: string;
+    processus?: Processus[];
+    // Salle où se trouve le matériel (absents s'il est archivé)
+    numSalle?: string;
+    typeSalle?: TypeSalle;
 }
 
 // MaterielRequestDto
@@ -202,5 +213,29 @@ export interface MaterielRequest {
     dateFinGarantie: string;
     dateAcquisition: string;
     type: TypeMateriel;
+    nomMachine?: string;   // UC uniquement
     idStockage?: number;
+}
+
+//==========================================
+//      PROCESSUS
+//==========================================
+// ListeProcessus.java
+export const LIBELLE_LISTE_PROCESSUS = {
+    BLANCHE: "Liste blanche",
+    NOIRE: "Liste noire",
+} as const;
+export type ListeProcessus = keyof typeof LIBELLE_LISTE_PROCESSUS;
+
+// ProcessusResponseDto
+export interface Processus {
+    id: number;
+    nom: string;
+    liste: ListeProcessus;
+}
+
+// ProcessusRequestDto
+export interface ProcessusRequest {
+    nom: string;
+    liste: ListeProcessus;
 }

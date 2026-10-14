@@ -2,8 +2,8 @@ package net.ent.etnc.orbit.dtos.assemblers;
 
 import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import org.junit.jupiter.api.Test;
 
@@ -14,14 +14,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PosteAssemblerTest {
 
-    private final PosteAssembler assembler = new PosteAssembler(new MaterielAssembler());
+    private final PosteAssembler assembler = new PosteAssembler(new MaterielAssembler(new ProcessusAssembler()));
 
     private Materiel materiel(Long id, LocalDate acquisition) {
-        Materiel m = new Materiel();
+        Materiel m = new Ecran();
         m.setId(id);
         m.setNumSerie("MAT-" + id);
         m.setModele("Modele");
-        m.setType(TypeMateriel.Ecran);
         m.setDateAcquisition(acquisition);
         m.setDateFinGarantie(LocalDate.now().plusYears(2));
         return m;

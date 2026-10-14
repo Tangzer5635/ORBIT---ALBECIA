@@ -133,22 +133,27 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         List<Long> ids = page.map(Batiment::getId).getContent();
         if (ids.isEmpty()) return Page.empty(pageable);
 
-        LocalDate seuil = Materiel.seuilARemplacer();
         Map<Long, Long> nbSalles = repository.nbSallesDeCours(ids).stream()
                 .collect(Collectors.toMap(IdCompte::id, IdCompte::nb));
         Map<Long, List<BatimentResponseDto.StockageDto>> stockages = repository.stockages(ids).stream()
                 .collect(Collectors.groupingBy(StockageCompte::idBatiment, Collectors.mapping(
                         s -> new BatimentResponseDto.StockageDto(s.id(), s.numSalle(), s.nbMateriels()),
                         Collectors.toList())));
-        Map<Long, AnneauDto> anneaux = AnneauDto.parId(
-                repository.comptesEtatsEnSalle(ids, seuil), repository.comptesEtatsSurPoste(ids, seuil));
+        // anneau du bâtiment = anneaux de ses salles de cours additionnés
+        List<Long> idsSalles = page.getContent().stream()
+                .flatMap(b -> b.getSalles().stream())
+                .filter(s -> s.getType() == TypeSalle.SalleDeCours)
+                .map(Salle::getId).toList();
+        Map<Long, AnneauDto> anneauxSalles = salleService.anneaux(idsSalles);
 
         return page.map(b -> BatimentCarteDto.builder()
                 .id(b.getId())
                 .numBatiment(b.getNumBatiment())
                 .nbSalles(nbSalles.getOrDefault(b.getId(), 0L))
                 .stockages(stockages.getOrDefault(b.getId(), List.of()))
-                .anneau(anneaux.getOrDefault(b.getId(), AnneauDto.VIDE))
+                .anneau(b.getSalles().stream()
+                        .map(s -> anneauxSalles.getOrDefault(s.getId(), AnneauDto.VIDE))
+                        .reduce(AnneauDto.VIDE, AnneauDto::plus))
                 .build());
     }
 

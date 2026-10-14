@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.services;
 
 import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.models.entities.Poste;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface SalleService extends Service<Salle, Long> {
@@ -44,4 +46,13 @@ public interface SalleService extends Service<Salle, Long> {
 
     /** Page /salles?batiment=XX : tout est compté en base, nombre de requêtes fixe. */
     List<SalleCarteDto> findCartesDuBatiment(Long idBatiment);
+
+    /** Salle où se trouve le matériel : posé directement dans la salle (stockage compris) ou sur un de ses postes. */
+    Optional<Salle> localiser(Long idMateriel);
+
+    /** Anneau d'une salle : ses postes comptés par état (carte de la salle et page détail). */
+    AnneauDto anneauDe(Long idSalle);
+
+    /** Anneau de chaque salle (clé : id de la salle). */
+    Map<Long, AnneauDto> anneaux(List<Long> idsSalles);
 }

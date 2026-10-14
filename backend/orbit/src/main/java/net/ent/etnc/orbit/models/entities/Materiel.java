@@ -10,17 +10,17 @@ import lombok.Setter;
 import lombok.ToString;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
 
 @Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "materiel",
         uniqueConstraints = @UniqueConstraint(name = "uk_materiel_num_serie", columnNames = {"num_serie"}))
 @EqualsAndHashCode(callSuper = false, of = {"numSerie"})
-@ToString(callSuper = true, of = {"numSerie", "modele", "dateFinGarantie", "dateAcquisition", "type", "archive"})
-public class Materiel extends AbstractPersistableWithIdSetter<Long> {
+@ToString(callSuper = true, of = {"numSerie", "modele", "dateFinGarantie", "dateAcquisition", "archive"})
+public abstract class Materiel extends AbstractPersistableWithIdSetter<Long> {
 
     //TODO voir la gestion des numSerie avec le jeu de donnée
     @Getter
@@ -53,13 +53,6 @@ public class Materiel extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "date_acquisition", nullable = false)
     private LocalDate dateAcquisition;
 
-    @Getter
-    @Setter
-    @NotNull(message = "type ne doit pas être null")
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 20, nullable = false)
-    private TypeMateriel type;
-
     @Getter @Setter
     @Column(name = "archive", nullable = false)
     private boolean archive;
@@ -67,6 +60,15 @@ public class Materiel extends AbstractPersistableWithIdSetter<Long> {
     @Getter @Setter
     @Column(name = "date_archivage")
     private LocalDate dateArchivage;
+
+    /** Types acceptés par l'API (champ « type » du JSON), pour la validation du DTO. */
+    public static final String TYPES = UC.TYPE + "|" + Ecran.TYPE + "|" + VideoProjecteur.TYPE + "|" + TableauInteractif.TYPE;
+
+    /**
+     * Type du matériel tel qu'il est exposé au front ("UC", "Ecran"...).
+     * Méthode et pas getClass() : un matériel chargé en LAZY est un proxy Hibernate.
+     */
+    public abstract String getType();
 
     /**
      * État calculé (non stocké), par ordre de priorité :

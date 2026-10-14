@@ -1,10 +1,11 @@
-import type { Page, Salle, SalleCarte, SalleRequest } from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import type {Page, Poste, Salle, SalleCarte, SalleRequest} from "../types/types.ts";
+import {authHeaders} from "./api.ts";
 
 const URL = `/api/v1/salles`;
 
 export class SalleError extends Error {
     status: number;
+
     constructor(status: number) {
         super(`HTTP ${status}`);
         this.status = status;
@@ -46,7 +47,7 @@ export async function creerSalleEquipee(dto: SalleEquipeeRequest): Promise<Salle
 export async function getSalle(): Promise<Salle[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });
+        response = await fetch(`${URL}/`, {headers: authHeaders()});
     } catch {
         throw new SalleError(0); // serveur injoignable
     }
@@ -60,7 +61,20 @@ export async function getSalle(): Promise<Salle[]> {
 export async function getSalleById(id: string): Promise<Salle> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, { headers: authHeaders() });
+        response = await fetch(`${URL}/${id}/`, {headers: authHeaders()});
+    } catch {
+        throw new SalleError(0);
+    }
+
+    if (!response.ok) throw new SalleError(response.status);
+
+    return await response.json();
+}
+
+export async function getMaterielByNumSalle(numSalle: string): Promise<Salle> {
+    let response: Response;
+    try {
+        response = await fetch(`${URL}/?numSalle=${numSalle}`, {headers: authHeaders()});
     } catch {
         throw new SalleError(0);
     }
@@ -74,13 +88,25 @@ export async function getSalleById(id: string): Promise<Salle> {
 export async function getSallesDuBatiment(idBatiment: number): Promise<SalleCarte[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/?batiment=${idBatiment}`, { headers: authHeaders() });
+        response = await fetch(`${URL}/?batiment=${idBatiment}`, {headers: authHeaders()});
     } catch {
         throw new SalleError(0);
     }
 
     if (!response.ok) throw new SalleError(response.status);
 
+    return await response.json();
+}
+
+export async function getPostesBySalle(idSalle: string): Promise<Poste[]> {
+    let response: Response;
+    try {
+        response = await fetch(`/api/v1/postes/?salle=${idSalle}`, {headers: authHeaders()});
+    } catch {
+        throw new SalleError(0);
+    }
+
+    if (!response.ok) throw new SalleError(response.status);
     return await response.json();
 }
 

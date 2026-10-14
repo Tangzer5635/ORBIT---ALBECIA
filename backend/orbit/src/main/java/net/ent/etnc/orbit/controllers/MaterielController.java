@@ -29,7 +29,6 @@ import java.util.Map;
 public class MaterielController {
 
     private static final Map<String, String> FILTERABLE = Map.of(
-            "type", "type",
             "modele", "modele",
             "numSerie", "numSerie",
             "dateAcquisition", "dateAcquisition",
@@ -49,13 +48,14 @@ public class MaterielController {
     }
 
     private MaterielResponseDto dto(Materiel m) {
-        return materielAssembler.toDto(m, materielService.etatDe(m));
+        return materielAssembler.toDto(m, materielService.etatDe(m), materielService.salleDe(m).orElse(null));
     }
 
     @GetMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<PageResponse<MaterielResponseDto>> getAll(
             @RequestParam(required = false) String filter,
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) EtatMateriel etat,
             @RequestParam(required = false) LocalisationMateriel localisation,
             @PageableDefault(size = 20, sort = "id") Pageable pageable) {
@@ -63,6 +63,7 @@ public class MaterielController {
         List<Specification<Materiel>> specs = new ArrayList<>();
         Specification<Materiel> rsql = rsqlFilterUtils.build(filter, FILTERABLE);
         if (rsql != null) specs.add(rsql);
+        if (type != null) specs.add(MaterielSpecifications.type(type));
         if (etat != null) specs.add(MaterielSpecifications.etat(etat));
         if (localisation != null) specs.add(MaterielSpecifications.localisation(localisation));
 
@@ -107,6 +108,5 @@ public class MaterielController {
     public ResponseEntity<MaterielResponseDto> archiver(@PathVariable Long id) {
         return ResponseEntity.ok(dto(materielService.archiver(id)));
     }
-
 
 }

@@ -1,7 +1,9 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepository> implements MaterielService {
@@ -55,14 +58,31 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         //TODO a voir avec l'équipe
         if (existant.isArchive())
             throw new ServiceException("Un matériel archivé ne peut pas être modifié");
+        if (!existant.getType().equals(materiel.getType()))
+            throw new ServiceException("Le type d'un matériel ne peut pas être modifié");
+
         if (repository.existsByNumSerieAndIdNot(materiel.getNumSerie(), materiel.getId()))
             throw new ServiceException("Le numéro de série " + materiel.getNumSerie() + " existe déjà");
         existant.setNumSerie(materiel.getNumSerie());
         existant.setModele(materiel.getModele());
         existant.setDateFinGarantie(materiel.getDateFinGarantie());
         existant.setDateAcquisition(materiel.getDateAcquisition());
-        existant.setType(materiel.getType());
+        if (existant instanceof UC uc && materiel instanceof UC modifie)
+            uc.setNomMachine(modifie.getNomMachine());
         return repository.save(existant);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Salle> salleDe(Materiel materiel) {
+        if (materiel.isArchive()) return Optional.empty();
+        return salleService.localiser(materiel.getId());
+    }
+
+    @Override
+    @Transactional
+    public void desinstallerPartout(Processus processus) {
+        repository.findUcAvecProcessus(processus.getId()).forEach(uc -> uc.removeProcessus(processus));
     }
 
     @Override

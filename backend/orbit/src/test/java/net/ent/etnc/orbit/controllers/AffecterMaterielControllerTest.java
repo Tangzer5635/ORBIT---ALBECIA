@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.controllers;
 import net.ent.etnc.orbit.dtos.assemblers.MaterielAssembler;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
@@ -46,7 +47,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void affecterASalle_doitRenvoyer200_quandValide() throws Exception {
-        when(affecterMaterielService.affecterASalle(2L, 11L)).thenReturn(new Materiel());
+        when(affecterMaterielService.affecterASalle(2L, 11L)).thenReturn(new UC());
         reponseMateriel();
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 11L).param("salleId", "2")
@@ -57,7 +58,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void affecterASalle_doitRenvoyer200_quandAdmin() throws Exception {
-        when(affecterMaterielService.affecterASalle(2L, 11L)).thenReturn(new Materiel());
+        when(affecterMaterielService.affecterASalle(2L, 11L)).thenReturn(new UC());
         reponseMateriel();
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 11L).param("salleId", "2")
@@ -103,7 +104,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void retirerDeSalle_doitRenvoyer200_quandValide() throws Exception {
-        when(affecterMaterielService.retirerDeSalle(2L, 11L)).thenReturn(new Materiel());
+        when(affecterMaterielService.retirerDeSalle(2L, 11L)).thenReturn(new UC());
         reponseMateriel();
 
         mockMvc.perform(delete("/api/v1/materiels/{id}/", 11L).param("salleId", "2")
@@ -131,7 +132,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void affecterAPoste_doitRenvoyer200_quandValide() throws Exception {
-        when(affecterMaterielService.affecterAPoste(1L, 8L)).thenReturn(new Materiel());
+        when(affecterMaterielService.affecterAPoste(1L, 8L)).thenReturn(new UC());
         reponseMateriel();
 
         mockMvc.perform(post("/api/v1/materiels/{id}/", 8L).param("posteId", "1")
@@ -169,7 +170,7 @@ class AffecterMaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void retirerDuPoste_doitRenvoyer200_quandValide() throws Exception {
-        when(affecterMaterielService.retirerDuPoste(1L, 8L)).thenReturn(new Materiel());
+        when(affecterMaterielService.retirerDuPoste(1L, 8L)).thenReturn(new UC());
         reponseMateriel();
 
         mockMvc.perform(delete("/api/v1/materiels/{id}/", 8L).param("posteId", "1")

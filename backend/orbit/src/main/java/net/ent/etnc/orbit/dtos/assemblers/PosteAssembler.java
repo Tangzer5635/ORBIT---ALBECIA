@@ -6,6 +6,7 @@ import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,11 @@ public class PosteAssembler {
                 .build();
     }
 
+    public PosteResponseDto toDto(Poste poste, EtatPoste etat) {
+        PosteResponseDto dto = toDto(poste);
+        dto.setEtat(etat);
+        return dto;
+    }
     public Poste toEntity(PosteRequestDto posteDto) {
         Poste poste = new Poste();
         poste.setNumPoste(posteDto.getNumPoste());

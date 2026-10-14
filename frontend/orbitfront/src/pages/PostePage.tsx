@@ -61,6 +61,7 @@ export default function PostePage() {
                             </div>
                             <p>Modèle {m.modele}</p>
                             <p>N° de série {m.numSerie} </p>
+                            {m.nomMachine && <p>Machine {m.nomMachine}</p>}
                             <p>Garantie jusqu'au {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}</p>
 
                         </li>

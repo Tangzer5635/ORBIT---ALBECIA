@@ -35,22 +35,17 @@ public interface SalleRepository extends BaseRepository<Salle> {
     @Query("select distinct s from Salle s left join fetch s.postes where s.id in :ids")
     List<Salle> chargerPostes(@Param("ids") Collection<Long> ids);
 
+    /** Matériel posé dans ces salles (réserves), compté par état. */
+    @Query("select " + ComptesEtats.NEW + "(s.id, " + ComptesEtats.COLONNES + ")"
+            + " from Salle s join s.materiels m where s.id in :ids group by s.id")
+    List<ComptesEtats> comptesEtats(@Param("ids") Collection<Long> ids, @Param("seuil") LocalDate seuil);
+
     @Query("select s from Batiment b join b.salles s where b.id = :idBatiment order by s.type, s.numSalle")
     List<Salle> findByBatiment(@Param("idBatiment") Long idBatiment);
 
     @Query("select " + IdCompte.NEW + "(s.id, count(p)) from Salle s join s.postes p"
             + " where s.id in :ids group by s.id")
     List<IdCompte> nbPostes(@Param("ids") Collection<Long> ids);
-
-    /** Matériel posé directement dans la salle (stockage compris). */
-    @Query("select " + ComptesEtats.NEW + "(s.id, " + ComptesEtats.COLONNES + ")"
-            + " from Salle s join s.materiels m where s.id in :ids group by s.id")
-    List<ComptesEtats> comptesEtatsEnSalle(@Param("ids") Collection<Long> ids, @Param("seuil") LocalDate seuil);
-
-    /** Matériel affecté aux postes de la salle. */
-    @Query("select " + ComptesEtats.NEW + "(s.id, " + ComptesEtats.COLONNES + ")"
-            + " from Salle s join s.postes p join p.materiels m where s.id in :ids group by s.id")
-    List<ComptesEtats> comptesEtatsSurPoste(@Param("ids") Collection<Long> ids, @Param("seuil") LocalDate seuil);
 
     @Query("""
             select r

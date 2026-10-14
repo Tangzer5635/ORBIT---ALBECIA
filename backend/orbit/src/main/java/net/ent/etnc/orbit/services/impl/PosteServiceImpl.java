@@ -1,6 +1,8 @@
 package net.ent.etnc.orbit.services.impl;
 
+import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.repositories.PosteRepository;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import net.ent.etnc.orbit.services.PosteService;
@@ -13,7 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service des postes.
@@ -81,5 +86,23 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
     @Transactional(readOnly = true)
     public List<MonPosteLigne> lignesMonPoste(Long idOccupant) {
         return repository.lignesMonPoste(idOccupant);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Poste> findBySalleAvecDetails(Long idSalle) {
+        List<Poste> postes = repository.findBySalle(idSalle);
+        if (!postes.isEmpty())
+            repository.chargerMateriels(postes.stream().map(Poste::getId).toList());
+        return postes;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, EtatPoste> etats(List<Poste> postes) {
+        List<Long> idsMateriels = postes.stream()
+                .flatMap(p -> p.getMateriels().stream()).map(Materiel::getId).toList();
+        Set<Long> defectueux = idsMateriels.isEmpty() ? Set.of() : repository.materielsDefectueux(idsMateriels);
+        return postes.stream().collect(Collectors.toMap(Poste::getId, p -> p.calculerEtat(defectueux)));
     }
 }

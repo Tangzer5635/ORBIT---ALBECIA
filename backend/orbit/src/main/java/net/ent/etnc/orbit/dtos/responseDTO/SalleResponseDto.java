@@ -1,7 +1,6 @@
 package net.ent.etnc.orbit.dtos.responseDTO;
 
 import lombok.*;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 
 import java.util.List;
@@ -19,5 +18,6 @@ public class SalleResponseDto {
     private TypeSalle type;
     private List<Long> materielsId;
     private int nbPostes;
-    private Map<TypeMateriel, Long> materielsParType;
+    private Map<String, Long> materielsParType;
+    private AnneauDto anneau;
 }
