@@ -17,4 +17,5 @@ public class UserResponseDto {
     private String nom;
     private boolean active;
     private boolean verrouille;
+    private Long stageId; // null si le stagiaire n'est dans aucun stage
 }

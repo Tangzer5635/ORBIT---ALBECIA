@@ -21,6 +21,8 @@ public class SalleAssembler {
                 .nbPostes(salle.getPostes().size())
                 .materielsParType(salle.getMateriels().stream()
                         .collect(Collectors.groupingBy(Materiel::getType, Collectors.counting())))
+                .stageId(salle.getStage() != null ? salle.getStage().getId() : null)
+                .stageNom(salle.getStage() != null ? salle.getStage().getNom() : null)
                 .build();
     }
 

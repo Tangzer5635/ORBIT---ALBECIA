@@ -86,6 +86,7 @@ public class MaterielController {
         return ResponseEntity.ok(dto(materielService.creerEnStock(materielAssembler.toEntity(materielRequestDto), materielRequestDto.getIdStockage())));
     }
 
+    //TODO A CHANGER LORS QUE LA FICHE MODIFIER SERA FAITE EN FRONT
     @PutMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MaterielResponseDto> put(@PathVariable Long id, @Valid @RequestBody MaterielRequestDto materielRequestDto) {
