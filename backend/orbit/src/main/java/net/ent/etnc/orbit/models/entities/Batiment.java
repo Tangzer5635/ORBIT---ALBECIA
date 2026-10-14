@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import org.hibernate.validator.constraints.Length;
@@ -15,16 +16,14 @@ import java.util.List;
 
 @Entity
 @Table(name = "batiment",
-        uniqueConstraints = @UniqueConstraint(name = "uk_batiment_num_batiment", columnNames = {"num_batiment"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_batiment_numBatiment", columnNames = {"numBatiment"}))
 @EqualsAndHashCode(callSuper = false, of = {"numBatiment"})
 @ToString(callSuper = true, of = {"numBatiment"})
 public class Batiment extends AbstractPersistableWithIdSetter<Long> {
     @Getter
     @Setter
-    @NotNull(message = "numBatiment ne doit pas être null")
-    @NotEmpty(message = "numBatiment ne doit pas être vide")
-    @NotBlank(message = "numBatiment doit contenir des caractères lisibles")
-    @Length(min = 1, max = 10, message = "numBatiment doit avoir entre 1 et 10 caractères")
+    @NotBlank
+    @Size(max = 10, message = "numBatiment de max 10 caractères")
     @Column(name = "num_batiment", length = 10, nullable = false)
     private String numBatiment;
 

@@ -201,11 +201,11 @@ class PersonnelControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void verrouiller_doitRenvoyer404_quandIntrouvable() throws Exception {
+    void verrouiller_doitRenvoyer400_quandIntrouvable() throws Exception {
         when(personnelService.verrouiller(999L)).thenThrow(new ServiceException("RG-U02", "Utilisateur introuvable"));
 
         mockMvc.perform(patch("/api/v1/personnels/{id}/verrouiller/", 999L).with(connecte(Role.ADMINISTRATEUR)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -251,11 +251,11 @@ class PersonnelControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void delete_doitRenvoyer404_quandIntrouvable() throws Exception {
+    void delete_doitRenvoyer400_quandIntrouvable() throws Exception {
         doThrow(new ServiceException("Utilisateur introuvable")).when(personnelService).deleteById(999L);
 
         mockMvc.perform(delete("/api/v1/personnels/{id}/", 999L).with(connecte(Role.ADMINISTRATEUR)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -2,13 +2,17 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.PosteRepository;
+import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,7 +61,25 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
     }
 
     @Override
-    public Optional<Poste> findMyPoste(Long id) {
-        return repository.findByIdUtilisateur(id);
+    @Transactional(readOnly = true)
+    public Page<Poste> findAllAvecDetails(Pageable pageable) {
+        Page<Poste> page = repository.findAll(pageable);
+        if (page.hasContent())
+            repository.chargerMateriels(page.getContent().stream().map(Poste::getId).toList());
+        return page;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Poste> findByIdAvecDetails(Long id) {
+        Optional<Poste> poste = repository.findById(id);
+        poste.ifPresent(p -> repository.chargerMateriels(List.of(p.getId())));
+        return poste;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonPosteLigne> lignesMonPoste(Long idOccupant) {
+        return repository.lignesMonPoste(idOccupant);
     }
 }

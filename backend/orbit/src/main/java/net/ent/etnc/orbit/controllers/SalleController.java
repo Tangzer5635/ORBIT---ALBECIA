@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -37,16 +38,16 @@ public class SalleController {
     @GetMapping("/")
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<SalleResponseDto>> getAll(
-            @PageableDefault(size = 20) Pageable pageable
+            @PageableDefault(size = 30, sort = {"numSalle", "id"}) Pageable pageable
     ) {
-        return ResponseEntity.ok(salleService.findAll(pageable)
+        return ResponseEntity.ok(salleService.findAllAvecDetails(pageable)
                 .map(salleAssembler::toDto));
     }
 
     @GetMapping("/{id}/")
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<SalleResponseDto> getById(@PathVariable Long id) {
-        return salleService.findById(id)
+        return salleService.findByIdAvecDetails(id)
                 .map(salle -> ResponseEntity.ok(salleAssembler.toDto(salle)))
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -62,8 +63,8 @@ public class SalleController {
     @PostMapping
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<SalleResponseDto> post(@Valid @RequestBody SalleRequestDto salleDto) {
-        return ResponseEntity.ok(salleAssembler.toDto(
-                batimentService.create(salleDto.getIdBatiment(), salleAssembler.toEntity(salleDto))));
+        return ResponseEntity.status(HttpStatus.CREATED).body(salleAssembler.toDto(
+                salleService.create(salleDto.getIdBatiment(), salleAssembler.toEntity(salleDto))));
     }
 
     @DeleteMapping("/{id}/")
@@ -74,9 +75,9 @@ public class SalleController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/equipee")
+    @PostMapping("/equipee/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<SalleEquipeeResponseDto> postEquipee(@Valid @RequestBody SalleEquipeeRequestDto dto) {
-        return ResponseEntity.ok(batimentService.creerSalleEquipee(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(salleService.creerSalleEquipee(dto));
     }
 }

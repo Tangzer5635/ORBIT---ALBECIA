@@ -1,5 +1,6 @@
 package net.ent.etnc.orbit.dtos.assemblers;
 
+import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
@@ -54,5 +55,13 @@ class SalleAssemblerTest {
         assertThat(dto.getMaterielsParType())
                 .containsEntry(TypeMateriel.Ecran, 2L);
         assertThat(dto.getNbPostes()).isZero();
+    }
+
+    @Test
+    void toEntity_doitRetirerLesEspacesAutourDuNumero() {
+        SalleRequestDto dto = SalleRequestDto.builder()
+                .numSalle("  101 ").etage("1").type(TypeSalle.SalleDeCours).idBatiment(1L).build();
+
+        assertThat(assembler.toEntity(dto).getNumSalle()).isEqualTo("101");
     }
 }

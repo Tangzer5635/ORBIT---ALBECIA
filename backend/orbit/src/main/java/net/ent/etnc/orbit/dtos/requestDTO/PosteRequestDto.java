@@ -1,14 +1,11 @@
 package net.ent.etnc.orbit.dtos.requestDTO;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
 
-/**
- * Création et modification d'un poste.
- * {@code idSalle} est obligatoire à la création et ignoré à la modification
- * (un poste ne change pas de salle).
- */
+/** Création d'un poste dans une salle. */
 @Getter
 @Setter
 @Builder
@@ -17,8 +14,9 @@ import org.hibernate.validator.constraints.Length;
 public class PosteRequestDto {
 
     @NotBlank(message = "numPoste doit contenir des caractères lisibles")
-    @Length(max = 50, message = "numPoste doit avoir au plus 50 caractères")
+    @Size(max = 50, message = "numPoste de max 50 caractères")
     private String numPoste;
 
+    @NotNull(message = "idSalle ne doit pas être null")
     private Long idSalle;
 }

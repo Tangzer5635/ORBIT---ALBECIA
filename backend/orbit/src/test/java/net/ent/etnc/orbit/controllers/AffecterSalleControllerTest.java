@@ -50,12 +50,12 @@ class AffecterSalleControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void affecterSalle_doitRenvoyer404_quandBatimentIntrouvable() throws Exception {
+    void affecterSalle_doitRenvoyer400_quandBatimentIntrouvable() throws Exception {
         when(batimentService.affecterSalle(999L, 6L)).thenThrow(new ServiceException("Bâtiment 999 introuvable"));
 
         mockMvc.perform(post("/api/v1/salles/{idSalle}/", 6L).param("batimentId", "999")
                         .with(connecte(Role.ADMINISTRATEUR)))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isBadRequest())
                 .andExpect(content().string("Bâtiment 999 introuvable"));
     }
 
