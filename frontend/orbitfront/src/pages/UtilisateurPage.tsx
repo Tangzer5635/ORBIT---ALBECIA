@@ -1,15 +1,16 @@
-import {useEffect, useMemo, useState} from "react";
-import {LIBELLE_ROLE, type Role, type Utilisateur, type UtilisateurRequest} from "../types/types.ts";
+import {useEffect, useState} from "react";
+import {LIBELLE_ROLE, type Page, type Role, type Utilisateur} from "../types/types.ts";
 import {
-    ajouterUtilisateur,
     changerVerrou,
+    compterUtilisateurs,
     getUtilisateurs,
-    modifierUtilisateur,
     supprimerUtilisateur,
     UtilisateurError,
 } from "../services/utilisateurService.ts";
 import {getUtilisateur} from "../services/authService.ts";
+import {type FiltreEtat, versRsqlUtilisateurs} from "../utils/utilisateurs.ts";
 import UtilisateurLigne from "../components/UtilisateurLigne.tsx";
+import UtilisateurPopup from "../components/UtilisateurPopup.tsx";
 import Popup from "../components/Popup.tsx";
 
 const ROLES = Object.keys(LIBELLE_ROLE) as Role[];
@@ -22,67 +23,80 @@ type PopupState =
     | { type: "supprimer"; utilisateur: Utilisateur }
     | null;
 
-type FiltreEtat = "" | "actifs" | "inactifs" | "verrouilles";
+interface Compteurs {
+    parRole: number[];    // dans l'ordre de ROLES
+    inactifs: number;
+    verrouilles: number;
+}
+
+// Les compteurs ne dépendent pas des filtres : quelques requêtes "size=1" lancées en parallèle
+async function chargerCompteurs(): Promise<Compteurs> {
+    const [inactifs, verrouilles, ...parRole] = await Promise.all([
+        compterUtilisateurs("active==false"),
+        compterUtilisateurs("verrouille==true"),
+        ...ROLES.map((r) => compterUtilisateurs(`role==${r}`)),
+    ]);
+    return {parRole, inactifs, verrouilles};
+}
 
 export default function UtilisateurPage() {
-    const [nonTries, setUtilisateurs] = useState<Utilisateur[]>([]);
+    // données
+    const [resultat, setResultat] = useState<Page<Utilisateur>>(); // page courante renvoyée par le back
+    const [compteurs, setCompteurs] = useState<Compteurs>();
+    const [version, setVersion] = useState(0); // +1 après chaque modification : recharge la page et les compteurs
     const [erreurChargement, setErreurChargement] = useState<string>();
     const [error, setError] = useState<string>(); // erreur hors popup (verrouillage)
     const moi = getUtilisateur(); // utilisateur connecté
-    const [page, setPage] = useState(0); // numéro de page, commence à 0
 
-    // popup + champs du formulaire
+    // popup ouverte + état de la popup de suppression (le formulaire est dans UtilisateurPopup)
     const [popup, setPopup] = useState<PopupState>(null);
-    const [prenom, setPrenom] = useState("");
-    const [nom, setNom] = useState("");
-    const [login, setLogin] = useState("");
-    const [nid, setNid] = useState("");
-    const [role, setRole] = useState<Role>("STAGIAIRE");
-    const [motDePasse, setMotDePasse] = useState("");
-    const [actif, setActif] = useState(true);
     const [erreur, setErreur] = useState("");
     const [envoi, setEnvoi] = useState(false);
 
-    // filtres
-    const [recherche, setRecherche] = useState("");
+    // filtres et page
+    const [saisie, setSaisie] = useState("");         // ce qui est tapé dans le champ
+    const [recherche, setRecherche] = useState("");   // ce qui est envoyé au back
     const [filtreRole, setFiltreRole] = useState<Role | "">("");
     const [filtreEtat, setFiltreEtat] = useState<FiltreEtat>("");
+    const [page, setPage] = useState(0); // numéro de page, commence à 0
 
-    // Chargement de la liste à l'ouverture de la page
+    // la recherche part 300 ms après la dernière frappe pour ne pas faire une requête par lettre
     useEffect(() => {
-        getUtilisateurs()
-            .then(setUtilisateurs)
-            .catch(() => setErreurChargement("Impossible de charger les utilisateurs."));
-    }, []);
+        const minuteur = setTimeout(() => {
+            setRecherche(saisie);
+            setPage(0);
+        }, 300);
+        return () => clearTimeout(minuteur);
+    }, [saisie]);
 
-    // Tri par nom puis prénom
-    const utilisateurs = useMemo(
-        () => [...nonTries].sort((a, b) =>
-            a.nom.localeCompare(b.nom, "fr") || a.prenom.localeCompare(b.prenom, "fr")),
-        [nonTries]
-    );
+    // recharge la page à chaque changement de filtre, de page ou après une modification
+    // (le tri nom, prénom, id est fait par le back)
+    useEffect(() => {
+        let actif = true; // pour ignorer une réponse qui arrive après un changement de filtre
+        getUtilisateurs(versRsqlUtilisateurs(recherche, filtreRole, filtreEtat), page, PAR_PAGE)
+            .then((p) => {
+                if (actif) {
+                    setResultat(p);
+                    setErreurChargement(undefined);
+                }
+            })
+            .catch(() => {
+                if (actif) setErreurChargement("Impossible de charger les utilisateurs.");
+            });
+        return () => { actif = false; };
+    }, [recherche, filtreRole, filtreEtat, page, version]);
+
+    useEffect(() => {
+        chargerCompteurs().then(setCompteurs).catch(() => {});
+    }, [version]);
 
     // ---------- ouverture / fermeture des popups ----------
 
-    // remplit les champs (vides en création, ceux de l'utilisateur en modification)
-    function remplirChamps(u?: Utilisateur) {
-        setPrenom(u?.prenom ?? "");
-        setNom(u?.nom ?? "");
-        setLogin(u?.login ?? "");
-        setNid("");
-        setRole(u?.role ?? "STAGIAIRE");
-        setMotDePasse("");
-        setActif(u?.active ?? true);
-        setErreur("");
-    }
-
     function ouvrirCreation() {
-        remplirChamps();
         setPopup({type: "creer"});
     }
 
     function ouvrirModification(utilisateur: Utilisateur) {
-        remplirChamps(utilisateur);
         setPopup({type: "modifier", utilisateur});
     }
 
@@ -93,67 +107,28 @@ export default function UtilisateurPage() {
 
     function fermerPopup() {
         setPopup(null);
-        remplirChamps();
+        setErreur("");
     }
 
-    function remplacer(maj: Utilisateur) {
-        setUtilisateurs((liste) => liste.map((x) => (x.id === maj.id ? maj : x)));
+    // après une création, modification, suppression ou un verrouillage : on redemande la page au back
+    // (l'utilisateur peut avoir changé de place dans le tri ou ne plus correspondre aux filtres)
+    function rafraichir() {
+        setVersion((v) => v + 1);
+    }
+
+    // appelé par UtilisateurPopup quand le back a bien enregistré
+    function enregistre() {
+        rafraichir();
+        setPopup(null);
     }
 
     // ---------- actions ----------
-
-    // Mêmes règles que l'entité Personnel côté back
-    function verifier(creation: boolean): string {
-        if (prenom.trim() === "" || prenom.trim().length > 30) return "Le prénom est obligatoire (30 caractères maximum).";
-        if (nom.trim() === "" || nom.trim().length > 50) return "Le nom est obligatoire (50 caractères maximum).";
-        if (login.trim().length < 3 || login.trim().length > 50) return "L'identifiant doit faire entre 3 et 50 caractères.";
-        if (creation && !/^[0-9]{10}$/.test(nid.trim())) return "Le NID doit contenir exactement 10 chiffres.";
-        if (creation && motDePasse === "") return "Le mot de passe provisoire est obligatoire.";
-        return "";
-    }
-
-    // Création et modification passent par la même fonction
-    async function handleEnregistrer(aModifier?: Utilisateur) {
-        const message = verifier(!aModifier);
-        if (message) {
-            setErreur(message);
-            return;
-        }
-
-        const dto: UtilisateurRequest = {
-            ...(aModifier ? {} : {nid: nid.trim()}), // en modification, le back garde le NID existant
-            nom: nom.trim(),
-            prenom: prenom.trim(),
-            login: login.trim(),
-            role,
-            active: actif,
-            ...(motDePasse ? {motDePasse} : {}), // vide = mot de passe inchangé
-        };
-
-        setEnvoi(true);
-        try {
-            if (aModifier) {
-                remplacer(await modifierUtilisateur(aModifier.id, dto));
-            } else {
-                const nouveau = await ajouterUtilisateur(dto);
-                setUtilisateurs((liste) => [...liste, nouveau]);
-            }
-            fermerPopup();
-        } catch (err) {
-            if (err instanceof UtilisateurError && err.status === 403) setErreur("Vous n'avez pas le droit de gérer les utilisateurs.");
-            else if (err instanceof UtilisateurError && err.status === 400) setErreur(err.detail || "Informations invalides.");
-            else if (err instanceof UtilisateurError && err.status === 404) setErreur("Cet utilisateur n'a pas été créer.");
-            else setErreur("Le service est indisponible. Réessayez plus tard.");
-        } finally {
-            setEnvoi(false);
-        }
-    }
 
     async function handleSupprimer(u: Utilisateur) {
         setEnvoi(true);
         try {
             await supprimerUtilisateur(u.id);
-            setUtilisateurs((liste) => liste.filter((x) => x.id !== u.id));
+            rafraichir();
             fermerPopup();
         } catch (err) {
             if (err instanceof UtilisateurError && err.status === 400) setErreur(err.detail || "Suppression impossible.");
@@ -170,36 +145,14 @@ export default function UtilisateurPage() {
     async function handleVerrou(u: Utilisateur) {
         setError(undefined);
         try {
-            remplacer(await changerVerrou(u.id, !u.verrouille));
+            await changerVerrou(u.id, !u.verrouille);
+            rafraichir();
         } catch (err) {
             if (err instanceof UtilisateurError && err.status === 400) setError(err.detail || "Action impossible sur ce compte.");
             else if (err instanceof UtilisateurError && err.status === 403) setError("Vous n'avez pas le droit de verrouiller un compte.");
             else setError("Le service est indisponible. Réessayez plus tard.");
         }
     }
-
-    // ---------- affichage ----------
-
-    // liste filtrée
-    const q = recherche.trim().toLowerCase();
-    const liste = utilisateurs.filter((u) =>
-        (filtreRole === "" || u.role === filtreRole) &&
-        (filtreEtat !== "actifs" || u.active) &&
-        (filtreEtat !== "inactifs" || !u.active) &&
-        (filtreEtat !== "verrouilles" || u.verrouille) &&
-        (q === "" || `${u.prenom} ${u.nom} ${u.login} ${u.id}`.toLowerCase().includes(q))
-    );
-    // pagination
-    const nbPages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
-    const pageCourante = Math.min(page, nbPages - 1); // si un filtre réduit la liste, on ne sort pas des pages
-    const visibles = liste.slice(pageCourante * PAR_PAGE, (pageCourante + 1) * PAR_PAGE);
-    const nbInactifs = utilisateurs.filter((u) => !u.active).length;
-    const nbVerrouilles = utilisateurs.filter((u) => u.verrouille).length;
-
-    // Utilisateur concerné par la popup (undefined si on est en création)
-    const aModifier = popup?.type === "modifier" ? popup.utilisateur : undefined;
-    const aSupprimer = popup?.type === "supprimer" ? popup.utilisateur : undefined;
-    const estMoi = aModifier !== undefined && aModifier.id === moi?.id; // pas de changement de son propre rôle / état
 
     // un changement de filtre ramène à la première page
     function choisirRole(r: Role | "") {
@@ -212,30 +165,35 @@ export default function UtilisateurPage() {
         setPage(0);
     }
 
-    // efface l'erreur dès qu'on retape quelque chose
-    function champ(set: (v: string) => void) {
-        return (e: { target: { value: string } }) => {
-            set(e.target.value);
-            setErreur("");
-        };
-    }
+    // ---------- affichage ----------
+
+    // filtrage et pagination sont faits par le back : on affiche la page reçue
+    const visibles = resultat?.content ?? [];
+    const nbResultats = resultat?.totalElements ?? 0;
+
+    // Utilisateur concerné par la popup
+    const aModifier = popup?.type === "modifier" ? popup.utilisateur : undefined;
+    const aSupprimer = popup?.type === "supprimer" ? popup.utilisateur : undefined;
+    const estMoi = aModifier !== undefined && aModifier.id === moi?.id; // pas de changement de son propre rôle / état
 
     return (
         <>
             <div className="page-head">
                 <h1>Utilisateurs</h1>
-                <span className="muted">{liste.length} utilisateur{liste.length > 1 ? "s" : ""}</span>
+                <span className="muted">{nbResultats} utilisateur{nbResultats > 1 ? "s" : ""}</span>
             </div>
 
             {/* compteurs par rôle */}
-            <div className="stats">
-                {ROLES.map((r) => (
-                    <div key={r} className="stat">
-                        <b>{utilisateurs.filter((u) => u.role === r).length}</b>
-                        <span>{LIBELLE_ROLE[r]}s</span>
-                    </div>
-                ))}
-            </div>
+            {compteurs && (
+                <div className="stats">
+                    {ROLES.map((r, i) => (
+                        <div key={r} className="stat">
+                            <b>{compteurs.parRole[i]}</b>
+                            <span>{LIBELLE_ROLE[r]}s</span>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <button type="button" className="btn primary" onClick={ouvrirCreation}>
                 Créer un utilisateur
@@ -248,17 +206,14 @@ export default function UtilisateurPage() {
                 type="search"
                 placeholder="Rechercher un utilisateur par nom ou identifiant"
                 aria-label="Rechercher un utilisateur"
-                value={recherche}
-                onChange={(e) => {
-                    setRecherche(e.target.value);
-                    setPage(0);
-                }}
+                value={saisie}
+                onChange={(e) => setSaisie(e.target.value)}
             />
 
             <div className="filters">
                 <div className="seg" role="group" aria-label="Rôle">
-                    <button type="button" aria-pressed={filtreRole === ""} onClick={() => choisirRole("")}>Tous les
-                        rôles
+                    <button type="button" aria-pressed={filtreRole === ""} onClick={() => choisirRole("")}>
+                        Tous les rôles
                     </button>
                     {ROLES.map((r) => (
                         <button key={r} type="button" aria-pressed={filtreRole === r}
@@ -266,17 +221,17 @@ export default function UtilisateurPage() {
                     ))}
                 </div>
                 <div className="seg" role="group" aria-label="État du compte">
-                    <button type="button" aria-pressed={filtreEtat === ""} onClick={() => choisirEtat("")}>Actifs et
-                        inactifs
+                    <button type="button" aria-pressed={filtreEtat === ""} onClick={() => choisirEtat("")}>
+                        Actifs et inactifs
                     </button>
-                    <button type="button" aria-pressed={filtreEtat === "actifs"}
-                            onClick={() => choisirEtat("actifs")}>Actifs
+                    <button type="button" aria-pressed={filtreEtat === "actifs"} onClick={() => choisirEtat("actifs")}>
+                        Actifs
                     </button>
-                    <button type="button" aria-pressed={filtreEtat === "inactifs"}
-                            onClick={() => choisirEtat("inactifs")}>Inactifs ({nbInactifs})
+                    <button type="button" aria-pressed={filtreEtat === "inactifs"} onClick={() => choisirEtat("inactifs")}>
+                        Inactifs{compteurs && ` (${compteurs.inactifs})`}
                     </button>
-                    <button type="button" aria-pressed={filtreEtat === "verrouilles"}
-                            onClick={() => choisirEtat("verrouilles")}>Verrouillés ({nbVerrouilles})
+                    <button type="button" aria-pressed={filtreEtat === "verrouilles"} onClick={() => choisirEtat("verrouilles")}>
+                        Verrouillés{compteurs && ` (${compteurs.verrouilles})`}
                     </button>
                 </div>
             </div>
@@ -292,99 +247,53 @@ export default function UtilisateurPage() {
                         onSupprime={ouvrirSuppression}
                     />
                 ))}
-                {liste.length === 0 && !erreurChargement && <p className="muted">Aucun utilisateur ne correspond.</p>}
+                {!resultat && !erreurChargement && <p className="muted">Chargement des utilisateurs…</p>}
+                {resultat && nbResultats === 0 && <p className="muted">Aucun utilisateur ne correspond.</p>}
             </div>
 
-            {nbPages > 1 && (
+            {/* boutons de changement de page */}
+            {resultat && resultat.totalPages > 1 && (
                 <nav className="pagination" aria-label="Pages">
-                    <button type="button" className="btn sm" onClick={() => setPage(pageCourante - 1)}
-                            disabled={pageCourante === 0}>
+                    <button type="button" className="btn sm" onClick={() => setPage((p) => p - 1)}
+                            disabled={resultat.first}>
                         ‹ Précédent
                     </button>
                     <span className="muted small">
-                        Page {pageCourante + 1} sur {nbPages} ({liste.length} utilisateurs)
+                        Page {resultat.page + 1} sur {resultat.totalPages} ({nbResultats} utilisateurs)
                     </span>
-                    <button type="button" className="btn sm" onClick={() => setPage(pageCourante + 1)}
-                            disabled={pageCourante === nbPages - 1}>
+                    <button type="button" className="btn sm" onClick={() => setPage((p) => p + 1)}
+                            disabled={resultat.last}>
                         Suivant ›
                     </button>
                 </nav>
             )}
 
-            <Popup
-                open={popup !== null}
-                onClose={fermerPopup}
-                title={aSupprimer
-                    ? `Supprimer ${aSupprimer.prenom} ${aSupprimer.nom} ?`
-                    : aModifier ? "Modifier l’utilisateur" : "Créer un utilisateur"}
-                description={aSupprimer
-                    ? `Le compte ${aSupprimer.login} sera supprimé définitivement. Pour bloquer l’accès sans supprimer, désactivez-le ou verrouillez-le.`
-                    : aModifier
-                        ? <>Identifiant actuel : <b>{aModifier.login}</b> (ID {aModifier.id})</>
-                        : "Donnez un mot de passe provisoire, à changer à la première connexion."}
-                confirmLabel={aSupprimer ? "Supprimer l’utilisateur" : aModifier ? "Enregistrer" : "Créer l’utilisateur"}
-                variant={aSupprimer ? "danger" : "primary"}
-                onConfirm={aSupprimer ? () => handleSupprimer(aSupprimer) : () => handleEnregistrer(aModifier)}
-                loading={envoi}
-            >
-                {!aSupprimer && (
-                    <>
-                        <div className="user-grille">
-                            <div>
-                                <label htmlFor="uPrenom">Prénom</label>
-                                <input id="uPrenom" value={prenom} onChange={champ(setPrenom)} autoFocus/>
-                            </div>
-                            <div>
-                                <label htmlFor="uNom">Nom</label>
-                                <input id="uNom" value={nom} onChange={champ(setNom)}/>
-                            </div>
-                            <div>
-                                <label htmlFor="uLogin">Identifiant</label>
-                                <input id="uLogin" value={login} onChange={champ(setLogin)} autoComplete="off"/>
-                            </div>
-                            {!aModifier && (
-                                <div>
-                                    <label htmlFor="uNid">NID</label>
-                                    <input id="uNid" value={nid} onChange={champ(setNid)} inputMode="numeric"
-                                           maxLength={10} placeholder="10 chiffres"/>
-                                </div>
-                            )}
-                            <div>
-                                <label htmlFor="uRole">Rôle</label>
-                                <select id="uRole" value={role} onChange={(e) => setRole(e.target.value as Role)}
-                                        disabled={estMoi}>
-                                    {ROLES.map((r) => <option key={r} value={r}>{LIBELLE_ROLE[r]}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="uMdp">{aModifier ? "Nouveau mot de passe" : "Mot de passe provisoire"}</label>
-                                <input
-                                    id="uMdp"
-                                    type="password"
-                                    value={motDePasse}
-                                    onChange={champ(setMotDePasse)}
-                                    autoComplete="new-password"
-                                    placeholder={aModifier ? "Laisser vide pour ne pas changer" : ""}
-                                />
-                            </div>
-                        </div>
+            {/* création / modification : le composant n'existe que pendant que la popup est ouverte */}
+            {(popup?.type === "creer" || popup?.type === "modifier") && (
+                <UtilisateurPopup
+                    key={aModifier?.id ?? "creation"}
+                    utilisateur={aModifier}
+                    estMoi={estMoi}
+                    onClose={fermerPopup}
+                    onEnregistre={enregistre}
+                />
+            )}
 
-                        {aModifier && (
-                            <label className="user-check">
-                                <input type="checkbox" checked={actif} onChange={(e) => setActif(e.target.checked)}
-                                       disabled={estMoi}/>
-                                <span>Compte actif. Décoché, l’utilisateur ne peut plus se connecter mais son historique est conservé.</span>
-                            </label>
-                        )}
-                        {estMoi &&
-                            <p className="muted small">Vous ne pouvez pas changer votre propre rôle ni désactiver votre
-                                compte.</p>}
-                    </>
-                )}
-
-                {erreur && <p className="error-message" role="alert">{erreur}</p>}
-            </Popup>
+            {/* suppression : une simple confirmation, gardée dans la page */}
+            {aSupprimer && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Supprimer ${aSupprimer.prenom} ${aSupprimer.nom} ?`}
+                    description={`Le compte ${aSupprimer.login} sera supprimé définitivement. Pour bloquer l’accès sans supprimer, désactivez-le ou verrouillez-le.`}
+                    confirmLabel="Supprimer l’utilisateur"
+                    variant="danger"
+                    onConfirm={() => handleSupprimer(aSupprimer)}
+                    loading={envoi}
+                >
+                    {erreur && <p className="error-message" role="alert">{erreur}</p>}
+                </Popup>
+            )}
         </>
     );
 }

@@ -31,8 +31,7 @@ async function chargerCompteurs(): Promise<Compteurs> {
     const [total, archives, ...stock] = await Promise.all([
         compterMateriels({localisation: "PARTOUT"}),
         compterMateriels({localisation: "ARCHIVE"}),
-        ...ORDRE_TYPES.map((t) => compterMateriels({localisation: "STOCK", filter: `type==${t}`})),
-    ]);
+        ...ORDRE_TYPES.map((t) => compterMateriels({localisation: "STOCK", type: t})),    ]);
     return {total, archives, stock};
 }
 
@@ -69,7 +68,7 @@ export default function MaterielPage() {
     // recharge la page à chaque changement de filtre ou de page
     useEffect(() => {
         let actif = true; // pour ignorer une réponse qui arrive après un chagement de filtre
-        getMateriels({filter: versRsql(recherche, type), etat, localisation}, page, TAILLE_PAGE)
+        getMateriels({filter: versRsql(recherche), type, etat, localisation}, page, TAILLE_PAGE)
             .then((p) => {
                 if (actif) {
                     setResultat(p);
@@ -102,12 +101,10 @@ export default function MaterielPage() {
 
             {compteurs && (
                 <div>
-                    <span>En stock</span>
-                    <ul>
+                    <p>En stock</p>
                         {ORDRE_TYPES.map((t, i) => (
-                            <li key={t}>{pluriel(compteurs.stock[i], NOM_TYPE[t][0], NOM_TYPE[t][1])}</li>
+                            <p key={t}>{pluriel(compteurs.stock[i], NOM_TYPE[t][0], NOM_TYPE[t][1])}</p>
                         ))}
-                    </ul>
                 </div>
             )}
 

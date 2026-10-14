@@ -13,17 +13,26 @@ export class UtilisateurError extends Error {
 }
 
 // Méthode pour récupérer la liste des utilisateurs
-export async function getUtilisateurs(): Promise<Utilisateur[]> {
+export async function getUtilisateurs(filter: string, page = 0, size = 30): Promise<Page<Utilisateur>> {
+    // URLSearchParams encode les caractères spéciaux du filtre RSQL (; = " espaces)
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (filter) params.set("filter", filter);
+
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });    } catch {
+        response = await fetch(`${URL}/?${params}`, { headers: authHeaders() });
+    } catch {
         throw new UtilisateurError(0); // serveur injoignable
     }
 
     if (!response.ok) throw new UtilisateurError(response.status);
 
-    const data: Page<Utilisateur> = await response.json();
-    return data.content; //les utilisateurs sont dans "content" car on a des pages
+    return await response.json();
+}
+
+// juste une requete pour avoir le total d'utilisateur de la pagination
+export async function compterUtilisateurs(filter = ""): Promise<number> {
+    return (await getUtilisateurs(filter, 0, 1)).totalElements;
 }
 
 // Méthode pour ajouter un utilisateur
@@ -65,7 +74,7 @@ export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRe
 export async function changerVerrou(id: number, verrouiller: boolean): Promise<Utilisateur> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/${verrouiller ? "verrouiller" : "déverrouiller"}/`, {
+        response = await fetch(`${URL}/${id}/${verrouiller ? "verrouiller" : "deverrouiller"}/`, {
             method: "PATCH",
             headers: authHeaders(),
         });
