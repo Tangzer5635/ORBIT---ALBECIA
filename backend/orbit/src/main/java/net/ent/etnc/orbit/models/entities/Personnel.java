@@ -70,6 +70,11 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     @Column(name = "verrouille", nullable = false)
     private boolean verrouille = false;
 
+    @Getter
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stage_id", foreignKey = @ForeignKey(name = "fk_personnel_stage"))
+    private Stage stage;
 
     /** Le nid est toujours enregistré sans espaces autour. */
     public void setNid(String nid) {
