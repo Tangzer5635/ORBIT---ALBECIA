@@ -153,17 +153,17 @@ export default function MaterielPage() {
                 </div>
             </div>
 
-            {erreur && <p role="alert">{erreur}</p>}
-            {!resultat && !erreur && <p>Chargement du matériel…</p>}
-            {resultat && resultat.totalElements === 0 && <p>Aucun matériel ne correspond à ces filtres.</p>}
+            {erreur && <p>{erreur}</p>}
+            {!materiels && !erreur && <p>Chargement du matériel…</p>}
+            {materiels && resultats.length === 0 && <p>Aucun matériel ne correspond à ces filtres.</p>}
 
-            {resultat && resultat.content.length > 0 && (
-                <ul>
-                    {resultat.content.map((m) => (
-                        <li key={m.id}>
-                            {LIBELLE_TYPE_MATERIEL[m.type]} - {m.modele} - {LIBELLE_ETAT_MATERIEL[m.etat]}
-                            {" "}- garantie jusqu'au {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
-                        </li>
+
+            {resultats.length>0 && (
+                <div>
+                    {resultats.map((m) => (
+                        <div>
+                            {LIBELLE_TYPE_MATERIEL[m.type]}{m.nomMachine && ` (${m.nomMachine})`} - {m.modele} -- {LIBELLE_ETAT_MATERIEL[m.etat]}{" "} - {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
+                        </div>
                     ))}
                 </ul>
             )}

@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
@@ -47,7 +48,7 @@ class AffecterMaterielServiceImplTest {
     }
 
     private Materiel materiel(Long id) {
-        Materiel m = new Materiel();
+        Materiel m = new UC();
         m.setId(id);
         m.setNumSerie("MAT-" + id);
         return m;

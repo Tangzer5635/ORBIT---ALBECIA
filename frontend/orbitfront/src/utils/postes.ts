@@ -5,11 +5,12 @@ export const ANNEAU_VIDE: ComptesAnneau = { libre: 0, bonEtat: 0, defectueux: 0,
 // ordre des segments de l'anneau et de la légende
 export const ORDRE_ETATS: (keyof ComptesAnneau)[] = ["bonEtat", "libre", "aChanger", "defectueux"];
 
+// l'anneau d'une salle compte ses postes (celui d'un bâtiment, les postes de toutes ses salles)
 export const LIBELLE_ETAT: Record<keyof ComptesAnneau, string> = {
-    bonEtat: "Bon état",
-    libre: "Libres (en stock)",
+    bonEtat: "Utilisés",
+    libre: "Disponibles",
     aChanger: "À changer",
-    defectueux: "Défectueux",
+    defectueux: "Défectueux ou à compléter",
 };
 
 // couleur de chaque état : on réutilise les classes déjà dans index.css
@@ -20,14 +21,14 @@ export const CLASSE_ETAT: Record<keyof ComptesAnneau, "use" | "dispo" | "chg" | 
     defectueux: "def",
 };
 
-export function totalMateriels(anneau: ComptesAnneau | undefined) {
+export function totalAnneau(anneau: ComptesAnneau | undefined) {
     if (!anneau) return 0;
     return ORDRE_ETATS.reduce((t, k) => t + anneau[k], 0);
 }
 
 // % de matériel utilisable (tout sauf le défectueux), null si aucun matériel
 export function pourcentageUtilisable(anneau: ComptesAnneau | undefined): number | null {
-    const total = totalMateriels(anneau);
+    const total = totalAnneau(anneau);
     if (!anneau || !total) return null;
     return Math.round(((total - anneau.defectueux) / total) * 100);
 }

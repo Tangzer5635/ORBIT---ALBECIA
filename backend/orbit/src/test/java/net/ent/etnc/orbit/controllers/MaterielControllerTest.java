@@ -4,9 +4,9 @@ import net.ent.etnc.orbit.dtos.assemblers.MaterielAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.MaterielRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -52,18 +52,17 @@ class MaterielControllerTest extends ControllerTestSupport {
     private MaterielAssembler materielAssembler;
 
     private Materiel materiel() {
-        Materiel m = new Materiel();
+        Materiel m = new UC();
         m.setId(1L);
         m.setNumSerie("UC-0100");
         m.setModele("Dell OptiPlex 7020");
         m.setDateAcquisition(LocalDate.of(2026, 9, 1));
         m.setDateFinGarantie(LocalDate.of(2029, 9, 1));
-        m.setType(TypeMateriel.UC);
         return m;
     }
 
     private void reponse(EtatMateriel etat) {
-        when(materielAssembler.toDto(any(), any())).thenReturn(
+        when(materielAssembler.toDto(any(), any(), any())).thenReturn(
                 MaterielResponseDto.builder().id(1L).numSerie("UC-0100").etat(etat).build());
     }
 
@@ -102,7 +101,7 @@ class MaterielControllerTest extends ControllerTestSupport {
         mockMvc.perform(get("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.etat").value("DEFECTUEUX"));
-        verify(materielAssembler).toDto(any(), eq(EtatMateriel.DEFECTUEUX));
+        verify(materielAssembler).toDto(any(), eq(EtatMateriel.DEFECTUEUX), any());
     }
 
     @Test

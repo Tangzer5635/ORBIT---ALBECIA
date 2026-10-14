@@ -48,7 +48,11 @@ public class SalleController {
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<SalleResponseDto> getById(@PathVariable Long id) {
         return salleService.findByIdAvecDetails(id)
-                .map(salle -> ResponseEntity.ok(salleAssembler.toDto(salle)))
+                .map(salle -> {
+                    SalleResponseDto dto = salleAssembler.toDto(salle);
+                    dto.setAnneau(salleService.anneauDe(id));
+                    return ResponseEntity.ok(dto);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

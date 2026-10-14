@@ -1,8 +1,8 @@
 package net.ent.etnc.orbit.init;
 
 import net.ent.etnc.orbit.models.entities.*;
+import net.ent.etnc.orbit.models.enums.ListeProcessus;
 import net.ent.etnc.orbit.models.enums.Role;
-import net.ent.etnc.orbit.models.enums.TypeMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.*;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 
 @Component
 public class Init implements CommandLineRunner {
@@ -37,22 +38,27 @@ public class Init implements CommandLineRunner {
             "David", "Bertrand", "Roux", "Vincent", "Fournier", "Morel", "Girard", "Andre", "Mercier"};
 
     /** Un modèle et sa probabilité de tomber en panne : certains modèles sont des séries à problèmes. */
-    private record Modele(String nom, TypeMateriel type, double tauxPanne) {}
+    private record Modele(String nom, Supplier<Materiel> fabrique, double tauxPanne) {}
 
-    private static final List<Modele> UC = List.of(
-            new Modele("Dell OptiPlex 7010", TypeMateriel.UC, 0.03),
-            new Modele("HP EliteDesk 800 G6", TypeMateriel.UC, 0.25),       // série à problèmes
-            new Modele("Lenovo ThinkCentre M70q", TypeMateriel.UC, 0.05));
+    private static final List<Modele> MODELES_UC = List.of(
+            new Modele("Dell OptiPlex 7010", UC::new, 0.03),
+            new Modele("HP EliteDesk 800 G6", UC::new, 0.25),       // série à problèmes
+            new Modele("Lenovo ThinkCentre M70q", UC::new, 0.05));
     private static final List<Modele> ECRANS = List.of(
-            new Modele("Dell P2422H", TypeMateriel.Ecran, 0.02),
-            new Modele("Iiyama ProLite XU2493", TypeMateriel.Ecran, 0.20),  // série à problèmes
-            new Modele("HP E24 G5", TypeMateriel.Ecran, 0.04));
+            new Modele("Dell P2422H", Ecran::new, 0.02),
+            new Modele("Iiyama ProLite XU2493", Ecran::new, 0.20),  // série à problèmes
+            new Modele("HP E24 G5", Ecran::new, 0.04));
     private static final List<Modele> VIDEOPROJECTEURS = List.of(
-            new Modele("Epson EB-W51", TypeMateriel.VideoProjecteur, 0.05),
-            new Modele("BenQ MW560", TypeMateriel.VideoProjecteur, 0.30));  // série à problèmes
+            new Modele("Epson EB-W51", VideoProjecteur::new, 0.05),
+            new Modele("BenQ MW560", VideoProjecteur::new, 0.30));  // série à problèmes
     private static final List<Modele> TABLEAUX = List.of(
-            new Modele("Samsung Flip Pro", TypeMateriel.TableauInteractif, 0.10),
-            new Modele("Promethean ActivPanel", TypeMateriel.TableauInteractif, 0.04));
+            new Modele("Samsung Flip Pro", TableauInteractif::new, 0.10),
+            new Modele("Promethean ActivPanel", TableauInteractif::new, 0.04));
+
+    /** Processus de l'image installée sur chaque UC (liste blanche), plus quelques interdits. */
+    private static final String[] PROCESSUS_AUTORISES = {"explorer.exe", "chrome.exe", "firefox.exe",
+            "code.exe", "idea64.exe", "java.exe", "node.exe", "teams.exe"};
+    private static final String[] PROCESSUS_INTERDITS = {"steam.exe", "discord.exe", "utorrent.exe"};
 
     /** Nombre de postes stagiaires par salle : 0 = salle sans poste (réunion, travaux), rare. */
     private static final int[] TAILLES_SALLES = {0, 6, 8, 10, 12, 12, 14, 16, 16, 20};
@@ -71,11 +77,15 @@ public class Init implements CommandLineRunner {
     private final PosteService posteService;
     private final AffecterMaterielService affecterMaterielService;
     private final DefaillanceService defaillanceService;
+    private final ProcessusService processusService;
+
+    /** Processus installés sur chaque UC créée. */
+    private final List<Processus> image = new ArrayList<>();
 
     public Init(PersonnelService personnelService, MaterielService materielService,
                 BatimentService batimentService, SalleService salleService,
                 PosteService posteService, AffecterMaterielService affecterMaterielService,
-                DefaillanceService defaillanceService) {
+                DefaillanceService defaillanceService, ProcessusService processusService) {
         this.personnelService = personnelService;
         this.materielService = materielService;
         this.batimentService = batimentService;
@@ -83,6 +93,7 @@ public class Init implements CommandLineRunner {
         this.posteService = posteService;
         this.affecterMaterielService = affecterMaterielService;
         this.defaillanceService = defaillanceService;
+        this.processusService = processusService;
     }
 
     @Override
@@ -124,6 +135,10 @@ public class Init implements CommandLineRunner {
         personnelService.desactiver(inactif.getId());
         verrouille.setVerrouille(true);
 
+        // ---------- Processus ----------
+        for (String nom : PROCESSUS_AUTORISES) image.add(processusService.create(buildProcessus(nom, ListeProcessus.BLANCHE)));
+        for (String nom : PROCESSUS_INTERDITS) processusService.create(buildProcessus(nom, ListeProcessus.NOIRE));
+
         // Postes à occuper, remplis à la fin pour répartir les stagiaires sur tout le parc
         List<Poste> aOccuper = new ArrayList<>();
 
@@ -143,14 +158,14 @@ public class Init implements CommandLineRunner {
             }
 
             // stock de rechange : de quoi équiper 3 ou 4 salles, plutôt récent
-            remplirStock(stockage, UC, 40 + random.nextInt(21));               // 40 à 60 UC
+            remplirStock(stockage, MODELES_UC, 40 + random.nextInt(21));               // 40 à 60 UC
             remplirStock(stockage, ECRANS, 60 + random.nextInt(41));           // 60 à 100 écrans
             remplirStock(stockage, VIDEOPROJECTEURS, 3 + random.nextInt(4));   // 3 à 6 vidéoprojecteurs
             remplirStock(stockage, TABLEAUX, 2 + random.nextInt(3));           // 2 à 4 tableaux
 
             // un vieux matériel archivé dans 1 bâtiment sur 3 (ne doit pas compter dans l'anneau)
             if (random.nextInt(3) == 0) {
-                Materiel vieux = creerMateriel(choisir(UC), aujourdhui.minusYears(6), stockage);
+                Materiel vieux = creerMateriel(choisir(MODELES_UC), aujourdhui.minusYears(6), stockage);
                 materielService.archiver(vieux.getId());
             }
         }
@@ -168,7 +183,7 @@ public class Init implements CommandLineRunner {
         // Réserve hors bâtiment, conservée comme avant.
         Salle stockagePrincipal = salleService.create(
                 buildSalle("999", "0", TypeSalle.SalleStockage));
-        creerMateriel(UC.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
+        creerMateriel(MODELES_UC.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
         creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
         creerMateriel(VIDEOPROJECTEURS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
     }
@@ -195,7 +210,7 @@ public class Init implements CommandLineRunner {
 
         // poste formateur : toujours complet, sans occupant stagiaire
         Poste posteFormateur = creerPoste(prefixe + "F", salle);
-        installer(posteFormateur, choisir(UC), equipement, stockage);
+        installer(posteFormateur, choisir(MODELES_UC), equipement, stockage);
         for (int e = 0; e < ecransParPoste; e++) installer(posteFormateur, choisir(ECRANS), equipement, stockage);
 
         int numero = 0;
@@ -205,7 +220,7 @@ public class Init implements CommandLineRunner {
                     ? aujourdhui.minusMonths(26 + random.nextInt(30)) // plus de 2 ans : à remplacer
                     : equipement.minusDays(random.nextInt(20));
 
-            Materiel uc = installer(poste, choisir(UC), achat, stockage);
+            Materiel uc = installer(poste, choisir(MODELES_UC), achat, stockage);
             List<Materiel> ecrans = new ArrayList<>();
             int nbEcrans = profil == Profil.INCOMPLET ? ecransParPoste - 1 : ecransParPoste;
             for (int e = 0; e < nbEcrans; e++) ecrans.add(installer(poste, choisir(ECRANS), achat, stockage));
@@ -291,21 +306,25 @@ public class Init implements CommandLineRunner {
 
     private Materiel creerMateriel(Modele modele, LocalDate acquisition, Salle stockage)
             throws ServiceException {
-        Materiel materiel = new Materiel();
-        materiel.setNumSerie(String.format("%s-%05d", prefixe(modele.type()), numeroSerie++));
+        Materiel materiel = modele.fabrique().get();
+        materiel.setNumSerie(String.format("%s-%05d", prefixe(materiel), numeroSerie));
         materiel.setModele(modele.nom());
         materiel.setDateAcquisition(acquisition);
         materiel.setDateFinGarantie(acquisition.plusYears(3));
-        materiel.setType(modele.type());
+        if (materiel instanceof UC uc) {
+            uc.setNomMachine(String.format("PC-%05d", numeroSerie));
+            image.forEach(uc::addProcessus);
+        }
+        numeroSerie++;
         return materielService.creerEnStock(materiel, stockage.getId());
     }
 
-    private static String prefixe(TypeMateriel type) {
-        return switch (type) {
-            case UC -> "UC";
-            case Ecran -> "EC";
-            case VideoProjecteur -> "VP";
-            case TableauInteractif -> "TI";
+    private static String prefixe(Materiel materiel) {
+        return switch (materiel.getType()) {
+            case UC.TYPE -> "UC";
+            case Ecran.TYPE -> "EC";
+            case VideoProjecteur.TYPE -> "VP";
+            default -> "TI";
         };
     }
 
@@ -357,6 +376,13 @@ public class Init implements CommandLineRunner {
                 .orElseThrow(() -> new IllegalStateException(
                         "Aucune salle de stockage pour le bâtiment "
                                 + batiment.getNumBatiment()));
+    }
+
+    private Processus buildProcessus(String nom, ListeProcessus liste) {
+        Processus processus = new Processus();
+        processus.setNom(nom);
+        processus.setListe(liste);
+        return processus;
     }
 
     private Batiment buildBatiment(String numBatiment) {

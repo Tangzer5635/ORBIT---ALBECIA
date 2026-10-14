@@ -1,5 +1,5 @@
 import type { ComptesAnneau } from "../types/types.ts";
-import { CLASSE_ETAT, ORDRE_ETATS as ORDRE, pourcentageUtilisable, totalMateriels } from "../utils/postes.ts";
+import { CLASSE_ETAT, ORDRE_ETATS as ORDRE, pourcentageUtilisable, totalAnneau } from "../utils/postes.ts";
 
 interface AnneauProps {
     // identifiant unique : sert à nommer la hachure SVG (plusieurs anneaux sur la même page)
@@ -11,7 +11,7 @@ interface AnneauProps {
 
 export default function Anneau({id, comptes, grand = false}: AnneauProps) {
     const epaisseur = grand ? 5 : 6;
-    const total = totalMateriels(comptes);
+    const total = totalAnneau(comptes);
     const pct = pourcentageUtilisable(comptes);
 
     // un arc par état : longueur = part en %, décalage = parts déjà dessinées
@@ -24,7 +24,7 @@ export default function Anneau({id, comptes, grand = false}: AnneauProps) {
     }
 
     return (
-        <div className={grand ? "ring grand" : "ring"} role="img" aria-label={pct === null ? "Aucun matériel" : `${pct} % du matériel utilisable`}>
+        <div className={grand ? "ring grand" : "ring"} role="img" aria-label={pct === null ? "Aucun poste" : `${pct} % des postes utilisables`}>
             <svg viewBox="0 0 42 42" aria-hidden="true">
                 <defs>
                     <pattern id={`hachure-${id}`} patternUnits="userSpaceOnUse" width="1.8" height="1.8"

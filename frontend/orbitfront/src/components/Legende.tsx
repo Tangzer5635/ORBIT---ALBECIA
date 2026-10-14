@@ -2,7 +2,6 @@ import type { ComptesAnneau } from "../types/types.ts";
 import { CLASSE_ETAT, LIBELLE_ETAT, ORDRE_ETATS } from "../utils/postes.ts";
 
 interface LegendeProps {
-    // avec comptes : affiche le nombre de matériels de chaque état + la phrase d'explication
     comptes?: ComptesAnneau;
 }
 

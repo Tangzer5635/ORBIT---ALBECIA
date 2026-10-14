@@ -1,5 +1,5 @@
 import type { SalleCarte } from "../types/types.ts";
-import {pluriel, totalMateriels} from "../utils/postes.ts";
+import {pluriel, totalAnneau} from "../utils/postes.ts";
 
 interface StockageCardProps {
     salle: SalleCarte;
@@ -8,7 +8,7 @@ interface StockageCardProps {
 
 export default function StockageCard({ salle }: StockageCardProps) {
     const { libre, defectueux, aChanger } = salle.anneau;
-    const total = totalMateriels(salle.anneau);
+    const total = totalAnneau(salle.anneau);
 
     return (
         <article className="room stock">

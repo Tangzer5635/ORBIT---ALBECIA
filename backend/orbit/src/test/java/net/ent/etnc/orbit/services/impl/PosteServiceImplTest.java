@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.PosteRepository;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
@@ -65,7 +66,7 @@ class PosteServiceImplTest {
     @Test
     void update_doitRenommerSansPerdreLeMateriel() {
         Poste existant = poste(1L, "P101-01");
-        Materiel m = new Materiel();
+        Materiel m = new UC();
         m.setId(1L);
         m.setNumSerie("UC-0001");
         existant.addMateriel(m);
