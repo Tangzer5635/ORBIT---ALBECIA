@@ -74,7 +74,7 @@ export async function getSalleById(id: string): Promise<Salle> {
 export async function getSallesDuBatiment(idBatiment: number): Promise<SalleCarte[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/?batiment=${idBatiment}/`, { headers: authHeaders() });
+        response = await fetch(`${URL}/?batiment=${idBatiment}`, { headers: authHeaders() });
     } catch {
         throw new SalleError(0);
     }

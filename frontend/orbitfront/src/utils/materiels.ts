@@ -21,7 +21,7 @@ export const LIBELLE_LOCALISATION: Record<Localisation, string> = {
     ARCHIVE: "Archivés",
 };
 
-// "Écran" -> "ecran" on ignore majuscule et accent
+// "Écran" -> "ecran" on ignore majuscule et accent le diacritic c'est le caractère speciaux
 const normaliser = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 export function localisationDe(m: Materiel): Exclude<Localisation, "PARTOUT"> {

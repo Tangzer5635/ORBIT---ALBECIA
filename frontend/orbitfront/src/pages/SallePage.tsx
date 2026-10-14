@@ -86,7 +86,7 @@ export default function SallePage() {
                         <h1>Bâtiment {batiment.numBatiment}</h1>
                         <p>
                             {pluriel(totalMateriels(batiment.anneau), "matériel")}
-                            dans {pluriel(batiment.nbSalles, "salle")}
+                            {" "} dans {pluriel(batiment.nbSalles, "salle")}
                             {enDifficulte > 0 && `, dont ${enDifficulte} sous 80 % de matériel utilisable`}.
                         </p>
                         {(role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && (
