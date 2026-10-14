@@ -26,6 +26,20 @@ export async function getMateriel(): Promise<Materiel[]> {
     return data.content; //les materiels sont dans "content" car on a des pages
 }
 
+// Méthode pour récupérer un matériel par son id
+export async function getMaterielById(id: number): Promise<Materiel> {
+    let response: Response;
+    try {
+        response = await fetch(`${URL}/${id}/`, { headers: authHeaders() });
+    } catch {
+        throw new MaterielError(0);
+    }
+
+    if (!response.ok) throw new MaterielError(response.status);
+
+    return await response.json();
+}
+
 // Méthode pour ajouter un materiel
 export async function ajouterMateriel(materiel: MaterielRequest): Promise<Materiel> {
     let response: Response;

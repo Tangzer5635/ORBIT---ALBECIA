@@ -130,6 +130,7 @@ export interface Salle {
     materielsId: number[];
     nbPostes: number;
     materielsParType: Partial<Record<TypeMateriel, number>>;
+    anneau?: ComptesAnneau;
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)

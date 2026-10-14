@@ -8,7 +8,7 @@ import Legende from "../components/Legende.tsx";
 import SalleCard from "../components/SalleCard.tsx";
 import StockageCard from "../components/StockageCard.tsx";
 import type {SalleCarte} from "../types/types.ts";
-import {pluriel, pourcentageUtilisable, totalMateriels} from "../utils/postes.ts";
+import {pluriel, pourcentageUtilisable, totalAnneau} from "../utils/postes.ts";
 import CreerSallePopup from "../components/CreerSallePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";
 
@@ -84,9 +84,9 @@ export default function SallePage() {
                     <div>
                         <h1>Bâtiment {batiment.numBatiment}</h1>
                         <p>
-                            {pluriel(totalMateriels(batiment.anneau), "matériel")}
+                            {pluriel(totalAnneau(batiment.anneau), "poste")}
                             {" "} dans {pluriel(batiment.nbSalles, "salle")}
-                            {enDifficulte > 0 && `, dont ${enDifficulte} sous 80 % de matériel utilisable`}.
+                            {enDifficulte > 0 && `, dont ${enDifficulte} sous 80 % de postes utilisables`}.
                         </p>
                         {(role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && (
                             <div className="hero-row">

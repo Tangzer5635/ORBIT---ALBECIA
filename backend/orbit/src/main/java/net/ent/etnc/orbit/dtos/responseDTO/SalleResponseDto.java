@@ -19,4 +19,5 @@ public class SalleResponseDto {
     private List<Long> materielsId;
     private int nbPostes;
     private Map<String, Long> materielsParType;
+    private AnneauDto anneau;
 }

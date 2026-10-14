@@ -13,6 +13,7 @@ import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.TableauInteractif;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.VideoProjecteur;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.repositories.SalleRepository;
@@ -267,16 +268,27 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Salle> localiser(Long idMateriel) {
+        return repository.findByMateriels_Id(idMateriel)
+                .or(() -> posteService.posteDuMateriel(idMateriel)
+                        .flatMap(poste -> repository.findByPostes_Id(poste.getId())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<SalleCarteDto> findCartesDuBatiment(Long idBatiment) {
         List<Salle> salles = repository.findByBatiment(idBatiment);
         if (salles.isEmpty()) return List.of();
         List<Long> ids = salles.stream().map(Salle::getId).toList();
 
-        LocalDate seuil = Materiel.seuilARemplacer();
         Map<Long, Long> nbPostes = repository.nbPostes(ids).stream()
                 .collect(Collectors.toMap(IdCompte::id, IdCompte::nb));
-        Map<Long, AnneauDto> anneaux = AnneauDto.parId(
-                repository.comptesEtatsEnSalle(ids, seuil), repository.comptesEtatsSurPoste(ids, seuil));
+        Map<Long, AnneauDto> anneaux = anneaux(ids);
+        // réserves : pas de poste, on compte leur matériel
+        List<Long> idsStockage = salles.stream().filter(s -> s.getType() == TypeSalle.SalleStockage).map(Salle::getId).toList();
+        if (!idsStockage.isEmpty())
+            repository.comptesEtats(idsStockage, Materiel.seuilARemplacer())
+                    .forEach(c -> anneaux.put(c.id(), AnneauDto.de(c)));
 
         return salles.stream().map(s -> SalleCarteDto.builder()
                 .id(s.getId())
@@ -290,9 +302,19 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Salle> localiser(Long idMateriel) {
-        return repository.findByMateriels_Id(idMateriel)
-                .or(() -> posteService.posteDuMateriel(idMateriel)
-                        .flatMap(poste -> repository.findByPostes_Id(poste.getId())));
+    public AnneauDto anneauDe(Long idSalle) {
+        return anneaux(List.of(idSalle)).getOrDefault(idSalle, AnneauDto.VIDE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, AnneauDto> anneaux(List<Long> idsSalles) {
+        if (idsSalles.isEmpty()) return Map.of();
+        List<Salle> salles = repository.chargerPostes(idsSalles);
+        Map<Long, EtatPoste> etats = posteService.etats(salles.stream().flatMap(s -> s.getPostes().stream()).toList());
+        Map<Long, AnneauDto> anneaux = new HashMap<>();
+        salles.forEach(s -> anneaux.put(s.getId(),
+                AnneauDto.dePostes(s.getPostes().stream().map(p -> etats.get(p.getId())).toList())));
+        return anneaux;
     }
 }

@@ -1,7 +1,7 @@
 /* =========================================================
    Styles d'ORBIT — tout dans un seul fichier (chargé dans main.tsx)
    Couleurs reprises de la maquette : thème sombre par défaut, thème clair avec data-theme="light".
-   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments  6. Salles  7. Popup  8. Utilisateurs
+   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments  6. Salles  7. Popup  8. Utilisateurs  9. Détail d'une salle
    ========================================================= */
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
 
@@ -31,6 +31,8 @@
     --inc: #60a5fa;
     --def: #fb7185;
     --def-bg: #46203a;
+    /* hachure "disponible" (postes, tuiles, légende) */
+    --hachure: repeating-linear-gradient(45deg, color-mix(in srgb, var(--use) 45%, transparent) 0 1.5px, color-mix(in srgb, var(--use-bg) 70%, var(--bg)) 1.5px 9px);
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 
     --radius-card: 30px;
@@ -65,6 +67,7 @@
     --inc: #3b82c4;
     --def: #e5484d;
     --def-bg: #fde4e5;
+    --hachure: repeating-linear-gradient(45deg, color-mix(in srgb, var(--use) 45%, transparent) 0 1.5px, var(--use-bg) 1.5px 9px);
     --shadow: 0 6px 22px rgba(40, 30, 110, 0.08);
 
     --logo-filter: none;
@@ -895,7 +898,8 @@ h3 {
 }
 
 .sw.dispo {
-    background: repeating-linear-gradient(45deg, var(--use) 0 3px, var(--use-bg) 3px 7px);
+    background: var(--hachure);
+    box-shadow: inset 0 0 0 1.5px var(--use);
 }
 
 @media (max-width: 720px) {
@@ -1215,7 +1219,7 @@ h3 {
     min-width: 108px;
     padding: 8px 14px;
     border-radius: 16px;
-    background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--use) 30%, transparent) 0 2px, var(--use-bg) 2px 9px);
+    background: var(--hachure);
 }
 
 .stat b {
@@ -1359,4 +1363,156 @@ h3 {
     .user-grille {
         grid-template-columns: 1fr;
     }
+}
+
+/* =========================================================
+   9. DÉTAIL D'UNE SALLE : tuiles d'état + plan de la salle
+   ========================================================= */
+
+/* Tuiles de l'en-tête (cliquables pour filtrer le plan) */
+.tuiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tuile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 120px;
+    padding: 8px 14px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--c) 22%, var(--bg));
+    text-align: left;
+}
+
+.tuile b {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.tuile span {
+    font-size: 13px;
+}
+
+.tuile[aria-pressed="true"] {
+    border-color: var(--ink);
+}
+
+/* Disponible : hachure verte bordée de vert (tuile et poste) */
+.tuile.dispo,
+.plan-poste.dispo {
+    background: var(--hachure);
+    border: 2px solid var(--use);
+}
+
+/* Plan : la salle vue de dessus */
+.plan {
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.plan-salle {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 18px;
+    border: 2px solid var(--line);
+    border-radius: 22px;
+}
+
+.plan-haut {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.plan-materiels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Une rangée = 2 tables, une table = 2 postes */
+.plan-rangee {
+    display: flex;
+    justify-content: space-around;
+    gap: 24px;
+}
+
+.plan-table {
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--card2);
+}
+
+/* Matériel de salle et poste : fond sombre + barre de couleur de l'état en haut */
+.plan-mat,
+.plan-poste {
+    display: flex;
+    flex-direction: column;
+    border-top: 4px solid var(--c);
+    border-radius: 10px;
+    background: var(--card);
+}
+
+.plan-mat {
+    min-width: 76px;
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+.plan-poste {
+    justify-content: space-between;
+    width: 62px;
+    height: 62px;
+    padding: 6px 8px;
+}
+
+.plan-poste.formateur {
+    width: 130px;
+    height: auto;
+    min-height: 62px;
+}
+
+.plan-mat span,
+.plan-poste span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.plan-poste b {
+    align-self: flex-end;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* Défectueux et à changer : tout le poste prend la couleur */
+.plan-mat.def,
+.plan-poste.def {
+    background: var(--def-bg);
+}
+
+.plan-poste.chg {
+    background: var(--chg-bg);
+}
+
+.estompe {
+    opacity: 0.25;
+}
+
+.plan-legende {
+    justify-content: center;
+    margin-top: 16px;
 }

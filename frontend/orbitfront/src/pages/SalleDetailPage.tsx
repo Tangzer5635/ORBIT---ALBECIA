@@ -1,12 +1,20 @@
 import {Link, useParams} from "react-router-dom";
 import {getPostesBySalle, getSalleById} from "../services/salleService.ts";
+import {getMaterielById} from "../services/materielService.ts";
 import {getUtilisateur} from "../services/authService.ts";
-import type {EtatPoste, Poste, Salle} from "../types/types.ts";
+import {
+    LIBELLE_ETAT_MATERIEL,
+    type EtatPoste,
+    type Materiel,
+    type Poste,
+    type Salle,
+    type TypeMateriel,
+} from "../types/types.ts";
 import {useEffect, useState} from "react";
 import Anneau from "../components/Anneau.tsx";
-import {libelleEtage, pluriel} from "../utils/postes.ts";
+import {ANNEAU_VIDE, libelleEtage, pluriel} from "../utils/postes.ts";
 
-// ordre des tuiles, libellé et classe de couleur (classes déjà dans index.css)
+// ordre des tuiles, libellé et classe de couleur
 const ETATS: { etat: EtatPoste; libelle: string; classe: string }[] = [
     {etat: "DEFECTUEUX", libelle: "Défectueux", classe: "def"},
     {etat: "A_COMPLETER", libelle: "À compléter", classe: "inc"},
@@ -15,10 +23,32 @@ const ETATS: { etat: EtatPoste; libelle: string; classe: string }[] = [
     {etat: "DISPONIBLE", libelle: "Disponible", classe: "dispo"},
 ];
 
+// libellé court du matériel posé dans la salle (plan)
+const COURT: Record<TypeMateriel, string> = {
+    UC: "UC",
+    Ecran: "Écran",
+    VideoProjecteur: "VP",
+    TableauInteractif: "TBI",
+};
+
+const classeEtat = (e?: EtatPoste) => ETATS.find(x => x.etat === e)?.classe ?? "";
+
+// "B201-S302-F" = poste formateur, "B201-S302-P07" -> 7
+const estFormateur = (p: Poste) => p.numPoste.endsWith("-F");
+const numero = (p: Poste) => Number(p.numPoste.match(/P(\d+)$/)?.[1] ?? 0);
+
+// regroupe les postes 2 par 2 (une table = 2 postes côte à côte)
+function parTables(postes: Poste[]): Poste[][] {
+    const tables: Poste[][] = [];
+    for (let i = 0; i < postes.length; i += 2) tables.push(postes.slice(i, i + 2));
+    return tables;
+}
+
 export default function SalleDetailPage() {
     const {salleId} = useParams();
     const [salle, setSalle] = useState<Salle | null>(null);
     const [postes, setPostes] = useState<Poste[]>([]);
+    const [materielsSalle, setMaterielsSalle] = useState<Materiel[]>([]);
     const [filtre, setFiltre] = useState<EtatPoste | null>(null);
     const role = getUtilisateur()?.role;
     const peutGerer = role === "ADMINISTRATEUR" || role === "GESTIONNAIRE";
@@ -26,31 +56,49 @@ export default function SalleDetailPage() {
     useEffect(() => {
         if (!salleId) return;
         setFiltre(null);
-        getSalleById(salleId).then(setSalle).catch(console.error);
+        setMaterielsSalle([]);
+        getSalleById(salleId)
+            .then(s => {
+                setSalle(s);
+                // VP, tableau… posés dans la salle (pas sur un poste) : leur état vient du back
+                if (peutGerer) {
+                    Promise.all(s.materielsId.map(getMaterielById))
+                        .then(setMaterielsSalle)
+                        .catch(console.error);
+                }
+            })
+            .catch(console.error);
         getPostesBySalle(salleId).then(setPostes).catch(console.error);
-    }, [salleId]);
+    }, [salleId, peutGerer]);
 
     const compte = (e: EtatPoste) => postes.filter(p => p.etat === e).length;
 
-    // l'anneau compte les postes : défectueux et à compléter = non utilisables
-    const anneau = {
-        bonEtat: compte("UTILISE"),
-        libre: compte("DISPONIBLE"),
-        aChanger: compte("A_CHANGER"),
-        defectueux: compte("DEFECTUEUX") + compte("A_COMPLETER"),
-    };
-
     if (!salle) return <p className="muted">Chargement de la salle…</p>;
+
+    const posteFormateur = postes.find(estFormateur);
+    const stagiaires = postes.filter(p => !estFormateur(p)).sort((a, b) => numero(a) - numero(b));
+    // 2 colonnes de tables : la moitié des tables à gauche, l'autre à droite
+    const tables = parTables(stagiaires);
+    const rangees: Poste[][][] = [];
+    for (let i = 0; i < tables.length; i += 2) rangees.push(tables.slice(i, i + 2));
+
+    // pour un formateur (pas d'accès au détail du matériel) : seulement le type, sans état
+    const chips = peutGerer
+        ? materielsSalle.map(m => ({id: m.id, type: m.type, etat: m.etat}))
+        : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
+            Array.from({length: n ?? 0}, (_, i) => ({id: `${type}-${i}`, type: type as TypeMateriel, etat: undefined})));
+
+    const estompe = (p: Poste) => filtre !== null && p.etat !== filtre;
 
     return (
         <>
             <Link to={-1 as unknown as string} className="muted small">‹ Retour</Link>
 
             <section className="hero">
-                <Anneau id={`salle-${salle.id}`} comptes={anneau} grand/>
+                <Anneau id={`salle-${salle.id}`} comptes={salle.anneau ?? ANNEAU_VIDE} grand/>
                 <div>
                     <h1>Salle {salle.numSalle}</h1>
-                    <p>{libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}.</p>
+                    <p>{libelleEtage(salle.etage)}, {pluriel(stagiaires.length, "poste")} stagiaire.</p>
 
                     <div className="tuiles">
                         {ETATS.map(({etat, libelle, classe}) => (
@@ -58,13 +106,12 @@ export default function SalleDetailPage() {
                                     aria-pressed={filtre === etat}
                                     onClick={() => setFiltre(filtre === etat ? null : etat)}>
                                 <b>{compte(etat)}</b>
-                                {libelle}
+                                <span>{libelle}</span>
                             </button>
                         ))}
                     </div>
                     <p className="rleg-note">
-                        Le cercle indique la part de postes utilisables : utilisés, disponibles et à changer bientôt.
-                        Clique sur une case pour filtrer les postes.
+                        Le cercle indique la part du matériel utilisable (comme sur la carte de la salle). Les cases comptent les postes : clique dessus pour filtrer le plan.
                     </p>
                 </div>
             </section>
@@ -79,17 +126,53 @@ export default function SalleDetailPage() {
                 </div>
             )}
 
-            <ul className="postes">
-                {postes.map(p => {
-                    const info = ETATS.find(e => e.etat === p.etat);
-                    return (
-                        <li key={p.id} className={filtre && p.etat !== filtre ? "estompe" : undefined}>
-                            <i className={`sw ${info?.classe ?? ""}`}/>
-                            Poste {p.numPoste} : {info?.libelle ?? "—"}, {pluriel(p.materielsId.length, "matériel")}
-                        </li>
-                    );
-                })}
-            </ul>
+            <section className="plan">
+                <div className="plan-salle">
+                    {/* haut de la salle : matériel de salle à gauche, poste formateur à droite */}
+                    <div className="plan-haut">
+                        <div className="plan-materiels">
+                            {chips.map(c => (
+                                <div key={c.id} className={`plan-mat ${c.etat === "DEFECTUEUX" ? "def" : c.etat === "A_REMPLACER" ? "chg" : "use"}`}>
+                                    <b>{COURT[c.type]}</b>
+                                    {c.etat && <span>{LIBELLE_ETAT_MATERIEL[c.etat]}</span>}
+                                </div>
+                            ))}
+                        </div>
+                        {posteFormateur && (
+                            <div className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}`}>
+                                <b>Formateur</b>
+                                <span>{pluriel(posteFormateur.materielsId.length, "matériel")}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* postes stagiaires : rangées de 2 tables de 2 postes */}
+                    {rangees.map((rangee, r) => (
+                        <div key={r} className="plan-rangee">
+                            {rangee.map((table, t) => (
+                                <div key={t} className="plan-table">
+                                    {table.map(p => (
+                                        <div key={p.id}
+                                             className={`plan-poste ${classeEtat(p.etat)}${estompe(p) ? " estompe" : ""}`}
+                                             title={`Poste ${p.numPoste}`}>
+                                            <b>{numero(p)}</b>
+                                            <span>{p.occupantId ? "Occupé" : "Libre"}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+
+                    {stagiaires.length === 0 && <p className="muted">Aucun poste stagiaire dans cette salle.</p>}
+                </div>
+
+                <ul className="rleg plan-legende">
+                    {ETATS.map(({etat, libelle, classe}) => (
+                        <li key={etat} className={classe}><i className={`sw ${classe}`}/>{libelle} ({compte(etat)})</li>
+                    ))}
+                </ul>
+            </section>
         </>
     );
 }
