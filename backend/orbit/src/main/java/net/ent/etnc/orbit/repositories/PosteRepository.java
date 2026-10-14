@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.repositories;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.commons.BaseRepository;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
