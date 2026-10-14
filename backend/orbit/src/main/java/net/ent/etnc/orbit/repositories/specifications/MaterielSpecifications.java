@@ -15,12 +15,19 @@ import org.springframework.data.jpa.domain.Specification;
  * Filtre pour l"tat et la localisation du matériel.
  *
  * ici l'état est calculé depuis la BDD
+ *
+ * exemple de predicate :
+ * Predicate<Integer> isGreaterThanTen = x -> x > 10;
+ * boolean result = isGreaterThanTen.test(15);
+ *
+ * le specification construit les criteres de filtre pour la bdd avec les predicate
+ *
  */
 public final class MaterielSpecifications {
 
     private MaterielSpecifications() {}
 
-    /** EXISTS une défaillance SIGNALEE sur ce matériel (= DefaillanceService.aUneDefaillanceOuverte). */
+    /** EXISTS une défaillance SIGNALEE sur ce matériel  => (DefaillanceService.aUneDefaillanceOuverte). */
     private static Predicate defaillanceOuverte(Root<Materiel> materiel, CriteriaQuery<?> query, CriteriaBuilder cb) {
         Subquery<Long> sousRequete = query.subquery(Long.class);
         Root<Defaillance> defaillance = sousRequete.from(Defaillance.class);
@@ -61,10 +68,15 @@ public final class MaterielSpecifications {
             return switch (etat) {
                 case ARCHIVE -> cb.isTrue(materiel.get("archive"));
                 case DEFECTUEUX -> cb.and(actif, defaillanceOuverte(materiel, query, cb));
-                case A_REMPLACER -> cb.and(actif, cb.not(defaillanceOuverte(materiel, query, cb)), ancien);
-                case DISPONIBLE -> cb.and(actif, cb.not(defaillanceOuverte(materiel, query, cb)), cb.not(ancien),
+                case A_REMPLACER -> cb.and(actif,
+                        cb.not(defaillanceOuverte(materiel, query, cb)), ancien);
+                case DISPONIBLE -> cb.and(actif,
+                        cb.not(defaillanceOuverte(materiel, query, cb)),
+                        cb.not(ancien),
                         enStock(materiel, query, cb));
-                case NORMAL -> cb.and(actif, cb.not(defaillanceOuverte(materiel, query, cb)), cb.not(ancien),
+                case NORMAL -> cb.and(actif,
+                        cb.not(defaillanceOuverte(materiel, query, cb)),
+                        cb.not(ancien),
                         cb.not(enStock(materiel, query, cb)));
             };
         };

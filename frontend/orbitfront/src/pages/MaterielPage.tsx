@@ -51,12 +51,18 @@ export default function MaterielPage() {
     const [compteurs, setCompteurs] = useState<Compteurs>();
     const [erreur, setErreur] = useState("");
 
-    // la recherche part 300 ms après la dernière frappe pour pas faire de requête à chaque saisie
+    // Les compteurs n'ont pas besoin de changer au changement de filtre, c'est le matériel en stock
+    //TODO le changer quand on pourra affecter ou supprimer
+    useEffect(() => {
+        chargerCompteurs().then(setCompteurs).catch(() => {});
+    }, []);
+
+    // la recherche part 500 ms après la dernière frappe pour pas faire de requête à chaque saisie
     useEffect(() => {
         const minuteur = setTimeout(() => {
             setRecherche(saisie);
             setPage(0);
-        }, 300);
+        }, 500);
         return () => clearTimeout(minuteur);
     }, [saisie]);
 
@@ -76,11 +82,6 @@ export default function MaterielPage() {
         return () => { actif = false; };
     }, [recherche, type, etat, localisation, page]);
 
-    // Les compteurs n'ont pas besoin de changer au changement de filtre, c'est le matériel en stock
-    //TODO le changer quand on pourra affecter ou supprimer
-    useEffect(() => {
-        chargerCompteurs().then(setCompteurs).catch(() => {});
-    }, []);
 
     // changer un filtre ramène toujours à la première pagination
     function changerType(t: TypeMateriel | null) { setType(t); setPage(0); }
