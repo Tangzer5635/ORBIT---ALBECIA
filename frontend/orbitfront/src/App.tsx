@@ -13,7 +13,7 @@ import MaterielPage from "./pages/MaterielPage.tsx";
 import MasterPage from "./pages/MasterPage.tsx";
 import StagePage from "./pages/StagePage.tsx";
 import ProcessusPage from "./pages/ProcessusPage.tsx";
-import UserPage from "./pages/UserPage.tsx";
+import UserPage from "./pages/UtilisateurPage.tsx";
 import JournalPage from "./pages/JournalPage.tsx";
 import PostePage from "./pages/PostePage.tsx";
 import { ACCES } from "./config/acces.ts";

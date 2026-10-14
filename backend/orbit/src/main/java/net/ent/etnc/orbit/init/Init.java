@@ -126,22 +126,11 @@ public class Init implements CommandLineRunner {
         Batiment batiment666 = batimentService.create(buildBatiment("666"));
         Salle stockage666 = stockageDe(batiment666);
 
-            // stock de rechange : de quoi équiper 1 ou 2 salles complètes, plutôt récent
-            remplirStock(stockage, UC, 20 + random.nextInt(21));                 // 20 à 40 UC
-            remplirStock(stockage, ECRANS, 30 + random.nextInt(31));             // 30 à 60 écrans
-            remplirStock(stockage, EQUIPEMENTS_SALLE.subList(0, 2), 2 + random.nextInt(3)); // 2 à 4 vidéoprojecteurs
-            remplirStock(stockage, EQUIPEMENTS_SALLE.subList(2, 4), 1 + random.nextInt(3)); // 1 à 3 tableaux
-
-        Poste poste666 = creerPoste("666", salle999, p1);
 
         // Matériel créé dans le stockage du bâtiment, puis affecté au poste
         Materiel uc666 = creerMateriel(UC.get(0), aujourdhui.minusMonths(2), stockage666);
         Materiel ecran666a = creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockage666);
         Materiel ecran666b = creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockage666);
-
-        affecterMaterielService.affecterAPoste(poste666.getId(), uc666.getId());
-        affecterMaterielService.affecterAPoste(poste666.getId(), ecran666a.getId());
-        affecterMaterielService.affecterAPoste(poste666.getId(), ecran666b.getId());
 
         // Réserve hors bâtiment, conservée comme avant.
         Salle stockagePrincipal = salleService.create(
