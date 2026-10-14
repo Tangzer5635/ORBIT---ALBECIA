@@ -1,7 +1,7 @@
 /* =========================================================
    Styles d'ORBIT — tout dans un seul fichier (chargé dans main.tsx)
    Couleurs reprises de la maquette : thème sombre par défaut, thème clair avec data-theme="light".
-   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments
+   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments  6. Salles  7. Popup  8. Utilisateurs
    ========================================================= */
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
 
@@ -1196,4 +1196,167 @@ h3 {
 .popup-recap {
     margin: 0 0 10px;
     padding-left: 18px;
+}
+/* =========================================================
+   8. PAGE UTILISATEURS
+   ========================================================= */
+
+/* Compteurs par rôle (au-dessus du bouton "Créer un utilisateur") */
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    min-width: 108px;
+    padding: 8px 14px;
+    border-radius: 16px;
+    background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--use) 30%, transparent) 0 2px, var(--use-bg) 2px 9px);
+}
+
+.stat b {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.stat span {
+    font-size: 13px;
+}
+
+/* Barre de recherche */
+.search {
+    width: 100%;
+    margin: 18px 0 12px;
+    padding: 12px 16px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.search:focus {
+    border-color: var(--accent);
+}
+
+/* Filtres : une ligne par groupe (rôle, état du compte) */
+.filters {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.filters .seg {
+    flex-wrap: wrap;
+}
+
+/* Liste des utilisateurs : une ligne par compte, liseré de couleur à gauche
+   (gris = normal, rouge = verrouillé, via les classes .dispo / .def) */
+.list {
+    display: grid;
+    gap: 10px;
+}
+
+.li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2px 12px;
+    padding: 12px 16px;
+    border-left: 6px solid var(--c);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.li strong {
+    font-size: 15px;
+}
+
+.li > span {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.li > span b {
+    color: var(--ink);
+}
+
+.li-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.li-actions .btn {
+    background: var(--card2);
+}
+/* Pagination sous la liste */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.pagination .btn {
+    background: var(--card2);
+}
+
+.pagination .btn:disabled {
+    cursor: default;
+}
+
+/* Popup d'ajout / modification : champs sur deux colonnes */
+.user-grille {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+}
+
+.user-grille > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-grille label {
+    margin: 0 0 6px;
+}
+
+.user-grille select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Case "Compte actif" (les champs de .popup-body ne s'appliquent pas à la case) */
+.popup-body .user-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 16px 0 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.popup-body .user-check input {
+    width: auto;
+    margin-top: 4px;
+    accent-color: var(--accent);
+}
+
+@media (max-width: 720px) {
+    .li {
+        grid-template-columns: 1fr;
+    }
+
+    .user-grille {
+        grid-template-columns: 1fr;
+    }
 }
