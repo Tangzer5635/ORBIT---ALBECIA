@@ -1,5 +1,5 @@
-import type { ComptesAnneau } from "../types/types.ts";
-import { CLASSE_ETAT, ORDRE_ETATS as ORDRE, pourcentageUtilisable, totalAnneau } from "../utils/postes.ts";
+import type { ComptesAnneau } from "../../types/types.ts";
+import { CLASSE_ETAT, ORDRE_ETATS as ORDRE, pourcentageUtilisable, totalAnneau } from "../../utils/postes.ts";
 
 interface AnneauProps {
     // identifiant unique : sert à nommer la hachure SVG (plusieurs anneaux sur la même page)

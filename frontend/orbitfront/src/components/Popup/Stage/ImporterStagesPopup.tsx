@@ -1,8 +1,8 @@
 import {useState} from "react";
-import Popup from "./Popup.tsx";
-import {type BilanImportStages, LIBELLE_TYPE_FORMATION} from "../types/types.ts";
-import {importerStages, StageError} from "../services/stageService.ts";
-import {pluriel} from "../utils/postes.ts";
+import Popup from "../Popup.tsx";
+import {type BilanImportStages, LIBELLE_TYPE_FORMATION} from "../../../types/types.ts";
+import {importerStages, StageError} from "../../../services/stageService.ts";
+import {pluriel} from "../../../utils/postes.ts";
 
 interface Props {
     onClose: () => void;

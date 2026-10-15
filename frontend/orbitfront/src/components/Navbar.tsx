@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { getUtilisateur, logout } from "../services/authService.ts";
 import logo from "../assets/orbit-logo.gif";
 import { ACCES } from "../config/acces.ts";
-import ThemeButton from "./ThemeButton.tsx";
+import ThemeButton from "./Utils/ThemeButton.tsx";
 
 export default function Navbar() {
     const navigate = useNavigate();

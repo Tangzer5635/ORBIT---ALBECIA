@@ -1,6 +1,6 @@
-import {LIBELLE_ETAT_MATERIEL, LIBELLE_TYPE_MATERIEL, type Materiel, type Salle} from "../types/types.ts";
-import CarteMateriel from "./CarteMateriel.tsx";
-import {CLASSE_ETAT_MATERIEL} from "../utils/materiels.ts";
+import {LIBELLE_ETAT_MATERIEL, LIBELLE_TYPE_MATERIEL, type Materiel, type Salle} from "../../types/types.ts";
+import MaterielCard from "./MaterielCard.tsx";
+import {CLASSE_ETAT_MATERIEL} from "../../utils/materiels.ts";
 
 type Props = {
     materiel: Materiel;
@@ -23,7 +23,7 @@ export default function PanneauMateriel({materiel, salle, onFermer, onChange}: P
                 <p className="muted small">Matériel de salle, salle {salle.numSalle}</p>
             </div>
 
-            <CarteMateriel materiel={materiel} depuis={{salleId: salle.id}} onChange={onChange}/>
+            <MaterielCard materiel={materiel} depuis={{salleId: salle.id}} onChange={onChange}/>
         </aside>
     );
 }

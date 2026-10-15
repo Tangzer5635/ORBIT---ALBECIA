@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_TYPE_FORMATION, type Salle, type Stage} from "../types/types.ts";
-import {affecterStageASalle, getStages, StageError} from "../services/stageService.ts";
-import {statutDe} from "../utils/stages.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_TYPE_FORMATION, type Salle, type Stage} from "../../../types/types.ts";
+import {affecterStageASalle, getStages, StageError} from "../../../services/stageService.ts";
+import {statutDe} from "../../../utils/stages.ts";
 
 interface Props {
     salle: Salle;

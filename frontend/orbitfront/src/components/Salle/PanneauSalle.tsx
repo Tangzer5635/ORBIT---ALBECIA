@@ -1,5 +1,5 @@
-import {type Formateur, LIBELLE_TYPE_FORMATION, type Salle} from "../types/types.ts";
-import {dateFr} from "../utils/postes.ts";
+import {type Formateur, LIBELLE_TYPE_FORMATION, type Salle} from "../../types/types.ts";
+import {dateFr} from "../../utils/postes.ts";
 
 type Props = {
     salle: Salle;

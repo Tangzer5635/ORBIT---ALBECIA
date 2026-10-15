@@ -1,6 +1,6 @@
 import {Link} from "react-router-dom";
-import type {Batiment} from "../types/types.ts";
-import Anneau from "./Anneau.tsx";
+import type {Batiment} from "../../types/types.ts";
+import Anneau from "../Utils/Anneau.tsx";
 
 interface BatimentCardProps {
     batiment: Batiment;

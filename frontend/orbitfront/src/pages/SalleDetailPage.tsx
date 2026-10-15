@@ -13,7 +13,7 @@ import {
     type TypeMateriel,
 } from "../types/types.ts";
 import {useEffect, useState} from "react";
-import Anneau from "../components/Anneau.tsx";
+import Anneau from "../components/Utils/Anneau.tsx";
 import {
     ANNEAU_VIDE,
     dateFr,
@@ -27,16 +27,16 @@ import {
     pluriel
 } from "../utils/postes.ts";
 import {CLASSE_ETAT_MATERIEL, NOM_TYPE} from "../utils/materiels.ts";
-import PanneauSalle from "../components/PanneauSalle.tsx";
-import PanneauPoste from "../components/PanneauPoste.tsx";
-import PanneauMateriel from "../components/PanneauMateriel.tsx";
-import AffecterStagiairePopup from "../components/AffecterStagiairePopup.tsx";
-import AffecterMaterielPopup from "../components/AffecterMaterielPopup.tsx";
-import AffecterStagePopup from "../components/AffecterStagePopup.tsx";
-import AffecterFormateurPopup from "../components/AffecterFormateurPopup.tsx";
-import ModifierSallePopup from "../components/ModifierSallePopup.tsx";
-import GelerSallePopup from "../components/GelerSallePopup.tsx";
-import Popup from "../components/Popup.tsx";
+import PanneauSalle from "../components/Salle/PanneauSalle.tsx";
+import PanneauPoste from "../components/Poste/PanneauPoste.tsx";
+import PanneauMateriel from "../components/Materiel/PanneauMateriel.tsx";
+import AffecterStagiairePopup from "../components/Popup/Stage/AffecterStagiairePopup.tsx";
+import AffecterMaterielPopup from "../components/Popup/Materiel/AffecterMaterielPopup.tsx";
+import AffecterStagePopup from "../components/Popup/Stage/AffecterStagePopup.tsx";
+import AffecterFormateurPopup from "../components/Popup/Salle/AffecterFormateurPopup.tsx";
+import ModifierSallePopup from "../components/Popup/Salle/ModifierSallePopup.tsx";
+import GelerSallePopup from "../components/Popup/Salle/GelerSallePopup.tsx";
+import Popup from "../components/Popup/Popup.tsx";
 import {retirerStagiaireDuPoste} from "../services/posteService.ts";
 import {retirerStageDeSalle} from "../services/stageService.ts";
 import {retirerFormateurDeSalle} from "../services/formateurService.ts";

@@ -1,4 +1,4 @@
-import { LIBELLE_ROLE, type Utilisateur } from "../types/types.ts";
+import { LIBELLE_ROLE, type Utilisateur } from "../../types/types.ts";
 
 interface UtilisateurLigneProps {
     utilisateur: Utilisateur;

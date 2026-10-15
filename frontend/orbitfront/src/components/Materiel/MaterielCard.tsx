@@ -1,19 +1,19 @@
 import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
-import Popup from "./Popup.tsx";
-import ModifierMaterielPopup from "./ModifierMaterielPopup.tsx";
-import DeplacerMaterielPopup from "./DeplacerMaterielPopup.tsx";
+import Popup from "../Popup/Popup.tsx";
+import ModifierMaterielPopup from "../Popup/Materiel/ModifierMaterielPopup.tsx";
+import DeplacerMaterielPopup from "../Popup/Materiel/DeplacerMaterielPopup.tsx";
 import {
     type Defaillance,
     LIBELLE_ETAT_MATERIEL,
     LIBELLE_STATUT_DEFAILLANCE,
     LIBELLE_TYPE_MATERIEL,
     type Materiel,
-} from "../types/types.ts";
-import {type Emplacement, MaterielError, remettreEnStock, supprimerMateriel} from "../services/materielService.ts";
-import {getDefaillancesDuMateriel} from "../services/defaillanceService.ts";
-import {dateFr} from "../utils/postes.ts";
-import {CLASSE_ETAT_MATERIEL} from "../utils/materiels.ts";
+} from "../../types/types.ts";
+import {type Emplacement, MaterielError, remettreEnStock, supprimerMateriel} from "../../services/materielService.ts";
+import {getDefaillancesDuMateriel} from "../../services/defaillanceService.ts";
+import {dateFr} from "../../utils/postes.ts";
+import {CLASSE_ETAT_MATERIEL} from "../../utils/materiels.ts";
 
 interface Props {
     materiel: Materiel;
@@ -24,7 +24,7 @@ interface Props {
 
 type Action = "modifier" | "deplacer" | "stock" | "supprimer" | null;
 
-export default function CarteMateriel({materiel: m, depuis, onChange = () => {}, lecture = false}: Props) {
+export default function MaterielCard({materiel: m, depuis, onChange = () => {}, lecture = false}: Props) {
     const [defaillance, setDefaillance] = useState<Defaillance | null>(null);
     const [action, setAction] = useState<Action>(null);
     const [erreur, setErreur] = useState("");

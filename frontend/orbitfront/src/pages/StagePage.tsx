@@ -1,9 +1,9 @@
 import {useEffect, useState} from "react";
 import {LIBELLE_TYPE_FORMATION, type Stage, type Utilisateur} from "../types/types.ts";
 import {getStages, getStagiaires, StageError, supprimerStage} from "../services/stageService.ts";
-import GererStagiairesPopup from "../components/GererStagiairesPopup.tsx";
-import Popup from "../components/Popup.tsx";
-import ImporterStagesPopup from "../components/ImporterStagesPopup.tsx";
+import GererStagiairesPopup from "../components/Popup/Stage/GererStagiairesPopup.tsx";
+import Popup from "../components/Popup/Popup.tsx";
+import ImporterStagesPopup from "../components/Popup/Stage/ImporterStagesPopup.tsx";
 import {pluriel} from "../utils/postes.ts";
 import {statutDe, type Statut} from "../utils/stages.ts";
 import {useNavigate} from "react-router-dom";

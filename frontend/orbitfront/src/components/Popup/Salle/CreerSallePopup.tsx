@@ -1,8 +1,8 @@
 import {useState} from "react";
-import Popup from "./Popup.tsx";
-import type {Batiment} from "../types/types.ts";
-import {creerSalleEquipee, SalleError} from "../services/salleService.ts";
-import {pluriel} from "../utils/postes.ts";
+import Popup from "../Popup.tsx";
+import type {Batiment} from "../../../types/types.ts";
+import {creerSalleEquipee, SalleError} from "../../../services/salleService.ts";
+import {pluriel} from "../../../utils/postes.ts";
 
 const ETAGES = ["Rez-de-chaussée", "1er étage", "2e étage", "3e étage"]; // l'index est la valeur envoyée
 const ETAPES = ["Identité", "Composition", "Récapitulatif"];

@@ -13,8 +13,8 @@ import {
     ORDRE_TYPES,
     type Localisation, versRsql, NOM_TYPE,
 } from "../utils/materiels.ts";
-import AjouterMaterielPopup from "../components/AjouterMaterielPopup.tsx";
-import MaterielLigne from "../components/MaterielLigne.tsx";
+import AjouterMaterielPopup from "../components/Popup/Materiel/AjouterMaterielPopup.tsx";
+import MaterielLigne from "../components/Materiel/MaterielLigne.tsx";
 
 
 const TAILLE_PAGE = 20;

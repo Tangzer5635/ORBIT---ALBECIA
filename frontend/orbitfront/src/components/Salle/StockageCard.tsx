@@ -1,5 +1,5 @@
-import type { SalleCarte } from "../types/types.ts";
-import {pluriel, totalAnneau} from "../utils/postes.ts";
+import type { SalleCarte } from "../../types/types.ts";
+import {pluriel, totalAnneau} from "../../utils/postes.ts";
 
 interface StockageCardProps {
     salle: SalleCarte;

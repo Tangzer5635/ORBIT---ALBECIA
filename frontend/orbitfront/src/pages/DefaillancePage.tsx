@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {useSearchParams} from "react-router-dom";
-import Popup from "../components/Popup.tsx";
+import Popup from "../components/Popup/Popup.tsx";
 import {getDefaillance, getDefaillances, getDefaillancesDuMateriel, resoudreDefaillance} from "../services/defaillanceService.ts";
 import type {Defaillance, Page, StatutDefaillance} from "../types/types.ts";
 import {LIBELLE_STATUT_DEFAILLANCE, LIBELLE_TYPE_MATERIEL} from "../types/types.ts";

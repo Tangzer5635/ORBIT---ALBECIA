@@ -1,8 +1,8 @@
 import {type ChangeEvent, useState} from "react";
-import Popup from "./Popup.tsx";
-import type {Poste, Salle} from "../types/types.ts";
-import {modifierSalle, SalleError} from "../services/salleService.ts";
-import {estFormateur, libelleEtage, numeroPoste, pluriel} from "../utils/postes.ts";
+import Popup from "../Popup.tsx";
+import type {Poste, Salle} from "../../../types/types.ts";
+import {modifierSalle, SalleError} from "../../../services/salleService.ts";
+import {estFormateur, libelleEtage, numeroPoste, pluriel} from "../../../utils/postes.ts";
 
 interface Props {
     salle: Salle;

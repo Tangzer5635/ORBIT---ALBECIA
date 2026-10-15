@@ -1,9 +1,9 @@
 import {useEffect, useState} from "react";
-import type {Materiel, Poste, Salle, TypeMateriel} from "../types/types.ts";
-import {getMaterielById} from "../services/materielService.ts";
-import CarteMateriel from "./CarteMateriel.tsx";
-import {estFormateur, etatPoste, nomPoste, pluriel} from "../utils/postes.ts";
-import {NOM_TYPE, ORDRE_TYPES} from "../utils/materiels.ts";
+import type {Materiel, Poste, Salle, TypeMateriel} from "../../types/types.ts";
+import {getMaterielById} from "../../services/materielService.ts";
+import MaterielCard from "../Materiel/MaterielCard.tsx";
+import {estFormateur, etatPoste, nomPoste, pluriel} from "../../utils/postes.ts";
+import {NOM_TYPE, ORDRE_TYPES} from "../../utils/materiels.ts";
 
 type Props = {
     poste: Poste;
@@ -98,7 +98,7 @@ export default function PanneauPoste({
                     <p className="muted">Chargement du matériel…</p>
                 ) : (
                     materiels.map(m => (
-                        <CarteMateriel key={m.id} materiel={m} depuis={{posteId: poste.id}} onChange={onChange}/>
+                        <MaterielCard key={m.id} materiel={m} depuis={{posteId: poste.id}} onChange={onChange}/>
                     ))
                 )}
             </section>
