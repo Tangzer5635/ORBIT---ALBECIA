@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -161,8 +162,8 @@ public class Init implements CommandLineRunner {
         for (String nom : PROCESSUS_AUTORISES) image.add(processusService.create(buildProcessus(nom, ListeProcessus.BLANCHE)));
         for (String nom : PROCESSUS_INTERDITS) processusService.create(buildProcessus(nom, ListeProcessus.NOIRE));
 
-        // Postes à occuper, remplis à la fin pour répartir les stagiaires sur tout le parc
-        List<Poste> aOccuper = new ArrayList<>();
+        // Postes à occuper de chaque salle (clé : id de la salle), remplis par les stagiaires du stage de la salle
+        Map<Long, List<Poste>> aOccuper = new HashMap<>();
         // Salles de cours équipées, dans l'ordre de création : elles accueilleront les premiers stages en cours
         List<Salle> sallesDeCours = new ArrayList<>();
 
@@ -194,23 +195,28 @@ public class Init implements CommandLineRunner {
             }
         }
 
-        // ---------- Stages en cours dans les premières salles de cours ----------
+        // ---------- Stages en cours dans les premières salles de cours, et leurs stagiaires assis ----------
+        // un stagiaire n'est assis que dans la salle de son stage ; 2 par stage restent sans poste
+        // (pour tester l'affectation depuis la page de la salle). Les 3 stagiaires fixes passent en premier.
         List<Stage> enCours = stages.stream()
                 .filter(s -> !s.getDateDebut().isAfter(aujourdhui) && !s.getDateFin().isBefore(aujourdhui))
                 .limit(5)
                 .toList();
-        for (int i = 0; i < Math.min(enCours.size(), sallesDeCours.size()); i++) {
-            affecterStageService.affecterASalle(sallesDeCours.get(i).getId(), enCours.get(i).getId());
-        }
-
-        // ---------- Occupants : un stagiaire n'a qu'un seul poste ----------
-        Collections.shuffle(aOccuper, random);
-        Collections.shuffle(stagiairesGeneres, random);
         List<Personnel> stagiaires = new ArrayList<>(stagiairesFixes);
         stagiaires.addAll(stagiairesGeneres);
-        // les postes en trop (plus de postes que de stagiaires) restent vides
-        for (int i = 0; i < Math.min(aOccuper.size(), stagiaires.size()); i++) {
-            aOccuper.get(i).setOccupant(stagiaires.get(i));
+        for (int i = 0; i < Math.min(enCours.size(), sallesDeCours.size()); i++) {
+            Stage stage = enCours.get(i);
+            Salle salle = sallesDeCours.get(i);
+            affecterStageService.affecterASalle(salle.getId(), stage.getId());
+
+            List<Personnel> duStage = stagiaires.stream()
+                    .filter(p -> p.getStage() != null && p.getStage().getId().equals(stage.getId()))
+                    .toList();
+            List<Poste> postes = new ArrayList<>(aOccuper.getOrDefault(salle.getId(), List.of()));
+            Collections.shuffle(postes, random);
+            for (int j = 0; j < Math.min(postes.size(), duStage.size() - 2); j++) {
+                postes.get(j).setOccupant(duStage.get(j));
+            }
         }
 
         // Réserve hors bâtiment, conservée comme avant.
@@ -273,7 +279,7 @@ public class Init implements CommandLineRunner {
      */
     private void creerSalleEquipee(Batiment batiment, String numSalle, int etage, Salle stockage,
                                    List<Personnel> formateurs, Personnel gestionnaire,
-                                   List<Poste> aOccuper, List<Salle> sallesDeCours) throws ServiceException {
+                                   Map<Long, List<Poste>> aOccuper, List<Salle> sallesDeCours) throws ServiceException {
         Salle salle = salleService.create(batiment.getId(),
                 buildSalle(numSalle, Integer.toString(etage), TypeSalle.SalleDeCours));
         Personnel formateur = choisir(formateurs);
@@ -316,7 +322,7 @@ public class Init implements CommandLineRunner {
                 }
                 default -> { }
             }
-            if (profil != Profil.VIDE) aOccuper.add(poste);
+            if (profil != Profil.VIDE) aOccuper.computeIfAbsent(salle.getId(), k -> new ArrayList<>()).add(poste);
         }
 
         // 2 salles sur 3 ont un vidéoprojecteur, 1 sur 3 un tableau interactif (1 sur 4 en panne)

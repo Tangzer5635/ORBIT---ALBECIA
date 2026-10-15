@@ -22,6 +22,8 @@ public interface PosteRepository extends BaseRepository<Poste> {
 
     boolean existsByNumPosteAndIdNot(String numPoste, Long id);
 
+    boolean existsByOccupant_Id(Long idOccupant);
+
     /** Libère le poste occupé par cette personne (suppression de son compte). */
     @Modifying(flushAutomatically = true)
     @Query("update Poste p set p.occupant = null where p.occupant.id = :idOccupant")

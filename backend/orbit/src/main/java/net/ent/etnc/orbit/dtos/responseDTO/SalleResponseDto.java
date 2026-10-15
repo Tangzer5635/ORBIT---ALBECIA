@@ -22,4 +22,5 @@ public class SalleResponseDto {
     private AnneauDto anneau;
     private Long stageId;     // stage accueilli par la salle, absent s'il n'y en a pas
     private String stageNom;
+    private List<String> formateurs; // "Prénom Nom", seulement sur GET /salles/{id}/
 }
