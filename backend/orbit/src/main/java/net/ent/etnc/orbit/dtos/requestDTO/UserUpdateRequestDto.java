@@ -13,7 +13,8 @@ import lombok.*;
 @AllArgsConstructor
 public class UserUpdateRequestDto {
 
-    @NotBlank(message = "nid doit contenir des caractères lisibles")
+    // Facultatif en modification : le formulaire ne demande pas le NID.
+    // S’il est fourni, il doit contenir exactement 10 chiffres.
     @Pattern(regexp = "^[0-9]{10}$", message = "nid doit contenir exactement 10 chiffres")
     private String nid;
     @NotBlank(message = "nom doit contenir des caractères lisibles")

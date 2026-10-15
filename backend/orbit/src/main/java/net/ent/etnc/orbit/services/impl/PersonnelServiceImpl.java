@@ -61,6 +61,11 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     @Transactional
     public Personnel update(Personnel entity) throws ServiceException {
         Personnel existant = trouver(entity.getId());
+        // Le formulaire de modification ne transmet pas le NID : ne jamais écraser
+        // cette donnée persistée par null lors de la sauvegarde.
+        if (entity.getNid() == null || entity.getNid().isBlank()) {
+            entity.setNid(existant.getNid());
+        }
         entity.setRole(existant.getRole());
         entity.setActive(existant.isActive());
         entity.setVerrouille(existant.isVerrouille());
