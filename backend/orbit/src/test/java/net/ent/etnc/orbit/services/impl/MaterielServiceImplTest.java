@@ -2,12 +2,14 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
+import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,9 @@ class MaterielServiceImplTest {
 
     @Mock
     private SalleService salleService;
+
+    @Mock
+    private PosteService posteService;
 
     @Mock
     private DefaillanceService defaillanceService;
@@ -192,7 +197,6 @@ class MaterielServiceImplTest {
         reserve.addMateriel(m);
         when(repository.findById(9L)).thenReturn(Optional.of(m));
         when(defaillanceService.aDesDefaillances(9L)).thenReturn(false);
-        when(salleService.estEnStock(9L)).thenReturn(true);
         when(salleService.salleDuMateriel(9L)).thenReturn(Optional.of(reserve));
 
         service.deleteById(9L);
@@ -227,15 +231,20 @@ class MaterielServiceImplTest {
     }
 
     @Test
-    void deleteById_doitLeverServiceException_quandAffecte() {
-        when(repository.findById(1L)).thenReturn(Optional.of(materielSousGarantie(1L)));
+    void deleteById_doitSortirDuPosteEtSupprimer_quandAffecteAUnPoste() {
+        Materiel m = materielSousGarantie(1L);
+        Poste poste = new Poste();
+        poste.setId(4L);
+        poste.setNumPoste("B201-S302-P04");
+        poste.addMateriel(m);
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
         when(defaillanceService.aDesDefaillances(1L)).thenReturn(false);
-        when(salleService.estEnStock(1L)).thenReturn(false);
+        when(posteService.posteDuMateriel(1L)).thenReturn(Optional.of(poste));
 
-        assertThatThrownBy(() -> service.deleteById(1L))
-                .isInstanceOf(ServiceException.class)
-                .hasMessageContaining("remets-le en stock");
-        verify(repository, never()).delete(any());
+        service.deleteById(1L);
+
+        assertThat(poste.getMateriels()).isEmpty();
+        verify(repository).delete(m);
     }
 
     @Test

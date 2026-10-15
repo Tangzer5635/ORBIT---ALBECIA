@@ -6,9 +6,12 @@ const URL = `/api/v1/materiels`;
 
 export class MaterielError extends Error {
     status: number;
-    constructor(status: number) {
+    detail: string; // message du back (400 : règle métier violée)
+
+    constructor(status: number, detail = "") {
         super("Erreur materiel " + status);
         this.status = status;
+        this.detail = detail;
     }
 }
 
@@ -20,6 +23,22 @@ export interface FiltresMateriel {
     localisation?: Localisation;
 }
 
+// Où se trouve le matériel affecté : posé dans une salle ou sur un poste
+export type Emplacement = { salleId: number } | { posteId: number };
+
+const param = (e: Emplacement) => "salleId" in e ? `salleId=${e.salleId}` : `posteId=${e.posteId}`;
+
+async function requete<T>(url: string, init: RequestInit = {}): Promise<T> {
+    let response: Response;
+    try {
+        response = await fetch(url, {...init, headers: authHeaders()});
+    } catch {
+        throw new MaterielError(0); // serveur injoignable
+    }
+
+    if (!response.ok) throw new MaterielError(response.status, await response.text().catch(() => ""));
+    return response.status === 204 ? (undefined as T) : await response.json();
+}
 
 // Méthode pour récupérer une page de matériels filtrés
 export async function getMateriels(filtres: FiltresMateriel, page = 0, size = 20): Promise<Page<Materiel>> {
@@ -30,16 +49,7 @@ export async function getMateriels(filtres: FiltresMateriel, page = 0, size = 20
     if (filtres.etat) params.set("etat", filtres.etat);
     if (filtres.localisation) params.set("localisation", filtres.localisation);
 
-    let response: Response;
-    try {
-        response = await fetch(`${URL}/?${params}`, { headers: authHeaders() });
-    } catch {
-        throw new MaterielError(0); // serveur injoignable
-    }
-
-    if (!response.ok) throw new MaterielError(response.status);
-
-    return await response.json();
+    return requete(`${URL}/?${params}`);
 }
 
 // Méthode pour compter les matériels d'un filtre, on lit totalElements
@@ -48,50 +58,36 @@ export async function compterMateriels(filtres: FiltresMateriel): Promise<number
 }
 
 // Méthode pour récupérer un matériel par son id
-export async function getMaterielById(id: number): Promise<Materiel> {
-    let response: Response;
-    try {
-        response = await fetch(`${URL}/${id}/`, { headers: authHeaders() });
-    } catch {
-        throw new MaterielError(0);
-    }
-
-    if (!response.ok) throw new MaterielError(response.status);
-
-    return await response.json();
+export function getMaterielById(id: number): Promise<Materiel> {
+    return requete(`${URL}/${id}/`);
 }
 
 // Méthode pour ajouter un materiel
-export async function ajouterMateriel(materiel: MaterielRequest): Promise<Materiel> {
-    let response: Response;
-    try {
-        response = await fetch(URL, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(materiel),
-        });
-    } catch {
-        throw new MaterielError(0);
-    }
-
-    if (!response.ok) throw new MaterielError(response.status);
-
-    return await response.json();
+export function ajouterMateriel(materiel: MaterielRequest): Promise<Materiel> {
+    return requete(URL, {method: "POST", body: JSON.stringify(materiel)});
 }
 
-// Méthode pour supprimer un materiel
-export async function supprimerMateriel(id: number, stockageCibleId?: number): Promise<void> {
-    const params = stockageCibleId !== undefined ? `?stockageCible=${stockageCibleId}` : "";
+// Méthode pour modifier un matériel (le type ne change pas)
+export function modifierMateriel(id: number, materiel: MaterielRequest): Promise<Materiel> {
+    return requete(`${URL}/${id}/`, {method: "PUT", body: JSON.stringify(materiel)});
+}
 
-    let response: Response;
-    try {
-        response = await fetch(`${URL}/${id}/${params}`, {
-            method: "DELETE",
-            headers: authHeaders(),
-        });
-    } catch {
-        throw new MaterielError(0);
-    }
+// Méthode pour supprimer un materiel (s'il est affecté, le back le sort d'abord de sa salle ou de son poste)
+export function supprimerMateriel(id: number): Promise<void> {
+    return requete(`${URL}/${id}/`, {method: "DELETE"});
+}
 
-    if (!response.ok) throw new MaterielError(response.status);
+// Affecte un matériel du stock à un poste
+export function affecterMaterielAPoste(id: number, posteId: number): Promise<Materiel> {
+    return requete(`${URL}/${id}/?posteId=${posteId}`, {method: "POST"});
+}
+
+// Remet en stock un matériel posé dans une salle ou sur un poste
+export function remettreEnStock(id: number, depuis: Emplacement): Promise<Materiel> {
+    return requete(`${URL}/${id}/?${param(depuis)}`, {method: "DELETE"});
+}
+
+// Changer d'emplacement : déplace un matériel affecté vers une autre salle ou un autre poste
+export function deplacerMateriel(id: number, vers: Emplacement): Promise<Materiel> {
+    return requete(`${URL}/${id}/?${param(vers)}`, {method: "PATCH"});
 }

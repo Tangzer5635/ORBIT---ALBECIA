@@ -5,6 +5,7 @@ import net.ent.etnc.orbit.dtos.responseDTO.FormateurDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,16 @@ public class SalleAssembler {
                 .filter(p -> p.getRole() == Role.FORMATEUR)
                 .map(p -> new FormateurDto(p.getId(), p.getPrenom(), p.getNom()))
                 .toList();
+    }
+
+    /** Ajoute le détail du stage accueilli (charge le stage et son formateur : à n'appeler que pour une salle). */
+    public void completerStage(SalleResponseDto dto, Salle salle) {
+        Stage stage = salle.getStage();
+        if (stage == null) return;
+        dto.setStageType(stage.getType());
+        dto.setStageDateDebut(stage.getDateDebut());
+        dto.setStageDateFin(stage.getDateFin());
+        dto.setStageFormateur(stage.getFormateur().getPrenom() + " " + stage.getFormateur().getNom());
     }
 
     public Salle toEntity(SalleRequestDto salleDto) {

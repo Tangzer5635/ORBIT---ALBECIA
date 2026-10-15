@@ -1,4 +1,4 @@
-import type { ComptesAnneau } from "../types/types.ts";
+import type { ComptesAnneau, EtatPoste, Poste } from "../types/types.ts";
 
 export const ANNEAU_VIDE: ComptesAnneau = { libre: 0, bonEtat: 0, defectueux: 0, aChanger: 0 };
 
@@ -48,3 +48,31 @@ export function niveau(pct: number): "def" | "chg" | "use" {
 
 // pluriel(3, "salle") -> "3 salles" ; pluriel(2, "unité centrale", "unités centrales") pour les pluriels irréguliers
 export const pluriel = (n: number, mot: string, motPluriel = `${mot}s`) => `${n} ${n > 1 ? motPluriel : mot}`;
+
+// "2026-08-07" ou "2026-08-07T10:12:00" -> "07/08/2026" (sans passer par Date : pas de décalage de fuseau)
+export const dateFr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+
+// "B201-S302-F" = poste formateur, "B201-S302-P07" -> 7
+export const estFormateur = (p: Poste) => p.numPoste.endsWith("-F");
+export const numeroPoste = (p: Poste) => Number(p.numPoste.match(/P(\d+)$/)?.[1] ?? 0);
+
+// "Poste formateur" ou "Poste 07"
+export const nomPoste = (p: Poste) =>
+    estFormateur(p) ? "Poste formateur" : `Poste ${String(numeroPoste(p)).padStart(2, "0")}`;
+
+// états d'un poste : ordre des tuiles et de la légende, libellé et classe de couleur
+export const ETATS_POSTE: { etat: EtatPoste; libelle: string; classe: string }[] = [
+    {etat: "DEFECTUEUX", libelle: "Défectueux", classe: "def"},
+    {etat: "A_COMPLETER", libelle: "À compléter", classe: "inc"},
+    {etat: "A_CHANGER", libelle: "Prévoir changement", classe: "chg"},
+    {etat: "UTILISE", libelle: "Utilisé", classe: "use"},
+    {etat: "DISPONIBLE", libelle: "Disponible", classe: "dispo"},
+];
+
+export const etatPoste = (e?: EtatPoste) => ETATS_POSTE.find(x => x.etat === e);
+
+// "Emma Bernard" -> "Emma B." : tient dans une case du plan (nom complet au survol)
+export function nomCourt(nomComplet: string) {
+    const [prenom, nom] = nomComplet.split(" ", 2);
+    return nom ? `${prenom} ${nom[0]}.` : prenom;
+}

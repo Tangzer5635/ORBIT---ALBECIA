@@ -5,9 +5,11 @@ const URL = `/api/v1/postes`;
 
 export class PosteError extends Error {
     status: number;
-    constructor(status: number) {
+    detail: string; // message du back (400 : règle métier violée)
+    constructor(status: number, detail = "") {
         super("Erreur poste " + status);
         this.status = status;
+        this.detail = detail;
     }
 }
 
@@ -73,4 +75,21 @@ export async function supprimerPoste(id: number): Promise<void> {
     }
 
     if (!response.ok) throw new PosteError(response.status);
+}
+
+// Assied un stagiaire du stage de la salle sur ce poste
+export async function affecterStagiaireAPoste(idPoste: number, idStagiaire: number): Promise<Poste> {
+    let response: Response;
+    try {
+        response = await fetch(`${URL}/${idPoste}/?stagiaireId=${idStagiaire}`, {
+            method: "POST",
+            headers: authHeaders(),
+        });
+    } catch {
+        throw new PosteError(0);
+    }
+
+    if (!response.ok) throw new PosteError(response.status, await response.text().catch(() => ""));
+
+    return await response.json();
 }

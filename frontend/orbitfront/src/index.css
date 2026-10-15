@@ -1622,3 +1622,185 @@ button.plan-poste {
 .stagiaire-ligne small {
     color: var(--muted);
 }
+
+/* =========================================================
+   10. DÉTAIL D'UNE SALLE : panneau de droite (vue de la salle, poste, matériel)
+   ========================================================= */
+
+/* Le panneau est toujours affiché à droite du plan */
+.plan-corps.ouvert {
+    grid-template-columns: minmax(0, 1fr) 330px;
+}
+
+/* Poste : le nom du stagiaire est coupé s'il est trop long (nom complet au survol) */
+.plan-poste {
+    width: 76px;
+}
+
+.plan-poste span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Matériel de salle cliquable (VP, TBI…) */
+button.plan-mat {
+    border: 0;
+    border-top: 4px solid var(--c);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.plan-mat.chg {
+    background: var(--chg-bg);
+}
+
+.plan-mat.select {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.poste-panneau h2,
+.poste-panneau h3,
+.poste-panneau p {
+    margin: 0;
+}
+
+.poste-panneau h3 {
+    font-size: 15px;
+}
+
+/* Couleur par défaut (sans état) ; :where() = aucune priorité, les classes .def, .chg… l'emportent */
+:where(.panneau-entete, .carte-mat) {
+    --c: var(--muted);
+}
+
+/* En-tête coloré selon l'état du poste ou du matériel */
+.panneau-entete {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--c) 22%, var(--card));
+}
+
+/* Section du panneau (Stage, Formateurs, Occupant, Matériel…) */
+.panneau-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.panneau-section > .carte-mat {
+    align-self: stretch;
+}
+
+.panneau-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.panneau-liste li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.panneau-liste .lien {
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Pastille : point de la couleur de l'état + libellé */
+.pastille {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pastille::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c);
+}
+
+/* Fiche d'un matériel (poste ou salle) */
+.carte-mat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 4px solid var(--c);
+    border-radius: 16px;
+    background: var(--card);
+}
+
+.carte-mat header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.carte-mat dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13.5px;
+}
+
+.carte-mat dt {
+    color: var(--muted);
+}
+
+.carte-mat dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.carte-mat .mono {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.carte-defaillance {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--def-bg);
+}
+
+.carte-defaillance div {
+    display: flex;
+    flex-direction: column;
+}
+
+.carte-defaillance span {
+    color: var(--muted);
+}
+
+.carte-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}

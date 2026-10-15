@@ -33,6 +33,11 @@ export async function getStagiaires(): Promise<Utilisateur[]> {
     return (await requete<Page<Utilisateur>>("/api/v1/personnels/?role=STAGIAIRE&size=1000")).content;
 }
 
+// Stagiaires actifs du stage qui n'ont pas encore de poste
+export function getStagiairesSansPoste(idStage: number): Promise<Utilisateur[]> {
+    return requete(`/api/v1/personnels/?stage=${idStage}&sansPoste`);
+}
+
 export function ajouterAStage(idStagiaire: number, idStage: number): Promise<Utilisateur> {
     return requete(`/api/v1/personnels/${idStagiaire}/?stageId=${idStage}`, "POST");
 }

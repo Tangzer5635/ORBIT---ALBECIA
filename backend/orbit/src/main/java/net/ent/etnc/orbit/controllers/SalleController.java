@@ -62,6 +62,7 @@ public class SalleController {
                     SalleResponseDto dto = salleAssembler.toDto(salle);
                     dto.setAnneau(salleService.anneauDe(id));
                     dto.setFormateurs(salleAssembler.formateurs(salle));
+                    salleAssembler.completerStage(dto, salle);
                     return ResponseEntity.ok(dto);
                 })
                 .orElse(ResponseEntity.notFound().build());

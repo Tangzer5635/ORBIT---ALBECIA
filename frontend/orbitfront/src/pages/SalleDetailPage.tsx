@@ -13,23 +13,28 @@ import {
 } from "../types/types.ts";
 import {useEffect, useState} from "react";
 import Anneau from "../components/Anneau.tsx";
-import {ANNEAU_VIDE, libelleEtage, pluriel} from "../utils/postes.ts";
+import {
+    ANNEAU_VIDE,
+    estFormateur,
+    etatPoste,
+    ETATS_POSTE,
+    libelleEtage,
+    nomCourt,
+    nomPoste,
+    numeroPoste,
+    pluriel
+} from "../utils/postes.ts";
+import {CLASSE_ETAT_MATERIEL} from "../utils/materiels.ts";
+import PanneauSalle from "../components/PanneauSalle.tsx";
 import PanneauPoste from "../components/PanneauPoste.tsx";
+import PanneauMateriel from "../components/PanneauMateriel.tsx";
 import AffecterStagiairePopup from "../components/AffecterStagiairePopup.tsx";
+import AffecterMaterielPopup from "../components/AffecterMaterielPopup.tsx";
 import AffecterStagePopup from "../components/AffecterStagePopup.tsx";
 import AffecterFormateurPopup from "../components/AffecterFormateurPopup.tsx";
 import Popup from "../components/Popup.tsx";
 import {retirerStageDeSalle} from "../services/stageService.ts";
 import {retirerFormateurDeSalle} from "../services/formateurService.ts";
-
-// ordre des tuiles, libellé et classe de couleur
-const ETATS: { etat: EtatPoste; libelle: string; classe: string }[] = [
-    {etat: "DEFECTUEUX", libelle: "Défectueux", classe: "def"},
-    {etat: "A_COMPLETER", libelle: "À compléter", classe: "inc"},
-    {etat: "A_CHANGER", libelle: "Prévoir changement", classe: "chg"},
-    {etat: "UTILISE", libelle: "Utilisé", classe: "use"},
-    {etat: "DISPONIBLE", libelle: "Disponible", classe: "dispo"},
-];
 
 // libellé court du matériel posé dans la salle (plan)
 const COURT: Record<TypeMateriel, string> = {
@@ -39,11 +44,7 @@ const COURT: Record<TypeMateriel, string> = {
     TableauInteractif: "TBI",
 };
 
-const classeEtat = (e?: EtatPoste) => ETATS.find(x => x.etat === e)?.classe ?? "";
-
-// "B201-S302-F" = poste formateur, "B201-S302-P07" -> 7
-const estFormateur = (p: Poste) => p.numPoste.endsWith("-F");
-const numero = (p: Poste) => Number(p.numPoste.match(/P(\d+)$/)?.[1] ?? 0);
+const classeEtat = (e?: EtatPoste) => etatPoste(e)?.classe ?? "";
 
 // regroupe les postes 2 par 2 (une table = 2 postes côte à côte)
 function parTables(postes: Poste[]): Poste[][] {
@@ -52,32 +53,32 @@ function parTables(postes: Poste[]): Poste[][] {
     return tables;
 }
 
+type PopupOuverte = "stagiaire" | "materiel" | "stage" | "retirerStage" | "formateur" | null;
+
+// key = salleId : changer de salle repart d'un état propre (filtre, sélection, popups)
 export default function SalleDetailPage() {
     const {salleId} = useParams();
+    return salleId ? <SalleDetail key={salleId} salleId={salleId}/> : null;
+}
+
+function SalleDetail({salleId}: { salleId: string }) {
     const [salle, setSalle] = useState<Salle | null>(null);
     const [postes, setPostes] = useState<Poste[]>([]);
     const [materielsSalle, setMaterielsSalle] = useState<Materiel[]>([]);
     const [filtre, setFiltre] = useState<EtatPoste | null>(null);
     const role = getUtilisateur()?.role;
     const peutGerer = role === "ADMINISTRATEUR" || role === "GESTIONNAIRE";
+    // élément choisi sur le plan (rien = « Vue de la salle »)
     const [posteId, setPosteId] = useState<number | null>(null);
-    const [popupStagiaire, setPopupStagiaire] = useState(false);
-    const [popupStage, setPopupStage] = useState<"affecter" | "retirer" | null>(null);
+    const [materielId, setMaterielId] = useState<number | null>(null);
+    const [popup, setPopup] = useState<PopupOuverte>(null);
     const [erreurStage, setErreurStage] = useState("");
-    const [popupFormateur, setPopupFormateur] = useState(false);
     const [formateurARetirer, setFormateurARetirer] = useState<Formateur | null>(null);
     const [erreurFormateur, setErreurFormateur] = useState("");
     const [rechargement, setRechargement] = useState(0); // +1 = recharger la salle et ses postes
     const [refuse, setRefuse] = useState(false); // salle introuvable ou non affectée au formateur
 
     useEffect(() => {
-        if (!salleId) return;
-        setFiltre(null);
-        setPosteId(null);
-        setPopupStagiaire(false);
-        setPopupStage(null);
-        setMaterielsSalle([]);
-        setRefuse(false);
         getSalleById(salleId)
             .then(s => {
                 setSalle(s);
@@ -95,6 +96,28 @@ export default function SalleDetailPage() {
         getPostesBySalle(salleId).then(setPostes).catch(console.error);
     }, [salleId, peutGerer, rechargement]);
 
+    const recharger = () => setRechargement(n => n + 1);
+    const fermerPopup = () => setPopup(null);
+    const apresAction = () => {
+        setPopup(null);
+        recharger();
+    };
+
+    function choisirPoste(id: number) {
+        setPosteId(id);
+        setMaterielId(null);
+    }
+
+    function choisirMateriel(id: number) {
+        setMaterielId(id);
+        setPosteId(null);
+    }
+
+    function fermerPanneau() {
+        setPosteId(null);
+        setMaterielId(null);
+    }
+
     const compte = (e: EtatPoste) => postes.filter(p => p.etat === e).length;
 
     if (!salle) {
@@ -104,28 +127,38 @@ export default function SalleDetailPage() {
     }
 
     const posteFormateur = postes.find(estFormateur);
-    const stagiaires = postes.filter(p => !estFormateur(p)).sort((a, b) => numero(a) - numero(b));
+    const stagiaires = postes.filter(p => !estFormateur(p)).sort((a, b) => numeroPoste(a) - numeroPoste(b));
     // 2 colonnes de tables : la moitié des tables à gauche, l'autre à droite
     const tables = parTables(stagiaires);
     const rangees: Poste[][][] = [];
     for (let i = 0; i < tables.length; i += 2) rangees.push(tables.slice(i, i + 2));
 
-    // pour un formateur (pas d'accès au détail du matériel) : seulement le type, sans état
-    const chips = peutGerer
-        ? materielsSalle.map(m => ({id: m.id, type: m.type, etat: m.etat}))
-        : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
-            Array.from({length: n ?? 0}, (_, i) => ({
-                id: `${type}-${i}`,
-                type: type as TypeMateriel,
-                etat: undefined
-            })));
-
     const estompe = (p: Poste) => filtre !== null && p.etat !== filtre;
 
     const posteSelectionne = postes.find(p => p.id === posteId);
+    const materielSelectionne = materielsSalle.find(m => m.id === materielId);
     const formateurs = salle.formateurs ?? [];
     const nomFormateurs = formateurs.length === 0 ? "Aucun formateur"
         : `${formateurs[0].prenom} ${formateurs[0].nom}${formateurs.length > 1 ? ` +${formateurs.length - 1}` : ""}`;
+    const salleDeCours = salle.type === "SalleDeCours";
+
+    // panneau de droite : le poste ou le matériel choisi, sinon la vue de la salle
+    const panneau = posteSelectionne ? (
+        <PanneauPoste key={posteSelectionne.id} poste={posteSelectionne} salle={salle} peutGerer={peutGerer}
+                      onFermer={fermerPanneau}
+                      onAffecterStagiaire={() => setPopup("stagiaire")}
+                      onAffecterMateriel={() => setPopup("materiel")}
+                      onChange={recharger}/>
+    ) : materielSelectionne ? (
+        <PanneauMateriel key={materielSelectionne.id} materiel={materielSelectionne} salle={salle}
+                         onFermer={fermerPanneau} onChange={recharger}/>
+    ) : (
+        <PanneauSalle salle={salle}
+                      onAffecterStage={peutGerer && salleDeCours ? () => setPopup("stage") : undefined}
+                      onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
+                      onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
+                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}/>
+    );
 
     return (
         <>
@@ -141,7 +174,7 @@ export default function SalleDetailPage() {
                     </p>
 
                     <div className="tuiles">
-                        {ETATS.map(({etat, libelle, classe}) => (
+                        {ETATS_POSTE.map(({etat, libelle, classe}) => (
                             <button key={etat} type="button" className={`tuile ${classe}`}
                                     aria-pressed={filtre === etat}
                                     onClick={() => setFiltre(filtre === etat ? null : etat)}>
@@ -160,11 +193,6 @@ export default function SalleDetailPage() {
             {peutGerer && (
                 <div className="hero-row">
                     <button type="button" className="btn">Modifier la salle</button>
-                    {salle.type === "SalleDeCours" && (salle.stageId
-                        ? <button type="button" className="btn" onClick={() => setPopupStage("retirer")}>Retirer le stage</button>
-                        : <button type="button" className="btn" onClick={() => setPopupStage("affecter")}>Affecter un stage</button>)}
-                    {salle.type === "SalleDeCours" &&
-                        <button type="button" className="btn" onClick={() => setPopupFormateur(true)}>Affecter un formateur</button>}
                     <button type="button" className="btn">Exporter la salle</button>
                     <button type="button" className="btn">Geler la salle</button>
                     <button type="button" className="btn danger">Supprimer la salle</button>
@@ -172,26 +200,36 @@ export default function SalleDetailPage() {
             )}
 
             <section className="plan">
-                <div className={`plan-corps${posteSelectionne ? " ouvert" : ""}`}>
+                <div className="plan-corps ouvert">
                     <div>
                         <div className="plan-salle">
                             {/* haut de la salle : matériel de salle à gauche, poste formateur à droite */}
                             <div className="plan-haut">
                                 <div className="plan-materiels">
-                                    {chips.map(c => (
-                                        <div key={c.id}
-                                             className={`plan-mat ${c.etat === "DEFECTUEUX" ? "def" : c.etat === "A_REMPLACER" ? "chg" : "use"}`}>
-                                            <b>{COURT[c.type]}</b>
-                                            {c.etat && <span>{LIBELLE_ETAT_MATERIEL[c.etat]}</span>}
-                                        </div>
-                                    ))}
+                                    {peutGerer
+                                        ? materielsSalle.map(m => (
+                                            <button key={m.id} type="button"
+                                                    className={`plan-mat ${CLASSE_ETAT_MATERIEL[m.etat]}${m.id === materielId ? " select" : ""}`}
+                                                    aria-pressed={m.id === materielId}
+                                                    onClick={() => choisirMateriel(m.id)}>
+                                                <b>{COURT[m.type]}</b>
+                                                <span>{LIBELLE_ETAT_MATERIEL[m.etat]}</span>
+                                            </button>
+                                        ))
+                                        // formateur : pas d'accès au détail du matériel, seulement le type
+                                        : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
+                                            Array.from({length: n ?? 0}, (_, i) => (
+                                                <div key={`${type}-${i}`} className="plan-mat use">
+                                                    <b>{COURT[type as TypeMateriel]}</b>
+                                                </div>
+                                            )))}
                                 </div>
                                 {posteFormateur && (
                                     <button type="button"
                                             className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}${posteFormateur.id === posteId ? " select" : ""}`}
                                             title="Poste formateur"
                                             aria-pressed={posteFormateur.id === posteId}
-                                            onClick={() => setPosteId(posteFormateur.id)}>
+                                            onClick={() => choisirPoste(posteFormateur.id)}>
                                         <b>Formateur</b>
                                         <span>{nomFormateurs}</span>
                                     </button>
@@ -206,11 +244,11 @@ export default function SalleDetailPage() {
                                             {table.map(p => (
                                                 <button key={p.id} type="button"
                                                         className={`plan-poste ${classeEtat(p.etat)}${estompe(p) ? " estompe" : ""}${p.id === posteId ? " select" : ""}`}
-                                                        title={`Poste ${p.numPoste}`}
+                                                        title={p.occupant ? `${nomPoste(p)} : ${p.occupant}` : nomPoste(p)}
                                                         aria-pressed={p.id === posteId}
-                                                        onClick={() => setPosteId(p.id)}>
-                                                    <b>{numero(p)}</b>
-                                                    <span>{p.occupantId ? "Occupé" : "Libre"}</span>
+                                                        onClick={() => choisirPoste(p.id)}>
+                                                    <b>{numeroPoste(p)}</b>
+                                                    <span>{p.occupant ? nomCourt(p.occupant) : "Libre"}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -223,29 +261,18 @@ export default function SalleDetailPage() {
                         </div>
 
                         <ul className="rleg plan-legende">
-                            {ETATS.map(({etat, libelle, classe}) => (
+                            {ETATS_POSTE.map(({etat, libelle, classe}) => (
                                 <li key={etat} className={classe}><i
                                     className={`sw ${classe}`}/>{libelle} ({compte(etat)})</li>
                             ))}
                         </ul>
                     </div>
-                    {posteSelectionne && (
-                        <PanneauPoste poste={posteSelectionne} salle={salle} numero={numero(posteSelectionne)}
-                                      onFermer={() => setPosteId(null)}
-                                      onAffecterStagiaire={() => setPopupStagiaire(true)}
-                                      formateur={estFormateur(posteSelectionne)}
-                                      onAffecterFormateur={peutGerer ? () => setPopupFormateur(true) : undefined}
-                                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}/>)}</div>
+                    {panneau}
+                </div>
             </section>
-            {popupFormateur && (
-                <AffecterFormateurPopup
-                    salle={salle}
-                    onClose={() => setPopupFormateur(false)}
-                    onFait={() => {
-                        setPopupFormateur(false);
-                        setRechargement(n => n + 1);
-                    }}/>
-            )}
+
+            {popup === "formateur" &&
+                <AffecterFormateurPopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
             {formateurARetirer && (
                 <Popup
                     open
@@ -259,26 +286,18 @@ export default function SalleDetailPage() {
                         retirerFormateurDeSalle(formateurARetirer.id, salle.id)
                             .then(() => {
                                 setFormateurARetirer(null);
-                                setRechargement(n => n + 1);
+                                recharger();
                             })
                             .catch(() => setErreurFormateur("Impossible de retirer le formateur."));
                     }}>
                     {erreurFormateur && <p className="error-message" role="alert">{erreurFormateur}</p>}
                 </Popup>
             )}
-            {popupStage === "affecter" && (
-                <AffecterStagePopup
-                    salle={salle}
-                    onClose={() => setPopupStage(null)}
-                    onFait={() => {
-                        setPopupStage(null);
-                        setRechargement(n => n + 1);
-                    }}/>
-            )}
-            {popupStage === "retirer" && salle.stageId && (
+            {popup === "stage" && <AffecterStagePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {popup === "retirerStage" && salle.stageId && (
                 <Popup
                     open
-                    onClose={() => setPopupStage(null)}
+                    onClose={fermerPopup}
                     title={`Retirer le stage ${salle.stageNom}`}
                     description="Les postes de la salle redeviennent libres : plus aucun stagiaire n'y est installé."
                     confirmLabel="Retirer"
@@ -286,24 +305,26 @@ export default function SalleDetailPage() {
                     onConfirm={() => {
                         setErreurStage("");
                         retirerStageDeSalle(salle.stageId!, salle.id)
-                            .then(() => {
-                                setPopupStage(null);
-                                setRechargement(n => n + 1);
-                            })
+                            .then(apresAction)
                             .catch(() => setErreurStage("Impossible de retirer le stage."));
                     }}>
                     {erreurStage && <p className="error-message" role="alert">{erreurStage}</p>}
                 </Popup>
             )}
-            {popupStagiaire && posteSelectionne && (
+            {popup === "stagiaire" && posteSelectionne && (
                 <AffecterStagiairePopup
-                    numPoste={numero(posteSelectionne)}
-                    idsDejaPlaces={postes.flatMap(p => p.occupantId ? [p.occupantId] : [])}
-                    onClose={() => setPopupStagiaire(false)}
-                    onAffecte={(stagiaireId) => {
-                        console.log(`TODO appel API : stagiaire ${stagiaireId} -> poste ${posteSelectionne.id}`);
-                        setPopupStagiaire(false);
-                    }}/>
+                    posteId={posteSelectionne.id}
+                    numPoste={numeroPoste(posteSelectionne)}
+                    stageId={salle.stageId}
+                    onClose={fermerPopup}
+                    onFait={apresAction}/>
+            )}
+            {popup === "materiel" && posteSelectionne && (
+                <AffecterMaterielPopup
+                    posteId={posteSelectionne.id}
+                    titrePoste={nomPoste(posteSelectionne)}
+                    onClose={fermerPopup}
+                    onFait={apresAction}/>
             )}
         </>
     );

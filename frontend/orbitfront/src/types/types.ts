@@ -134,7 +134,12 @@ export interface Salle {
     anneau?: ComptesAnneau;
     stageId?: number | null; // stage accueilli (salle de cours)
     stageNom?: string | null;
-    formateurs?: Formateur[]; // formateurs attribués (GET /salles/{id}/ seulement)
+    // détail du stage et formateurs attribués (GET /salles/{id}/ seulement)
+    stageType?: TypeFormation | null;
+    stageDateDebut?: string | null; // "2026-08-07"
+    stageDateFin?: string | null;
+    stageFormateur?: string | null; // "Prénom Nom" du formateur qui gère le stage
+    formateurs?: Formateur[];
 }
 
 // FormateurDto
@@ -174,7 +179,9 @@ export interface Poste {
     id: number;
     numPoste: string;
     occupantId: number | null;
+    occupant: string | null; // "Prénom Nom" du stagiaire, null si le poste est libre
     materielsId: number[];
+    materielsParType: Partial<Record<TypeMateriel, number>>;
     etat?: EtatPoste;
 }
 
@@ -277,4 +284,25 @@ export interface Stage {
     salleId?: number | null; // salle qui accueille le stage
     numSalle?: string | null;
     numBatiment?: string | null;
+}
+
+//==========================================
+//      DÉFAILLANCES
+//==========================================
+
+// DefaillanceResponseDto
+export interface Defaillance {
+    id: number;
+    description: string;
+    dateSignalement: string; // "2026-10-09T14:32:00"
+    statut: StatutDefaillance;
+    idMateriel: number;
+    numSerieMateriel: string;
+    typeMateriel: TypeMateriel;
+    idSignalePar: number;
+    signalePar: string; // "Prénom Nom"
+    idTraitePar: number | null;
+    traitePar: string | null;
+    noteSolution: string | null;
+    dateResolution: string | null;
 }
