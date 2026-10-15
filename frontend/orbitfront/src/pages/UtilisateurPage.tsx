@@ -1,8 +1,16 @@
-import {useEffect, useMemo, useState} from "react";
-import {LIBELLE_ROLE, type Role, type Utilisateur, type UtilisateurRequest} from "../types/types.ts";
+import {useEffect, useState} from "react";
+import {
+    LIBELLE_ROLE,
+    type Page,
+    type Role,
+    type Utilisateur,
+    type UtilisateurRequest,
+} from "../types/types.ts";
 import {
     ajouterUtilisateur,
     changerVerrou,
+    compterUtilisateurs,
+    type FiltresUtilisateur,
     getUtilisateurs,
     modifierUtilisateur,
     supprimerUtilisateur,
@@ -11,9 +19,34 @@ import {
 import {getUtilisateur} from "../services/authService.ts";
 import UtilisateurLigne from "../components/UtilisateurLigne.tsx";
 import Popup from "../components/Popup.tsx";
+import {rechercheVersRsql} from "../utils/utilisateur.ts";
 
 const ROLES = Object.keys(LIBELLE_ROLE) as Role[];
-const PAR_PAGE = 30;
+// Boutons "état du compte" : chacun correspond à des filtres booléens envoyés au back
+type EtatCompte = "actifs" | "inactifs" | "verrouilles";
+const ETATS: { cle: EtatCompte; libelle: string; filtres: FiltresUtilisateur }[] = [
+    { cle: "actifs", libelle: "Actifs", filtres: { active: true } },
+    { cle: "inactifs", libelle: "Inactifs", filtres: { active: false } },
+    { cle: "verrouilles", libelle: "Verrouillés", filtres: { verrouille: true } },
+];
+const TAILLE_PAGE = 20;
+
+interface Compteurs {
+    parRole: number[];   // dans l'ordre de ROLES
+    inactifs: number;
+    verrouilles: number;
+}
+
+// Les compteurs ne dépendent pas des filtres : une requête "page de 1" par compteur, on lit totalElements
+// (même principe que chargerCompteurs dans MaterielPage)
+async function chargerCompteurs(): Promise<Compteurs> {
+    const [inactifs, verrouilles, ...parRole] = await Promise.all([
+        compterUtilisateurs({active: false}),
+        compterUtilisateurs({verrouille: true}),
+        ...ROLES.map((r) => compterUtilisateurs({role: r})),
+    ]);
+    return {parRole, inactifs, verrouilles};
+}
 
 // Popup ouverte (même principe que BatimentsPage, avec en plus la modification)
 type PopupState =
@@ -22,14 +55,14 @@ type PopupState =
     | { type: "supprimer"; utilisateur: Utilisateur }
     | null;
 
-type FiltreEtat = "" | "actifs" | "inactifs" | "verrouilles";
-
 export default function UtilisateurPage() {
-    const [nonTries, setUtilisateurs] = useState<Utilisateur[]>([]);
+    // données renvoyées par le back
+    const [resultat, setResultat] = useState<Page<Utilisateur>>(); // la page affichée
+    const [compteurs, setCompteurs] = useState<Compteurs>();
     const [erreurChargement, setErreurChargement] = useState<string>();
     const [error, setError] = useState<string>(); // erreur hors popup (verrouillage)
+    const [version, setVersion] = useState(0);     // +1 = recharger la liste et les compteurs
     const moi = getUtilisateur(); // utilisateur connecté
-    const [page, setPage] = useState(0); // numéro de page, commence à 0
 
     // popup + champs du formulaire
     const [popup, setPopup] = useState<PopupState>(null);
@@ -44,23 +77,48 @@ export default function UtilisateurPage() {
     const [envoi, setEnvoi] = useState(false);
 
     // filtres
-    const [recherche, setRecherche] = useState("");
-    const [filtreRole, setFiltreRole] = useState<Role | "">("");
-    const [filtreEtat, setFiltreEtat] = useState<FiltreEtat>("");
+    const [saisie, setSaisie] = useState("");         // ce qui est tapé dans le champ
+    const [recherche, setRecherche] = useState("");   // ce qui est envoyé au back
+    const [filtreRole, setFiltreRole] = useState<Role | null>(null);
+    const [filtreEtat, setFiltreEtat] = useState<EtatCompte | null>(null);
+    const [page, setPage] = useState(0);              // numéro de page, commence à 0
 
-    // Chargement de la liste à l'ouverture de la page
+    // la recherche part 500 ms après la dernière frappe pour ne pas faire une requête par lettre
     useEffect(() => {
-        getUtilisateurs()
-            .then(setUtilisateurs)
-            .catch(() => setErreurChargement("Impossible de charger les utilisateurs."));
-    }, []);
+        const minuteur = setTimeout(() => {
+            setRecherche(saisie);
+            setPage(0);
+        }, 500);
+        return () => clearTimeout(minuteur);
+    }, [saisie]);
 
-    // Tri par nom puis prénom
-    const utilisateurs = useMemo(
-        () => [...nonTries].sort((a, b) =>
-            a.nom.localeCompare(b.nom, "fr") || a.prenom.localeCompare(b.prenom, "fr")),
-        [nonTries]
-    );
+    // recharge la page à chaque changement de filtre, de page, ou après une action (version)
+    useEffect(() => {
+        let actif = true; // pour ignorer une réponse qui arrive après un changement de filtre
+        const etat = ETATS.find((e) => e.cle === filtreEtat)?.filtres ?? {}; // ex. { active: false }
+        getUtilisateurs({filter: rechercheVersRsql(recherche), role: filtreRole, ...etat}, page, TAILLE_PAGE)
+            .then((p) => {
+                if (!actif) return;
+                // la dernière page vient d'être vidée (suppression) : on revient à la précédente
+                if (p.content.length === 0 && page > 0) setPage(page - 1);
+                else setResultat(p);
+                setErreurChargement(undefined);
+            })
+            .catch(() => {
+                if (actif) setErreurChargement("Impossible de charger les utilisateurs.");
+            });
+        return () => { actif = false; };
+    }, [recherche, filtreRole, filtreEtat, page, version]);
+
+    // Les compteurs ne changent pas avec les filtres, seulement après une action
+    useEffect(() => {
+        chargerCompteurs().then(setCompteurs).catch(() => {});
+    }, [version]);
+
+    // après une création, modification, suppression ou un verrouillage : on redemande au back
+    function recharger() {
+        setVersion((v) => v + 1);
+    }
 
     // ---------- ouverture / fermeture des popups ----------
 
@@ -96,10 +154,6 @@ export default function UtilisateurPage() {
         remplirChamps();
     }
 
-    function remplacer(maj: Utilisateur) {
-        setUtilisateurs((liste) => liste.map((x) => (x.id === maj.id ? maj : x)));
-    }
-
     // ---------- actions ----------
 
     // Mêmes règles que l'entité Personnel côté back
@@ -132,13 +186,10 @@ export default function UtilisateurPage() {
 
         setEnvoi(true);
         try {
-            if (aModifier) {
-                remplacer(await modifierUtilisateur(aModifier.id, dto));
-            } else {
-                const nouveau = await ajouterUtilisateur(dto);
-                setUtilisateurs((liste) => [...liste, nouveau]);
-            }
+            if (aModifier) await modifierUtilisateur(aModifier.id, dto);
+            else await ajouterUtilisateur(dto);
             fermerPopup();
+            recharger();
         } catch (err) {
             if (err instanceof UtilisateurError && err.status === 403) setErreur("Vous n'avez pas le droit de gérer les utilisateurs.");
             else if (err instanceof UtilisateurError && err.status === 400) setErreur(err.detail || "Informations invalides.");
@@ -153,8 +204,8 @@ export default function UtilisateurPage() {
         setEnvoi(true);
         try {
             await supprimerUtilisateur(u.id);
-            setUtilisateurs((liste) => liste.filter((x) => x.id !== u.id));
             fermerPopup();
+            recharger();
         } catch (err) {
             if (err instanceof UtilisateurError && err.status === 400) setErreur(err.detail || "Suppression impossible.");
             else if (err instanceof UtilisateurError && err.status === 403) setErreur("Vous n'avez pas le droit de supprimer un utilisateur.");
@@ -170,7 +221,8 @@ export default function UtilisateurPage() {
     async function handleVerrou(u: Utilisateur) {
         setError(undefined);
         try {
-            remplacer(await changerVerrou(u.id, !u.verrouille));
+            await changerVerrou(u.id, !u.verrouille);
+            recharger();
         } catch (err) {
             if (err instanceof UtilisateurError && err.status === 400) setError(err.detail || "Action impossible sur ce compte.");
             else if (err instanceof UtilisateurError && err.status === 403) setError("Vous n'avez pas le droit de verrouiller un compte.");
@@ -180,34 +232,18 @@ export default function UtilisateurPage() {
 
     // ---------- affichage ----------
 
-    // liste filtrée
-    const q = recherche.trim().toLowerCase();
-    const liste = utilisateurs.filter((u) =>
-        (filtreRole === "" || u.role === filtreRole) &&
-        (filtreEtat !== "actifs" || u.active) &&
-        (filtreEtat !== "inactifs" || !u.active) &&
-        (filtreEtat !== "verrouilles" || u.verrouille) &&
-        (q === "" || `${u.prenom} ${u.nom} ${u.login} ${u.id}`.toLowerCase().includes(q))
-    );
-    // pagination
-    const nbPages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
-    const pageCourante = Math.min(page, nbPages - 1); // si un filtre réduit la liste, on ne sort pas des pages
-    const visibles = liste.slice(pageCourante * PAR_PAGE, (pageCourante + 1) * PAR_PAGE);
-    const nbInactifs = utilisateurs.filter((u) => !u.active).length;
-    const nbVerrouilles = utilisateurs.filter((u) => u.verrouille).length;
-
     // Utilisateur concerné par la popup (undefined si on est en création)
     const aModifier = popup?.type === "modifier" ? popup.utilisateur : undefined;
     const aSupprimer = popup?.type === "supprimer" ? popup.utilisateur : undefined;
     const estMoi = aModifier !== undefined && aModifier.id === moi?.id; // pas de changement de son propre rôle / état
 
     // un changement de filtre ramène à la première page
-    function choisirRole(r: Role | "") {
+    function changerRole(r: Role | null) {
         setFiltreRole(r);
         setPage(0);
     }
 
-    function choisirEtat(e: FiltreEtat) {
+    function changerEtat(e: EtatCompte | null) {
         setFiltreEtat(e);
         setPage(0);
     }
@@ -224,14 +260,16 @@ export default function UtilisateurPage() {
         <>
             <div className="page-head">
                 <h1>Utilisateurs</h1>
-                <span className="muted">{liste.length} utilisateur{liste.length > 1 ? "s" : ""}</span>
+                {resultat && (
+                    <span className="muted">{resultat.totalElements} utilisateur{resultat.totalElements > 1 ? "s" : ""}</span>
+                )}
             </div>
 
             {/* compteurs par rôle */}
             <div className="stats">
-                {ROLES.map((r) => (
+                {ROLES.map((r, i) => (
                     <div key={r} className="stat">
-                        <b>{utilisateurs.filter((u) => u.role === r).length}</b>
+                        <b>{compteurs ? compteurs.parRole[i] : "–"}</b>
                         <span>{LIBELLE_ROLE[r]}s</span>
                     </div>
                 ))}
@@ -248,41 +286,37 @@ export default function UtilisateurPage() {
                 type="search"
                 placeholder="Rechercher un utilisateur par nom ou identifiant"
                 aria-label="Rechercher un utilisateur"
-                value={recherche}
-                onChange={(e) => {
-                    setRecherche(e.target.value);
-                    setPage(0);
-                }}
+                value={saisie}
+                onChange={(e) => setSaisie(e.target.value)}
             />
 
             <div className="filters">
                 <div className="seg" role="group" aria-label="Rôle">
-                    <button type="button" aria-pressed={filtreRole === ""} onClick={() => choisirRole("")}>Tous les
-                        rôles
+                    <button type="button" aria-pressed={filtreRole === null} onClick={() => changerRole(null)}>
+                        Tous les rôles
                     </button>
                     {ROLES.map((r) => (
-                        <button key={r} type="button" aria-pressed={filtreRole === r}
-                                onClick={() => choisirRole(r)}>{LIBELLE_ROLE[r]}</button>
+                        <button key={r} type="button" aria-pressed={filtreRole === r} onClick={() => changerRole(r)}>
+                            {LIBELLE_ROLE[r]}
+                        </button>
                     ))}
                 </div>
                 <div className="seg" role="group" aria-label="État du compte">
-                    <button type="button" aria-pressed={filtreEtat === ""} onClick={() => choisirEtat("")}>Actifs et
-                        inactifs
+                    <button type="button" aria-pressed={filtreEtat === null} onClick={() => changerEtat(null)}>
+                        Actifs et inactifs
                     </button>
-                    <button type="button" aria-pressed={filtreEtat === "actifs"}
-                            onClick={() => choisirEtat("actifs")}>Actifs
-                    </button>
-                    <button type="button" aria-pressed={filtreEtat === "inactifs"}
-                            onClick={() => choisirEtat("inactifs")}>Inactifs ({nbInactifs})
-                    </button>
-                    <button type="button" aria-pressed={filtreEtat === "verrouilles"}
-                            onClick={() => choisirEtat("verrouilles")}>Verrouillés ({nbVerrouilles})
-                    </button>
+                    {ETATS.map((e) => (
+                        <button key={e.cle} type="button" aria-pressed={filtreEtat === e.cle} onClick={() => changerEtat(e.cle)}>
+                            {e.libelle}
+                            {e.cle === "inactifs" && compteurs && ` (${compteurs.inactifs})`}
+                            {e.cle === "verrouilles" && compteurs && ` (${compteurs.verrouilles})`}
+                        </button>
+                    ))}
                 </div>
             </div>
 
             <div className="list">
-                {visibles.map((u) => (
+                {resultat?.content.map((u) => (
                     <UtilisateurLigne
                         key={u.id}
                         utilisateur={u}
@@ -292,20 +326,18 @@ export default function UtilisateurPage() {
                         onSupprime={ouvrirSuppression}
                     />
                 ))}
-                {liste.length === 0 && !erreurChargement && <p className="muted">Aucun utilisateur ne correspond.</p>}
+                {!resultat && !erreurChargement && <p className="muted">Chargement…</p>}
+                {resultat && resultat.totalElements === 0 && <p className="muted">Aucun utilisateur ne correspond.</p>}
             </div>
 
-            {nbPages > 1 && (
-                <nav className="pagination" aria-label="Pages">
-                    <button type="button" className="btn sm" onClick={() => setPage(pageCourante - 1)}
-                            disabled={pageCourante === 0}>
+            {/* boutons de changement de page (même principe que MaterielPage) */}
+            {resultat && resultat.totalPages > 1 && (
+                <nav className="pagination" aria-label="Pagination">
+                    <button type="button" className="btn sm" disabled={resultat.first} onClick={() => setPage((p) => p - 1)}>
                         ‹ Précédent
                     </button>
-                    <span className="muted small">
-                        Page {pageCourante + 1} sur {nbPages} ({liste.length} utilisateurs)
-                    </span>
-                    <button type="button" className="btn sm" onClick={() => setPage(pageCourante + 1)}
-                            disabled={pageCourante === nbPages - 1}>
+                    <span className="muted small">Page {resultat.page + 1} sur {resultat.totalPages}</span>
+                    <button type="button" className="btn sm" disabled={resultat.last} onClick={() => setPage((p) => p + 1)}>
                         Suivant ›
                     </button>
                 </nav>

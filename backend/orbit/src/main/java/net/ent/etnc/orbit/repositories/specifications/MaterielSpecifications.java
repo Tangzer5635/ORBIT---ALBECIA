@@ -12,7 +12,7 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * Filtre pour l"tat et la localisation du matériel.
+ * Filtre pour l'état et la localisation du matériel.
  *
  * ici l'état est calculé depuis la BDD
  */

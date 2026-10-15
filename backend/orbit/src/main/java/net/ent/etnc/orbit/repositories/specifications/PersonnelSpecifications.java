@@ -1,7 +1,6 @@
 package net.ent.etnc.orbit.repositories.specifications;
 
 import net.ent.etnc.orbit.models.entities.Personnel;
-import net.ent.etnc.orbit.models.enums.EtatCompte;
 import net.ent.etnc.orbit.models.enums.Role;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -18,12 +17,13 @@ public final class PersonnelSpecifications {
         return (personnel, query, cb) -> cb.equal(personnel.get("role"), role);
     }
 
-    /** Actif, inactif (désactivé) ou verrouillé. */
-    public static Specification<Personnel> etat(EtatCompte etat) {
-        return (personnel, query, cb) -> switch (etat) {
-            case ACTIF -> cb.isTrue(personnel.get("active"));
-            case INACTIF -> cb.isFalse(personnel.get("active"));
-            case VERROUILLE -> cb.isTrue(personnel.get("verrouille"));
-        };
+    /** true = comptes actifs, false = comptes désactivés. */
+    public static Specification<Personnel> active(boolean active) {
+        return (personnel, query, cb) -> cb.equal(personnel.get("active"), active);
+    }
+
+    /** true = comptes verrouillés, false = comptes non verrouillés. */
+    public static Specification<Personnel> verrouille(boolean verrouille) {
+        return (personnel, query, cb) -> cb.equal(personnel.get("verrouille"), verrouille);
     }
 }
