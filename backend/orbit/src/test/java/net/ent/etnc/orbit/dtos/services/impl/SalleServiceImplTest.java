@@ -1,6 +1,12 @@
-package net.ent.etnc.orbit.services.impl;
+package net.ent.etnc.orbit.dtos.services.impl;
 
+import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
+import net.ent.etnc.orbit.models.entities.Personnel;
+import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.repositories.projections.SalleBatiment;
+import net.ent.etnc.orbit.services.impl.SalleServiceImpl;
+import org.springframework.security.access.AccessDeniedException;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Poste;
@@ -19,9 +25,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -188,7 +196,7 @@ class SalleServiceImplTest {
         assertThatThrownBy(() -> service.deleteById(3L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete((Salle) any());
     }
 
     // ---------- supprimerAvecBatiment ----------
@@ -212,7 +220,7 @@ class SalleServiceImplTest {
         assertThatThrownBy(() -> service.supprimerAvecBatiment(3L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Vide la salle de stockage avant de la supprimer");
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete((Salle) any());
     }
 
     @Test
@@ -352,5 +360,58 @@ class SalleServiceImplTest {
         when(repository.existsByTypeAndMateriels_Id(TypeSalle.SalleStockage, 9L)).thenReturn(true);
 
         assertThat(service.estEnStock(9L)).isTrue();
+    }
+
+    // ---------- verifierAcces / mes salles ----------
+
+    private Personnel utilisateur(Long id, Role role) {
+        Personnel p = new Personnel();
+        p.setId(id);
+        p.setRole(role);
+        return p;
+    }
+
+    @Test
+    void verifierAcces_doitAutoriserLeFormateurAffecte() {
+        when(repository.existsByIdAndPersonnels_Id(1L, 7L)).thenReturn(true);
+
+        assertThatCode(() -> service.verifierAcces(1L, utilisateur(7L, Role.FORMATEUR))).doesNotThrowAnyException();
+    }
+
+    @Test
+    void verifierAcces_doitRefuserLeFormateurNonAffecte() {
+        when(repository.existsByIdAndPersonnels_Id(1L, 7L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.verifierAcces(1L, utilisateur(7L, Role.FORMATEUR)))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void verifierAcces_neLimitePasLeGestionnaire() {
+        assertThatCode(() -> service.verifierAcces(1L, utilisateur(8L, Role.GESTIONNAIRE))).doesNotThrowAnyException();
+        verify(repository, never()).existsByIdAndPersonnels_Id(any(), any());
+    }
+
+    @Test
+    void findCartesDuFormateur_doitRenvoyerUneListeVide_quandAucuneSalle() {
+        when(repository.findByPersonnels_Id(7L)).thenReturn(List.of());
+
+        assertThat(service.findCartesDuFormateur(7L)).isEmpty();
+        verify(repository, never()).batimentsDesSalles(any());
+    }
+
+    @Test
+    void findCartesDuFormateur_doitRenvoyerSesSallesAvecLeurBatiment() {
+        Salle s = salle(5L, TypeSalle.SalleDeCours);
+        when(repository.findByPersonnels_Id(7L)).thenReturn(List.of(s));
+        when(repository.chargerPostes(List.of(5L))).thenReturn(List.of(s));
+        when(posteService.etats(any())).thenReturn(Map.of());
+        when(repository.batimentsDesSalles(List.of(5L))).thenReturn(List.of(new SalleBatiment(5L, "201")));
+
+        List<SalleCarteDto> cartes = service.findCartesDuFormateur(7L);
+
+        assertThat(cartes).hasSize(1);
+        assertThat(cartes.get(0).getNumSalle()).isEqualTo("S5");
+        assertThat(cartes.get(0).getNumBatiment()).isEqualTo("201");
     }
 }

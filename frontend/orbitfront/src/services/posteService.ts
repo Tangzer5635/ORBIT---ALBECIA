@@ -1,13 +1,15 @@
 import type {MonPoste, Page, Poste, PosteRequest} from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/postes`;
 
 export class PosteError extends Error {
     status: number;
-    constructor(status: number) {
+    detail: string; // message du back (400 : règle métier violée)
+    constructor(status: number, detail = "") {
         super("Erreur poste " + status);
         this.status = status;
+        this.detail = detail;
     }
 }
 
@@ -15,7 +17,7 @@ export class PosteError extends Error {
 export async function getPostes(): Promise<Poste[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/`, { headers: authHeaders() });
     } catch {
         throw new PosteError(0); // serveur injoignable
     }
@@ -31,7 +33,7 @@ export async function getPostes(): Promise<Poste[]> {
 export async function getMyPoste(): Promise<MonPoste | null> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/me/`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/me/`, { headers: authHeaders() });
     } catch {
         throw new PosteError(0); // serveur injoignable
     }
@@ -46,7 +48,7 @@ export async function getMyPoste(): Promise<MonPoste | null> {
 export async function ajouterPoste(poste: PosteRequest): Promise<Poste> {
     let response: Response;
     try {
-        response = await fetch(URL, {
+        response = await apiFetch(URL, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(poste),
@@ -64,7 +66,7 @@ export async function ajouterPoste(poste: PosteRequest): Promise<Poste> {
 export async function supprimerPoste(id: number): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, {
+        response = await apiFetch(`${URL}/${id}/`, {
             method: "DELETE",
             headers: authHeaders(),
         });
@@ -73,4 +75,38 @@ export async function supprimerPoste(id: number): Promise<void> {
     }
 
     if (!response.ok) throw new PosteError(response.status);
+}
+
+// Assied un stagiaire du stage de la salle sur ce poste
+export async function affecterStagiaireAPoste(idPoste: number, idStagiaire: number): Promise<Poste> {
+    let response: Response;
+    try {
+        response = await apiFetch(`${URL}/${idPoste}/?stagiaireId=${idStagiaire}`, {
+            method: "POST",
+            headers: authHeaders(),
+        });
+    } catch {
+        throw new PosteError(0);
+    }
+
+    if (!response.ok) throw new PosteError(response.status, await response.text().catch(() => ""));
+
+    return await response.json();
+}
+
+// Libère le poste : le stagiaire n'y est plus assis (il reste dans son stage)
+export async function retirerStagiaireDuPoste(idPoste: number, idStagiaire: number): Promise<Poste> {
+    let response: Response;
+    try {
+        response = await apiFetch(`${URL}/${idPoste}/?stagiaireId=${idStagiaire}`, {
+            method: "DELETE",
+            headers: authHeaders(),
+        });
+    } catch {
+        throw new PosteError(0);
+    }
+
+    if (!response.ok) throw new PosteError(response.status, await response.text().catch(() => ""));
+
+    return await response.json();
 }

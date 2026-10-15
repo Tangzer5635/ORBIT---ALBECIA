@@ -7,4 +7,10 @@ public interface AffecterMaterielService {
     Materiel affecterAPoste(Long idPoste, Long idMateriel);
     Materiel retirerDeSalle(Long idSalle, Long idMateriel);
     Materiel retirerDuPoste(Long idPoste, Long idMateriel);
+
+    /** Déplace un matériel déjà affecté (salle ou poste) vers une autre salle de cours. */
+    Materiel deplacerVersSalle(Long idSalle, Long idMateriel);
+
+    /** Déplace un matériel déjà affecté (salle ou poste) vers un autre poste. */
+    Materiel deplacerVersPoste(Long idPoste, Long idMateriel);
 }

@@ -82,6 +82,12 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
 
     @Override
     @Transactional(readOnly = true)
+    public List<Defaillance> findBySignalePar(Long idPersonnel) {
+        return repository.findBySignalePar_IdOrderByDateSignalementDesc(idPersonnel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean aUneDefaillanceOuverte(Long idMateriel) {
         return repository.existsByMateriel_IdAndStatut(idMateriel, StatutDefaillance.SIGNALEE);
     }

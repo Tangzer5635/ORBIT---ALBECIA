@@ -1,42 +1,106 @@
-import type {EtatPoste, Poste, Salle} from "../types/types.ts";
+import {useEffect, useState} from "react";
+import type {Materiel, Poste, Salle, TypeMateriel} from "../types/types.ts";
+import {getMaterielById} from "../services/materielService.ts";
+import CarteMateriel from "./CarteMateriel.tsx";
+import {estFormateur, etatPoste, nomPoste, pluriel} from "../utils/postes.ts";
+import {NOM_TYPE, ORDRE_TYPES} from "../utils/materiels.ts";
 
 type Props = {
     poste: Poste;
     salle: Salle;
-    numero: number;
+    peutGerer: boolean; // gestionnaire ou admin : détail du matériel et actions
     onFermer: () => void;
-    onAffecterStagiaire: () => void;
+    onAffecterStagiaire?: () => void; // absent si la salle est gelée
+    onRetirerStagiaire: () => void;
+    onAffecterMateriel: () => void;
+    onChange: () => void; // un matériel a bougé : la page se recharge
 };
 
-const LIBELLE_ETAT: Record<EtatPoste, string> = {
-    DEFECTUEUX: "Défectueux",
-    A_COMPLETER: "À compléter",
-    A_CHANGER: "Prévoir changement",
-    UTILISE: "Utilisé",
-    DISPONIBLE: "Disponible",
-};
+export default function PanneauPoste({
+                                         poste, salle, peutGerer, onFermer, onAffecterStagiaire, onRetirerStagiaire,
+                                         onAffecterMateriel, onChange
+                                     }: Props) {
+    const [materiels, setMateriels] = useState<Materiel[] | null>(null);
+    const formateur = estFormateur(poste);
+    const etat = etatPoste(poste.etat);
 
-export default function PanneauPoste({poste, salle, numero, onFermer, onAffecterStagiaire}: Props) {
+    // le détail du matériel n'est ouvert qu'au gestionnaire (le formateur voit seulement les types)
+    useEffect(() => {
+        if (!peutGerer) return;
+        Promise.all(poste.materielsId.map(getMaterielById))
+            .then(setMateriels)
+            .catch(console.error);
+    }, [poste, peutGerer]);
+
+    const formateurs = (salle.formateurs ?? []).map(f => `${f.prenom} ${f.nom}`);
+    const typesPoses = ORDRE_TYPES
+        .filter(t => poste.materielsParType?.[t])
+        .map((t: TypeMateriel) => pluriel(poste.materielsParType[t] ?? 0, ...NOM_TYPE[t]));
+
     return (
-        <aside className="poste-panneau" aria-label={`Poste ${numero}`}>
+        <aside className="poste-panneau" aria-label={nomPoste(poste)}>
             <button type="button" className="muted small lien" onClick={onFermer}>‹ Vue de la salle</button>
 
-            <div className="poste-entete">
-                <h2>Poste {String(numero).padStart(2, "0")}</h2>
-                {poste.etat && <span className="small muted">{LIBELLE_ETAT[poste.etat]}</span>}
-            </div>
-            <p className="muted small">Salle {salle.numSalle}</p>
-
-            <div className="poste-actions">
-                <button type="button" className="btn primary" onClick={onAffecterStagiaire}>
-                    Affecter un stagiaire
-                </button>
-                <button type="button" className="btn">Plaquer un master</button>
-                <button type="button" className="btn">Affecter un matériel</button>
+            <div className={`panneau-entete ${etat?.classe ?? ""}`}>
+                <div className="poste-entete">
+                    <h2>{nomPoste(poste)}</h2>
+                    {etat && <span className="pastille">{etat.libelle}</span>}
+                </div>
+                <p className="muted small">Salle {salle.numSalle}{salle.stageNom && `, ${salle.stageNom}`}</p>
             </div>
 
-            <h3>Occupant</h3>
-            <p className="muted">{poste.occupantId ? `Stagiaire n°${poste.occupantId}` : "Aucun stagiaire : poste disponible"}</p>
+            {peutGerer && (
+                <div className="poste-actions">
+                    {!formateur && !poste.occupant && onAffecterStagiaire && (
+                        <button type="button" className="btn primary" onClick={onAffecterStagiaire}>
+                            Affecter un stagiaire
+                        </button>
+                    )}
+                    <button type="button" className="btn" onClick={onAffecterMateriel}>Affecter un matériel</button>
+                </div>
+            )}
+
+            {formateur ? (
+                <section className="panneau-section">
+                    <h3>Utilisé par</h3>
+                    <p className={formateurs.length ? "" : "muted"}>
+                        {formateurs.length ? formateurs.join(", ") : "Aucun formateur attribué à la salle"}
+                    </p>
+                </section>
+            ) : (
+                <section className="panneau-section">
+                    <h3>Occupant</h3>
+                    {poste.occupant ? (
+                        <ul className="panneau-liste">
+                            <li>
+                                {poste.occupant}
+                                {peutGerer && (
+                                    <button type="button" className="muted small lien" onClick={onRetirerStagiaire}>
+                                        Retirer du poste
+                                    </button>
+                                )}
+                            </li>
+                        </ul>
+                    ) : (
+                        <p className="muted">Aucun stagiaire : poste disponible</p>
+                    )}
+                </section>
+            )}
+
+            <section className="panneau-section">
+                <h3>Matériel du poste</h3>
+                {poste.materielsId.length === 0 ? (
+                    <p className="muted">Aucun matériel sur ce poste.</p>
+                ) : !peutGerer ? (
+                    <p>{typesPoses.join(", ")}</p>
+                ) : materiels === null ? (
+                    <p className="muted">Chargement du matériel…</p>
+                ) : (
+                    materiels.map(m => (
+                        <CarteMateriel key={m.id} materiel={m} depuis={{posteId: poste.id}} onChange={onChange}/>
+                    ))
+                )}
+            </section>
         </aside>
     );
 }

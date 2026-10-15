@@ -33,6 +33,16 @@ export const LIBELLE_ETAT_MATERIEL = {
 } as const;
 export type EtatMateriel = keyof typeof LIBELLE_ETAT_MATERIEL;
 
+// MotifGel.java : pourquoi une salle est gelée
+export const LIBELLE_MOTIF_GEL = {
+    TRAVAUX: "Travaux",
+    ATTENTE_MATERIEL: "En attente de matériel",
+    MAINTENANCE: "Maintenance",
+    RESERVEE: "Réservée",
+    AUTRE: "Autre",
+} as const;
+export type MotifGel = keyof typeof LIBELLE_MOTIF_GEL;
+
 // StatutDefaillance.java
 export const LIBELLE_STATUT_DEFAILLANCE = {
     SIGNALEE: "Signalée",
@@ -134,16 +144,53 @@ export interface Salle {
     anneau?: ComptesAnneau;
     stageId?: number | null; // stage accueilli (salle de cours)
     stageNom?: string | null;
+    // détail du stage et formateurs attribués (GET /salles/{id}/ seulement)
+    stageType?: TypeFormation | null;
+    stageDateDebut?: string | null; // "2026-08-07"
+    stageDateFin?: string | null;
+    stageFormateur?: string | null; // "Prénom Nom" du formateur qui gère le stage
+    formateurs?: Formateur[];
+    // salle gelée : plus d'affectation de stage, de stagiaire ni de master
+    suspendu: boolean;
+    gelMotif?: MotifGel | null;
+    gelNote?: string | null;
+    gelDepuis?: string | null; // "2026-10-15"
+    gelJusqu?: string | null;  // fin prévue, facultative
+}
+
+// SalleModificationRequestDto (« Modifier la salle »)
+export interface SalleModification {
+    nbPostes: number; // postes stagiaires
+    nbVideoProjecteurs: number;
+    nbTableaux: number;
+}
+
+// GelRequestDto (« Geler la salle »)
+export interface GelRequest {
+    motif: MotifGel;
+    note?: string;
+    jusqu?: string; // "2026-12-01"
+}
+
+// FormateurDto
+export interface Formateur {
+    id: number;
+    prenom: string;
+    nom: string;
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)
 export interface SalleCarte {
     id: number;
     numSalle: string;
+    numBatiment?: string | null; // seulement dans « Mes salles » (formateur)
     etage: string;
     type: TypeSalle;
     nbPostes: number;
     anneau: ComptesAnneau;
+    suspendu: boolean; // salle gelée
+    gelMotif?: MotifGel | null;
+    gelJusqu?: string | null;
 }
 
 // SalleRequestDto
@@ -165,16 +212,27 @@ export interface Poste {
     id: number;
     numPoste: string;
     occupantId: number | null;
+    occupant: string | null; // "Prénom Nom" du stagiaire, null si le poste est libre
     materielsId: number[];
+    materielsParType: Partial<Record<TypeMateriel, number>>;
     etat?: EtatPoste;
 }
 
 
 
+// PlanPosteDto : un poste stagiaire sur le mini-plan de « Mon poste »
+export interface PlanPoste {
+    numPoste: string;
+    etat?: EtatPoste | null;
+}
+
 // MonPosteResponseDto (GET /postes/me/)
 export interface MonPoste {
     id: number;
     numPoste: string;
+    etat?: EtatPoste | null;
+    stageNom?: string | null;
+    plan?: PlanPoste[]; // postes stagiaires de la salle, dans l'ordre
     idSalle?: number;
     numSalle?: string;
     etage?: string;
@@ -256,6 +314,13 @@ export const LIBELLE_TYPE_FORMATION = {
 } as const;
 export type TypeFormation = keyof typeof LIBELLE_TYPE_FORMATION;
 
+// BilanImportStagesDto (POST /stages/import/)
+export interface BilanImportStages {
+    crees: string[];    // noms des stages créés
+    misAJour: string[]; // noms des stages mis à jour
+    erreurs: string[];  // "Ligne 4 : type « XXX » inconnu"
+}
+
 // StageResponseDto
 export interface Stage {
     id: number;
@@ -268,4 +333,25 @@ export interface Stage {
     salleId?: number | null; // salle qui accueille le stage
     numSalle?: string | null;
     numBatiment?: string | null;
+}
+
+//==========================================
+//      DÉFAILLANCES
+//==========================================
+
+// DefaillanceResponseDto
+export interface Defaillance {
+    id: number;
+    description: string;
+    dateSignalement: string; // "2026-10-09T14:32:00"
+    statut: StatutDefaillance;
+    idMateriel: number;
+    numSerieMateriel: string;
+    typeMateriel: TypeMateriel;
+    idSignalePar: number;
+    signalePar: string; // "Prénom Nom"
+    idTraitePar: number | null;
+    traitePar: string | null;
+    noteSolution: string | null;
+    dateResolution: string | null;
 }

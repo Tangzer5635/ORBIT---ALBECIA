@@ -7,8 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
+import net.ent.etnc.orbit.models.enums.MotifGel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,9 +61,28 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
             foreignKey = @ForeignKey(name = "fk_materiel_salle"))
     private List<Materiel> materiels = new ArrayList<>();
 
+    /** Salle gelée : visible, mais plus d'affectation de stage, de stagiaire ni de master. */
     @Getter @Setter
     @Column(name = "suspendu", nullable = false)
     private boolean suspendu;
+
+    @Getter @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gel_motif", length = 20)
+    private MotifGel gelMotif;
+
+    @Getter @Setter
+    @Size(max = 200, message = "gelNote de max 200 caractères")
+    @Column(name = "gel_note", length = 200)
+    private String gelNote;
+
+    @Getter @Setter
+    @Column(name = "gel_depuis")
+    private LocalDate gelDepuis;
+
+    @Getter @Setter
+    @Column(name = "gel_jusqu")
+    private LocalDate gelJusqu;
 
     @Getter
     @Setter

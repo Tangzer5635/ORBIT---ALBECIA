@@ -34,6 +34,8 @@ public class AffecterStageServiceImpl implements AffecterStageService {
 
         if (salle.getType() != TypeSalle.SalleDeCours)
             throw new ServiceException("Seule une salle de cours accueille un stage");
+        if (salle.isSuspendu())
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est gelée : dégelez-la avant d'y affecter un stage");
         if (salle.getStage() != null)
             throw new ServiceException("La salle " + salle.getNumSalle() + " accueille déjà le stage " + salle.getStage().getNom());
         if (stageService.salleDuStage(idStage).isPresent())

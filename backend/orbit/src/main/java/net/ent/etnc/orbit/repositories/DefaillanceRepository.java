@@ -21,6 +21,8 @@ public interface DefaillanceRepository extends BaseRepository<Defaillance> {
 
     List<Defaillance> findByMateriel_IdOrderByDateSignalementDesc(Long idMateriel);
 
+    List<Defaillance> findBySignalePar_IdOrderByDateSignalementDesc(Long idPersonnel);
+
     Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable);
 
     /** Suppression d'un personnel : les défaillances qu'il a traitées restent, sans technicien. */

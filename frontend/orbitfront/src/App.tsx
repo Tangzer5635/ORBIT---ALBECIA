@@ -7,6 +7,7 @@ import { Layout } from "./components/Layout.tsx";
 import { BatimentsPage } from "./pages/BatimentsPage.tsx";
 import SallePage from "./pages/SallePage.tsx";
 import SalleDetailPage from "./pages/SalleDetailPage.tsx";
+import MesSallesPage from "./pages/MesSallesPage.tsx";
 import DefaillancePage from "./pages/DefaillancePage.tsx";
 import GarantiePage from "./pages/GarantiePage.tsx";
 import MaterielPage from "./pages/MaterielPage.tsx";
@@ -21,6 +22,7 @@ import { ACCES } from "./config/acces.ts";
 const PAGES: Record<string, ReactElement> = {
     "/batiments": <BatimentsPage />,
     "/salles": <SallePage />,
+    "/mes-salles": <MesSallesPage />,
     "/salles/:salleId": <SalleDetailPage />,
     "/defaillances": <DefaillancePage />,
     "/garanties": <GarantiePage />,

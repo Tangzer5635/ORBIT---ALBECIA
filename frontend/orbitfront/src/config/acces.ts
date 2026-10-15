@@ -14,7 +14,8 @@ const ROLES_SALLES: Role[] = ["ADMINISTRATEUR", "GESTIONNAIRE", "FORMATEUR"];
 
 export const ACCES: Acces[] = [
     { path: "/batiments",    label: "Bâtiments",    roles: ["ADMINISTRATEUR"] },
-    { path: "/salles",       label: "Salles",       roles: ROLES_SALLES, labelParRole: { FORMATEUR: "Mes salles" } },
+    { path: "/salles",       label: "Salles",       roles: ["ADMINISTRATEUR", "GESTIONNAIRE"] },
+    { path: "/mes-salles",   label: "Mes salles",   roles: ["FORMATEUR"] },
     { path: "/salles/:salleId", label: "Détail d'une salle", roles: ROLES_SALLES, menu: false },
     { path: "/defaillances", label: "Défaillances", roles: ["ADMINISTRATEUR", "GESTIONNAIRE", "FORMATEUR"] },
     { path: "/garanties",    label: "Garanties",    roles: ["ADMINISTRATEUR", "GESTIONNAIRE"] },
@@ -31,6 +32,6 @@ export const ACCES: Acces[] = [
 export const PAGE_ACCUEIL: Record<Role, string> = {
     ADMINISTRATEUR: "/batiments",
     GESTIONNAIRE: "/salles",
-    FORMATEUR: "/salles",
+    FORMATEUR: "/mes-salles",
     STAGIAIRE: "/poste",
 };

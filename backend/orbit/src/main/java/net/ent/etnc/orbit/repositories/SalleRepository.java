@@ -5,6 +5,7 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.commons.BaseRepository;
 import net.ent.etnc.orbit.repositories.projections.ComptesEtats;
 import net.ent.etnc.orbit.repositories.projections.IdCompte;
+import net.ent.etnc.orbit.repositories.projections.SalleBatiment;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,12 @@ public interface SalleRepository extends BaseRepository<Salle> {
     Optional<Salle> findByPostes_Id(Long idPoste);
 
     List<Salle> findByPersonnels_Id(Long idPersonnel);
+
+    boolean existsByIdAndPersonnels_Id(Long idSalle, Long idPersonnel);
+
+    /** Bâtiment de chacune de ces salles : une requête pour toutes les salles. */
+    @Query("select " + SalleBatiment.NEW + "(s.id, b.numBatiment) from Batiment b join b.salles s where s.id in :ids")
+    List<SalleBatiment> batimentsDesSalles(@Param("ids") Collection<Long> ids);
 
     /** Charge les matériels des salles dans le contexte de persistance : une requête pour toutes les salles. */
     @Query("select distinct s from Salle s left join fetch s.materiels where s.id in :ids")

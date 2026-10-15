@@ -1,6 +1,6 @@
 import Anneau from "./Anneau.tsx";
-import type { SalleCarte } from "../types/types.ts";
-import {libelleEtage, pluriel} from "../utils/postes.ts";
+import {LIBELLE_MOTIF_GEL, type SalleCarte} from "../types/types.ts";
+import {dateFr, libelleEtage, pluriel} from "../utils/postes.ts";
 import { Link } from "react-router-dom";
 
 interface SalleCardProps {
@@ -17,11 +17,20 @@ export default function SalleCard({ salle }: SalleCardProps) {
     if (aChanger) alertes.push({ cle: "chg", texte: `${aChanger} à changer bientôt` });
 
     return (
-        <article className="room">
+        <article className={`room${salle.suspendu ? " gel" : ""}`}>
             <Anneau id={salle.id} comptes={salle.anneau}/>
             <div>
                 <Link to={`/salles/${salle.id}/`}><h3>Salle {salle.numSalle}</h3></Link>
-                <p>{libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}</p>
+                <p>
+                    {salle.numBatiment && `Bâtiment ${salle.numBatiment}, `}
+                    {libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}
+                </p>
+                {salle.suspendu && (
+                    <span className="gelb">
+                        Gelée{salle.gelMotif && ` : ${LIBELLE_MOTIF_GEL[salle.gelMotif]}`}
+                        {salle.gelJusqu && ` jusqu'au ${dateFr(salle.gelJusqu)}`}
+                    </span>
+                )}
                 <ul className="room-flags">
                     {salle.nbPostes === 0 ? (
                         <li className="dispo">Aucun poste</li>

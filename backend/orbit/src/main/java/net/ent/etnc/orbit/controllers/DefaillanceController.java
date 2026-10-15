@@ -54,6 +54,15 @@ public class DefaillanceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /** Défaillances remontées par l'utilisateur connecté (« Mon poste »). */
+    @GetMapping("/mes/")
+    @PreAuthorize("hasRole('STAGIAIRE')")
+    public ResponseEntity<List<DefaillanceResponseDto>> getMes(@AuthenticationPrincipal Personnel user) {
+        return ResponseEntity.ok(defaillanceService.findBySignalePar(user.getId()).stream()
+                .map(defaillanceAssembler::toDto)
+                .toList());
+    }
+
     @GetMapping("/materiel/{idMateriel}/")
     @PreAuthorize("hasRole('STAGIAIRE')")
     public ResponseEntity<List<DefaillanceResponseDto>> getByMateriel(@PathVariable Long idMateriel) {

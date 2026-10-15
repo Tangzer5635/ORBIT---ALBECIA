@@ -2,6 +2,7 @@ import {useEffect, useState} from "react";
 import {LIBELLE_TYPE_FORMATION, type Stage, type Utilisateur} from "../types/types.ts";
 import {getStages, getStagiaires} from "../services/stageService.ts";
 import GererStagiairesPopup from "../components/GererStagiairesPopup.tsx";
+import ImporterStagesPopup from "../components/ImporterStagesPopup.tsx";
 import {pluriel} from "../utils/postes.ts";
 import {statutDe, type Statut} from "../utils/stages.ts";
 import {useNavigate} from "react-router-dom";
@@ -22,6 +23,8 @@ export default function StagePage() {
     const [filtre, setFiltre] = useState<Statut | null>(null);
     const [recherche, setRecherche] = useState("");
     const [stageOuvert, setStageOuvert] = useState<Stage | null>(null);
+    const [importOuvert, setImportOuvert] = useState(false);
+    const [version, setVersion] = useState(0); // +1 = recharger les stages (après un import)
 
     useEffect(() => {
         Promise.all([getStages(), getStagiaires()])
@@ -30,7 +33,7 @@ export default function StagePage() {
                 setStagiaires(u);
             })
             .catch(() => setErreurChargement("Impossible de charger les stages."));
-    }, []);
+    }, [version]);
 
     const nbStagiaires = (stage: Stage) => stagiaires.filter(s => s.stageId === stage.id).length;
     const nbParStatut = (statut: Statut) => stages.filter(s => statutDe(s) === statut).length;
@@ -61,8 +64,9 @@ export default function StagePage() {
                 </div>
             </div>
 
-            {/* l'import SAGAIE (fichier CSV) viendra plus tard */}
-            <button type="button" className="btn primary">Importer les stages (SAGAIE)</button>
+            <button type="button" className="btn primary" onClick={() => setImportOuvert(true)}>
+                Importer les stages (SAGAIE)
+            </button>
             <p className="muted small">
                 Les stages sont gérés dans SAGAIE et importés ici. Dans ORBIT, on gère leurs stagiaires et on les affecte aux salles, depuis la page de chaque salle.
             </p>
@@ -107,6 +111,12 @@ export default function StagePage() {
                 })}
                 {visibles.length === 0 && !erreurChargement && <p className="muted">Aucun stage.</p>}
             </div>
+
+            {importOuvert && (
+                <ImporterStagesPopup
+                    onClose={() => setImportOuvert(false)}
+                    onImporte={() => setVersion(v => v + 1)}/>
+            )}
 
             {stageOuvert && (
                 <GererStagiairesPopup

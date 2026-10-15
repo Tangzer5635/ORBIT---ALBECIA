@@ -18,6 +18,9 @@ public interface DefaillanceService extends Service<Defaillance, Long> {
 
     List<Defaillance> findByMateriel(Long idMateriel) throws ServiceException;
 
+    /** Défaillances remontées par cette personne, les plus récentes d'abord (« Mon poste »). */
+    List<Defaillance> findBySignalePar(Long idPersonnel);
+
     /** {@code true} si le matériel a une défaillance signalée et non résolue (état DEFECTUEUX). */
     boolean aUneDefaillanceOuverte(Long idMateriel);
 

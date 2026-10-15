@@ -56,7 +56,7 @@ export default function BatimentBar() {
         return () => window.removeEventListener("resize", majFleches);
     }, [batiments, majFleches]);
 
-    if (utilisateur?.role === "STAGIAIRE") return null;
+    if (utilisateur?.role === "STAGIAIRE" || utilisateur?.role === "FORMATEUR") return null;
 
     // glisse d'une largeur visible vers la gauche ou la droite
     function defiler(sens: -1 | 1) {

@@ -14,6 +14,9 @@ import java.util.Optional;
 public interface PersonnelService extends Service<Personnel, Long> {
     Optional<Personnel> findByUsername(String username);
 
+    /** Personnel par son NID (10 chiffres), utilisé par l'import des stages. */
+    Optional<Personnel> findByNid(String nid);
+
     Personnel desactiver(Long id) throws ServiceException;
 
     Personnel activer(Long id) throws ServiceException;

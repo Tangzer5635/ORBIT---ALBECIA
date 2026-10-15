@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.controllers;
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.StageAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.StageRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.BilanImportStagesDto;
 import net.ent.etnc.orbit.dtos.responseDTO.StageResponseDto;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.repositories.projections.SalleDuStage;
@@ -12,10 +13,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -52,6 +57,13 @@ public class StageController {
     public ResponseEntity<StageResponseDto> post(@Valid @RequestBody StageRequestDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 dto(stageService.creer(stageAssembler.toEntity(dto), dto.getFormateurId())));
+    }
+
+    /** Import d'un fichier CSV de stages (champ « fichier »), voir StageService.importer. */
+    @PostMapping(value = "/import/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<BilanImportStagesDto> importer(@RequestParam("fichier") MultipartFile fichier) throws IOException {
+        return ResponseEntity.ok(stageService.importer(new String(fichier.getBytes(), StandardCharsets.UTF_8)));
     }
 
     @PutMapping("/{id}/")
