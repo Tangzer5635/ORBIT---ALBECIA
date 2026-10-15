@@ -1,5 +1,5 @@
 import type { Batiment, BatimentRequest, Page } from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/batiments`;
 
@@ -15,7 +15,7 @@ export class BatimentError extends Error {
 export async function getBatiments(): Promise<Batiment[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/`, { headers: authHeaders() });
     } catch {
         throw new BatimentError(0); // serveur injoignable
     }
@@ -30,7 +30,7 @@ export async function getBatiments(): Promise<Batiment[]> {
 export async function ajouterBatiment(batiment: BatimentRequest): Promise<Batiment> {
     let response: Response;
     try {
-        response = await fetch(URL, {
+        response = await apiFetch(URL, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(batiment),
@@ -50,7 +50,7 @@ export async function supprimerBatiment(id: number, stockageCibleId?: number): P
 
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/${params}`, {
+        response = await apiFetch(`${URL}/${id}/${params}`, {
             method: "DELETE",
             headers: authHeaders(),
         });

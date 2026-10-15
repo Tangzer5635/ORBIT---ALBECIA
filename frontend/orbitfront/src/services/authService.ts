@@ -63,6 +63,27 @@ export function getToken(): string | null {
   return sessionStorage.getItem(TOKEN_KEY);
 }
 
+// Demande un nouveau jeton avec le cookie de refresh (HttpOnly, envoyé tout seul par le navigateur).
+// false si le refresh est refusé : cookie expiré, compte désactivé ou verrouillé.
+export async function rafraichirToken(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/refresh/`, { method: "POST" });
+    if (!response.ok) return false;
+    const data: TokenResponse = await response.json();
+    sessionStorage.setItem(TOKEN_KEY, data.accessToken);
+    return true;
+  } catch {
+    return false; // serveur injoignable
+  }
+}
+
+// Session terminée (refresh refusé) : on vide la session et on retourne à la connexion
+export function finDeSession() {
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+  window.location.assign("/connexion?expiree");
+}
+
 export function getUtilisateur(): Utilisateur | null {
   const json = sessionStorage.getItem(USER_KEY);
   return json ? JSON.parse(json) : null;

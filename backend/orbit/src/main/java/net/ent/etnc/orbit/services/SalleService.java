@@ -1,18 +1,21 @@
 package net.ent.etnc.orbit.services;
 
 import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.SalleModificationRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.enums.MotifGel;
 import net.ent.etnc.orbit.services.commons.Service;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +48,18 @@ public interface SalleService extends Service<Salle, Long> {
 
     /** Crée une salle de cours dans un bâtiment et l'équipe avec le stock de sa réserve. */
     SalleEquipeeResponseDto creerSalleEquipee(SalleEquipeeRequestDto dto) throws ServiceException;
+
+    /**
+     * « Modifier la salle » : nombre de postes stagiaires, de vidéoprojecteurs et de tableaux.
+     * Le matériel manquant est pris dans le stock du bâtiment, celui en trop y retourne ;
+     * les postes en trop (les derniers numéros) sont supprimés et leur stagiaire perd son poste.
+     */
+    SalleEquipeeResponseDto modifierComposition(Long idSalle, SalleModificationRequestDto dto) throws ServiceException;
+
+    /** Gèle une salle de cours : plus d'affectation de stage, de stagiaire ni de master. */
+    Salle geler(Long idSalle, MotifGel motif, String note, LocalDate jusqu) throws ServiceException;
+
+    Salle degeler(Long idSalle) throws ServiceException;
 
     /** Page /salles?batiment=XX : tout est compté en base, nombre de requêtes fixe. */
     List<SalleCarteDto> findCartesDuBatiment(Long idBatiment);

@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.dtos.responseDTO;
 
 import lombok.*;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class MonPosteResponseDto {
 
     private Long id;
     private String numPoste;
+    private EtatPoste etat;
 
     private Long idSalle;
     private String numSalle;
@@ -24,6 +26,10 @@ public class MonPosteResponseDto {
 
     private Long idBatiment;
     private String numBatiment;
+    private String stageNom; // stage accueilli par la salle, absent s'il n'y en a pas
+
+    // mini-plan « Où se trouve mon poste » : postes stagiaires de la salle, dans l'ordre
+    private List<PlanPosteDto> plan;
 
     private List<MaterielResponseDto> materiels;
 }

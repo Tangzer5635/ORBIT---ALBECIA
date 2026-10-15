@@ -1,4 +1,4 @@
-package net.ent.etnc.orbit.services.impl;
+package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
@@ -9,6 +9,7 @@ import net.ent.etnc.orbit.repositories.projections.SalleDuStage;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.StageService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
+import net.ent.etnc.orbit.services.impl.AffecterStageServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

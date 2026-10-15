@@ -2,6 +2,7 @@ package net.ent.etnc.orbit.services.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.SalleModificationRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
@@ -15,6 +16,7 @@ import net.ent.etnc.orbit.models.entities.TableauInteractif;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.enums.EtatPoste;
+import net.ent.etnc.orbit.models.enums.MotifGel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -152,20 +155,10 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         salle.setType(TypeSalle.SalleDeCours);
         Salle creee = create(dto.getIdBatiment(), salle); // vérifie le bâtiment et le numéro en double
         Batiment batiment = trouverBatiment(dto.getIdBatiment());
-
-        // Stock du bâtiment, rangé par type (matériel archivé exclu)
-        Map<String, Deque<EnStock>> stock = new HashMap<>();
-        for (Salle reserve : batiment.getSalles()) {
-            if (reserve.getType() != TypeSalle.SalleStockage) continue;
-            for (Materiel m : reserve.getMateriels()) {
-                if (!m.isArchive())
-                    stock.computeIfAbsent(m.getType(), t -> new ArrayDeque<>()).add(new EnStock(m, reserve));
-            }
-        }
+        Map<String, Deque<EnStock>> stock = stockDu(batiment);
         Map<String, Integer> manquants = new LinkedHashMap<>();
 
-        // numPoste est unique sur tout le parc : on préfixe par bâtiment + salle
-        String prefixe = "B" + batiment.getNumBatiment() + "-S" + creee.getNumSalle() + "-";
+        String prefixe = prefixePostes(batiment, creee);
         List<String> numeros = new ArrayList<>();
         numeros.add(prefixe + "F"); // formateur en premier = servi en priorité
         for (int i = 1; i <= dto.getNbPostes(); i++) numeros.add(prefixe + String.format("P%02d", i));
@@ -187,6 +180,133 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
                     plusRien ? " (plus rien en stock)" : "", manquants);
         }
         return new SalleEquipeeResponseDto(creee.getId(), manquants);
+    }
+
+    @Override
+    @Transactional
+    public SalleEquipeeResponseDto modifierComposition(Long idSalle, SalleModificationRequestDto dto) {
+        Salle salle = trouver(idSalle);
+        if (salle.getType() != TypeSalle.SalleDeCours)
+            throw new ServiceException("Seule une salle de cours se modifie");
+        Batiment batiment = batimentRepository.findBySalles_Id(idSalle)
+                .orElseThrow(() -> new ServiceException("La salle " + salle.getNumSalle() + " n'est dans aucun bâtiment"));
+        Map<String, Deque<EnStock>> stock = stockDu(batiment);
+        Map<String, Integer> manquants = new LinkedHashMap<>();
+
+        // postes stagiaires, du plus petit numéro au plus grand
+        List<Poste> postes = salle.getPostes().stream()
+                .filter(p -> !p.getNumPoste().endsWith("-F"))
+                .sorted(Comparator.comparingInt(SalleServiceImpl::numeroPoste))
+                .toList();
+
+        if (dto.getNbPostes() < postes.size()) {
+            // les derniers postes disparaissent : matériel en stock, stagiaire sans poste
+            for (Poste p : postes.subList(dto.getNbPostes(), postes.size())) {
+                supprimerPoste(p.getId());
+            }
+        } else if (dto.getNbPostes() > postes.size()) {
+            // même nombre d'écrans que les postes existants (1 si la salle n'en a pas)
+            int ecransParPoste = postes.stream()
+                    .mapToInt(p -> (int) p.getMateriels().stream().filter(m -> Ecran.TYPE.equals(m.getType())).count())
+                    .max().orElse(1);
+            int numero = postes.isEmpty() ? 0 : numeroPoste(postes.get(postes.size() - 1));
+            String prefixe = prefixePostes(batiment, salle);
+            for (int i = postes.size(); i < dto.getNbPostes(); i++) {
+                Poste poste = new Poste();
+                poste.setNumPoste(prefixe + String.format("P%02d", ++numero));
+                Poste cree = creerPoste(idSalle, poste);
+                prendre(stock, UC.TYPE, 1, manquants).forEach(cree::addMateriel);
+                prendre(stock, Ecran.TYPE, Math.max(ecransParPoste, 1), manquants).forEach(cree::addMateriel);
+            }
+        }
+
+        ajuster(salle, VideoProjecteur.TYPE, dto.getNbVideoProjecteurs(), stock, manquants);
+        ajuster(salle, TableauInteractif.TYPE, dto.getNbTableaux(), stock, manquants);
+        return new SalleEquipeeResponseDto(idSalle, manquants);
+    }
+
+    /** Ramène le matériel de salle d'un type à `voulu` : on prend dans le stock ou on y remet le surplus. */
+    private void ajuster(Salle salle, String type, int voulu, Map<String, Deque<EnStock>> stock,
+                         Map<String, Integer> manquants) {
+        List<Materiel> presents = salle.getMateriels().stream()
+                .filter(m -> type.equals(m.getType()))
+                .toList();
+        if (voulu > presents.size()) {
+            prendre(stock, type, voulu - presents.size(), manquants).forEach(salle::addMateriel);
+        } else if (voulu < presents.size()) {
+            Salle reserve = trouverStockage(salle.getId());
+            for (Materiel m : presents.subList(voulu, presents.size())) {
+                salle.removeMateriel(m);
+                reserve.addMateriel(m);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public Salle geler(Long idSalle, MotifGel motif, String note, LocalDate jusqu) {
+        Salle salle = trouver(idSalle);
+        if (salle.getType() != TypeSalle.SalleDeCours)
+            throw new ServiceException("Seule une salle de cours se gèle");
+        if (salle.isSuspendu())
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est déjà gelée");
+        if (motif == null)
+            throw new ServiceException("Choisissez un motif");
+        if (jusqu != null && jusqu.isBefore(LocalDate.now()))
+            throw new ServiceException("La date de fin prévue est déjà passée");
+        salle.setSuspendu(true);
+        salle.setGelMotif(motif);
+        salle.setGelNote(note == null || note.isBlank() ? null : note.trim());
+        salle.setGelDepuis(LocalDate.now());
+        salle.setGelJusqu(jusqu);
+        return salle;
+    }
+
+    @Override
+    @Transactional
+    public Salle degeler(Long idSalle) {
+        Salle salle = trouver(idSalle);
+        if (!salle.isSuspendu())
+            throw new ServiceException("La salle " + salle.getNumSalle() + " n'est pas gelée");
+        salle.setSuspendu(false);
+        salle.setGelMotif(null);
+        salle.setGelNote(null);
+        salle.setGelDepuis(null);
+        salle.setGelJusqu(null);
+        return salle;
+    }
+
+    private Salle trouver(Long idSalle) {
+        return repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+    }
+
+    /** Stock du bâtiment, rangé par type (matériel archivé exclu). */
+    private Map<String, Deque<EnStock>> stockDu(Batiment batiment) {
+        Map<String, Deque<EnStock>> stock = new HashMap<>();
+        for (Salle reserve : batiment.getSalles()) {
+            if (reserve.getType() != TypeSalle.SalleStockage) continue;
+            for (Materiel m : reserve.getMateriels()) {
+                if (!m.isArchive())
+                    stock.computeIfAbsent(m.getType(), t -> new ArrayDeque<>()).add(new EnStock(m, reserve));
+            }
+        }
+        return stock;
+    }
+
+    /** numPoste est unique sur tout le parc : on préfixe par bâtiment + salle (ex. "B2-S105-"). */
+    private static String prefixePostes(Batiment batiment, Salle salle) {
+        return "B" + batiment.getNumBatiment() + "-S" + salle.getNumSalle() + "-";
+    }
+
+    /** "B2-S105-P07" -> 7 (0 si le numéro ne suit pas ce format). */
+    private static int numeroPoste(Poste poste) {
+        String num = poste.getNumPoste();
+        int i = num.lastIndexOf("-P");
+        try {
+            return i < 0 ? 0 : Integer.parseInt(num.substring(i + 2));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /** Retire jusqu'à `quantite` matériels du stock ; note ce qui manque. */
@@ -324,6 +444,9 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
                 .type(s.getType())
                 .nbPostes(nbPostes.getOrDefault(s.getId(), 0L))
                 .anneau(anneaux.getOrDefault(s.getId(), AnneauDto.VIDE))
+                .suspendu(s.isSuspendu())
+                .gelMotif(s.getGelMotif())
+                .gelJusqu(s.getGelJusqu())
                 .build()).toList();
     }
 

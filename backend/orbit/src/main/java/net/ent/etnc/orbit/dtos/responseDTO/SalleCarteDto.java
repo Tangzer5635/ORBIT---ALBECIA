@@ -5,7 +5,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.ent.etnc.orbit.models.enums.MotifGel;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
+
+import java.time.LocalDate;
 
 /** Carte d'une salle sur la page /salles?batiment=XX. */
 @Getter
@@ -21,4 +24,7 @@ public class SalleCarteDto {
     private TypeSalle type;
     private long nbPostes;
     private AnneauDto anneau;
+    private boolean suspendu; // salle gelée
+    private MotifGel gelMotif;
+    private LocalDate gelJusqu;
 }

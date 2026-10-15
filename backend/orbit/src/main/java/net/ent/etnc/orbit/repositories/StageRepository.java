@@ -9,11 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StageRepository extends BaseRepository<Stage> {
 
     boolean existsByNom(String nom);
+
+    Optional<Stage> findByNom(String nom);
 
     boolean existsByNomAndIdNot(String nom, Long id);
 

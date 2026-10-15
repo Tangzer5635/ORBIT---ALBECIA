@@ -46,6 +46,8 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
 
         Salle salle = salleService.salleDuPoste(idPoste)
                 .orElseThrow(() -> new ServiceException("Le poste " + poste.getNumPoste() + " n'est dans aucune salle"));
+        if (salle.isSuspendu())
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est gelée : on n'y affecte plus de stagiaire");
         Stage stage = salle.getStage();
         if (stage == null)
             throw new ServiceException("La salle " + salle.getNumSalle() + " n'accueille aucun stage");

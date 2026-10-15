@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.dtos.assemblers;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteUpdateRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
+import net.ent.etnc.orbit.dtos.responseDTO.PlanPosteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
@@ -11,7 +12,9 @@ import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -73,5 +76,16 @@ public class PosteAssembler {
                                 l.materiel().calculerEtat(false, l.defaillanceOuverte())))
                         .toList())
                 .build();
+    }
+
+    /** Ajoute à « mon poste » son état, le stage de la salle et le mini-plan (postes stagiaires de la salle). */
+    public void completerPlan(MonPosteResponseDto dto, List<Poste> postesSalle, Map<Long, EtatPoste> etats, String stageNom) {
+        dto.setStageNom(stageNom);
+        dto.setEtat(etats.get(dto.getId()));
+        dto.setPlan(postesSalle.stream()
+                .filter(p -> !p.getNumPoste().endsWith("-F"))
+                .sorted(Comparator.comparing(Poste::getNumPoste))
+                .map(p -> new PlanPosteDto(p.getNumPoste(), etats.get(p.getId())))
+                .toList());
     }
 }

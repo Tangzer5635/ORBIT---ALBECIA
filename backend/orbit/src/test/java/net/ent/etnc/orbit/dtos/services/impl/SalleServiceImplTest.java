@@ -1,10 +1,11 @@
-package net.ent.etnc.orbit.services.impl;
+package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.repositories.projections.SalleBatiment;
+import net.ent.etnc.orbit.services.impl.SalleServiceImpl;
 import org.springframework.security.access.AccessDeniedException;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
@@ -195,7 +196,7 @@ class SalleServiceImplTest {
         assertThatThrownBy(() -> service.deleteById(3L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete((Salle) any());
     }
 
     // ---------- supprimerAvecBatiment ----------
@@ -219,7 +220,7 @@ class SalleServiceImplTest {
         assertThatThrownBy(() -> service.supprimerAvecBatiment(3L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Vide la salle de stockage avant de la supprimer");
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete((Salle) any());
     }
 
     @Test

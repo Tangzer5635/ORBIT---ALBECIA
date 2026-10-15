@@ -33,6 +33,16 @@ export const LIBELLE_ETAT_MATERIEL = {
 } as const;
 export type EtatMateriel = keyof typeof LIBELLE_ETAT_MATERIEL;
 
+// MotifGel.java : pourquoi une salle est gelée
+export const LIBELLE_MOTIF_GEL = {
+    TRAVAUX: "Travaux",
+    ATTENTE_MATERIEL: "En attente de matériel",
+    MAINTENANCE: "Maintenance",
+    RESERVEE: "Réservée",
+    AUTRE: "Autre",
+} as const;
+export type MotifGel = keyof typeof LIBELLE_MOTIF_GEL;
+
 // StatutDefaillance.java
 export const LIBELLE_STATUT_DEFAILLANCE = {
     SIGNALEE: "Signalée",
@@ -140,6 +150,26 @@ export interface Salle {
     stageDateFin?: string | null;
     stageFormateur?: string | null; // "Prénom Nom" du formateur qui gère le stage
     formateurs?: Formateur[];
+    // salle gelée : plus d'affectation de stage, de stagiaire ni de master
+    suspendu: boolean;
+    gelMotif?: MotifGel | null;
+    gelNote?: string | null;
+    gelDepuis?: string | null; // "2026-10-15"
+    gelJusqu?: string | null;  // fin prévue, facultative
+}
+
+// SalleModificationRequestDto (« Modifier la salle »)
+export interface SalleModification {
+    nbPostes: number; // postes stagiaires
+    nbVideoProjecteurs: number;
+    nbTableaux: number;
+}
+
+// GelRequestDto (« Geler la salle »)
+export interface GelRequest {
+    motif: MotifGel;
+    note?: string;
+    jusqu?: string; // "2026-12-01"
 }
 
 // FormateurDto
@@ -158,6 +188,9 @@ export interface SalleCarte {
     type: TypeSalle;
     nbPostes: number;
     anneau: ComptesAnneau;
+    suspendu: boolean; // salle gelée
+    gelMotif?: MotifGel | null;
+    gelJusqu?: string | null;
 }
 
 // SalleRequestDto
@@ -187,10 +220,19 @@ export interface Poste {
 
 
 
+// PlanPosteDto : un poste stagiaire sur le mini-plan de « Mon poste »
+export interface PlanPoste {
+    numPoste: string;
+    etat?: EtatPoste | null;
+}
+
 // MonPosteResponseDto (GET /postes/me/)
 export interface MonPoste {
     id: number;
     numPoste: string;
+    etat?: EtatPoste | null;
+    stageNom?: string | null;
+    plan?: PlanPoste[]; // postes stagiaires de la salle, dans l'ordre
     idSalle?: number;
     numSalle?: string;
     etage?: string;
@@ -271,6 +313,13 @@ export const LIBELLE_TYPE_FORMATION = {
     EST: "Télécommunication",
 } as const;
 export type TypeFormation = keyof typeof LIBELLE_TYPE_FORMATION;
+
+// BilanImportStagesDto (POST /stages/import/)
+export interface BilanImportStages {
+    crees: string[];    // noms des stages créés
+    misAJour: string[]; // noms des stages mis à jour
+    erreurs: string[];  // "Ligne 4 : type « XXX » inconnu"
+}
 
 // StageResponseDto
 export interface Stage {

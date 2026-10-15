@@ -10,13 +10,15 @@ type Props = {
     salle: Salle;
     peutGerer: boolean; // gestionnaire ou admin : détail du matériel et actions
     onFermer: () => void;
-    onAffecterStagiaire: () => void;
+    onAffecterStagiaire?: () => void; // absent si la salle est gelée
+    onRetirerStagiaire: () => void;
     onAffecterMateriel: () => void;
     onChange: () => void; // un matériel a bougé : la page se recharge
 };
 
 export default function PanneauPoste({
-                                         poste, salle, peutGerer, onFermer, onAffecterStagiaire, onAffecterMateriel, onChange
+                                         poste, salle, peutGerer, onFermer, onAffecterStagiaire, onRetirerStagiaire,
+                                         onAffecterMateriel, onChange
                                      }: Props) {
     const [materiels, setMateriels] = useState<Materiel[] | null>(null);
     const formateur = estFormateur(poste);
@@ -49,7 +51,7 @@ export default function PanneauPoste({
 
             {peutGerer && (
                 <div className="poste-actions">
-                    {!formateur && !poste.occupant && (
+                    {!formateur && !poste.occupant && onAffecterStagiaire && (
                         <button type="button" className="btn primary" onClick={onAffecterStagiaire}>
                             Affecter un stagiaire
                         </button>
@@ -68,9 +70,20 @@ export default function PanneauPoste({
             ) : (
                 <section className="panneau-section">
                     <h3>Occupant</h3>
-                    <p className={poste.occupant ? "" : "muted"}>
-                        {poste.occupant ?? "Aucun stagiaire : poste disponible"}
-                    </p>
+                    {poste.occupant ? (
+                        <ul className="panneau-liste">
+                            <li>
+                                {poste.occupant}
+                                {peutGerer && (
+                                    <button type="button" className="muted small lien" onClick={onRetirerStagiaire}>
+                                        Retirer du poste
+                                    </button>
+                                )}
+                            </li>
+                        </ul>
+                    ) : (
+                        <p className="muted">Aucun stagiaire : poste disponible</p>
+                    )}
                 </section>
             )}
 

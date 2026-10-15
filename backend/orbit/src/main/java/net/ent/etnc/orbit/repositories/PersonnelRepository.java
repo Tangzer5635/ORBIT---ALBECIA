@@ -19,6 +19,8 @@ public interface PersonnelRepository extends BaseRepository<Personnel> {
 
     Optional<Personnel> findByUsername(String username);
 
+    Optional<Personnel> findByNid(String nid);
+
     long countByRole(Role role);
     Page<Personnel> findByRole(Role role, Pageable pageable);
 

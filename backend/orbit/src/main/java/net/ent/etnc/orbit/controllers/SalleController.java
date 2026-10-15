@@ -2,7 +2,9 @@ package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
+import net.ent.etnc.orbit.dtos.requestDTO.GelRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.SalleModificationRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
@@ -81,6 +83,25 @@ public class SalleController {
     public ResponseEntity<SalleResponseDto> post(@Valid @RequestBody SalleRequestDto salleDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(salleAssembler.toDto(
                 salleService.create(salleDto.getIdBatiment(), salleAssembler.toEntity(salleDto))));
+    }
+
+    /** « Modifier la salle » : nombre de postes stagiaires, de vidéoprojecteurs et de tableaux interactifs. */
+    @PutMapping("/{id}/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleEquipeeResponseDto> put(@PathVariable Long id, @Valid @RequestBody SalleModificationRequestDto dto) {
+        return ResponseEntity.ok(salleService.modifierComposition(id, dto));
+    }
+
+    @PatchMapping("/{id}/geler/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> geler(@PathVariable Long id, @Valid @RequestBody GelRequestDto dto) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.geler(id, dto.getMotif(), dto.getNote(), dto.getJusqu())));
+    }
+
+    @PatchMapping("/{id}/degeler/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> degeler(@PathVariable Long id) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.degeler(id)));
     }
 
     @DeleteMapping("/{id}/")

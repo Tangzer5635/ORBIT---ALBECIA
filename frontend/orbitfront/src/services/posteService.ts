@@ -1,5 +1,5 @@
 import type {MonPoste, Page, Poste, PosteRequest} from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/postes`;
 
@@ -17,7 +17,7 @@ export class PosteError extends Error {
 export async function getPostes(): Promise<Poste[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/`, { headers: authHeaders() });
     } catch {
         throw new PosteError(0); // serveur injoignable
     }
@@ -33,7 +33,7 @@ export async function getPostes(): Promise<Poste[]> {
 export async function getMyPoste(): Promise<MonPoste | null> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/me/`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/me/`, { headers: authHeaders() });
     } catch {
         throw new PosteError(0); // serveur injoignable
     }
@@ -48,7 +48,7 @@ export async function getMyPoste(): Promise<MonPoste | null> {
 export async function ajouterPoste(poste: PosteRequest): Promise<Poste> {
     let response: Response;
     try {
-        response = await fetch(URL, {
+        response = await apiFetch(URL, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(poste),
@@ -66,7 +66,7 @@ export async function ajouterPoste(poste: PosteRequest): Promise<Poste> {
 export async function supprimerPoste(id: number): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, {
+        response = await apiFetch(`${URL}/${id}/`, {
             method: "DELETE",
             headers: authHeaders(),
         });
@@ -81,8 +81,25 @@ export async function supprimerPoste(id: number): Promise<void> {
 export async function affecterStagiaireAPoste(idPoste: number, idStagiaire: number): Promise<Poste> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${idPoste}/?stagiaireId=${idStagiaire}`, {
+        response = await apiFetch(`${URL}/${idPoste}/?stagiaireId=${idStagiaire}`, {
             method: "POST",
+            headers: authHeaders(),
+        });
+    } catch {
+        throw new PosteError(0);
+    }
+
+    if (!response.ok) throw new PosteError(response.status, await response.text().catch(() => ""));
+
+    return await response.json();
+}
+
+// Libère le poste : le stagiaire n'y est plus assis (il reste dans son stage)
+export async function retirerStagiaireDuPoste(idPoste: number, idStagiaire: number): Promise<Poste> {
+    let response: Response;
+    try {
+        response = await apiFetch(`${URL}/${idPoste}/?stagiaireId=${idStagiaire}`, {
+            method: "DELETE",
             headers: authHeaders(),
         });
     } catch {

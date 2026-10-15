@@ -1804,3 +1804,239 @@ button.plan-mat {
     flex-wrap: wrap;
     gap: 6px;
 }
+
+/* =========================================================
+   11. SALLE GELÉE, IMPORT DES STAGES, MON POSTE
+   ========================================================= */
+
+/* Bandeau « Salle gelée » sous l'en-tête de la salle */
+.note-gel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--inc) 18%, var(--card));
+    font-size: 14px;
+}
+
+.note-gel p {
+    margin: 0;
+}
+
+/* Avertissement (stage d'une salle gelée, matériel manquant après une modification) */
+.note-chg {
+    margin: 10px 0 12px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: var(--chg-bg);
+    font-size: 14px;
+}
+
+.note-chg .lien {
+    margin-left: 8px;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Carte d'une salle gelée */
+.room.gel {
+    opacity: 0.85;
+}
+
+.gelb {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--inc) 18%, var(--card));
+    color: var(--inc);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Choix rapide (motif du gel) */
+.popup-lbl {
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+.quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.chip {
+    border: 0;
+    border-radius: 999px;
+    padding: 5px 12px;
+    background: var(--card2);
+    color: var(--ink);
+    font-size: 13.5px;
+    cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+}
+
+/* Import CSV des stages */
+.import-aide {
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
+
+.popup-body .btn.sm {
+    align-self: flex-start;
+}
+
+.popup-body input[type="file"] {
+    padding: 8px;
+}
+
+.import-bilan {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--card2);
+    font-size: 14px;
+}
+
+.import-bilan p {
+    margin: 0 0 4px;
+}
+
+.import-erreurs {
+    max-height: 160px;
+    margin: 4px 0 0;
+    padding-left: 18px;
+    overflow-y: auto;
+    color: var(--muted);
+}
+
+/* Mon poste : bandeau coloré selon l'état, avec le numéro du poste dans un rond plein */
+.hero-poste {
+    --c: var(--use);
+    background: color-mix(in srgb, var(--c) 16%, var(--card));
+}
+
+.hero-poste.def { --c: var(--def); }
+.hero-poste.chg { --c: var(--chg); }
+.hero-poste.inc { --c: var(--inc); }
+
+.rond-poste {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: var(--c);
+    color: var(--accent-ink);
+}
+
+.rond-poste b {
+    display: block;
+    font-size: 30px;
+}
+
+.rond-poste span {
+    color: inherit;
+    opacity: 0.8;
+}
+
+/* Deux colonnes : matériel à gauche, plan et défaillances à droite */
+.room-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 18px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .room-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.poste-materiels {
+    display: grid;
+    gap: 12px;
+}
+
+.card-s {
+    margin-bottom: 14px;
+    padding: 16px 18px;
+    border-radius: 22px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+}
+
+.card-s p {
+    margin: 10px 0 0;
+}
+
+/* Mini-plan : un rond par poste stagiaire, le mien entouré */
+.mplan-salle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 10px;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+}
+
+.mplan-formateur {
+    padding: 2px 10px;
+    border-radius: 8px;
+    background: var(--card2);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.mplan {
+    display: grid;
+    grid-template-columns: 14px 14px 6px 14px 14px; /* 2 tables de 2 postes, une allée au milieu */
+    gap: 6px 5px;
+}
+
+.mplan i {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c, var(--muted));
+}
+
+.mplan i.dispo {
+    background: repeating-linear-gradient(45deg, var(--use) 0 3px, var(--use-bg) 3px 7px);
+}
+
+/* 3e poste de chaque rangée : après l'allée */
+.mplan i:nth-child(4n + 3) {
+    grid-column: 4;
+}
+
+.mplan i.me {
+    box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent);
+}
+
+/* Aucun poste */
+.empty {
+    max-width: 560px;
+    padding: 28px;
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.empty h2 {
+    margin: 0 0 6px;
+}

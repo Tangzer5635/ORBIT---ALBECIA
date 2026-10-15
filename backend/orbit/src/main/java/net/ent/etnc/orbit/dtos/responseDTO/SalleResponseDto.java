@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.dtos.responseDTO;
 
 import lombok.*;
+import net.ent.etnc.orbit.models.enums.MotifGel;
 import net.ent.etnc.orbit.models.enums.TypeFormation;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 
@@ -30,4 +31,10 @@ public class SalleResponseDto {
     private LocalDate stageDateFin;
     private String stageFormateur; // "Prénom Nom" du formateur qui gère le stage
     private List<FormateurDto> formateurs; // formateurs attribués, seulement sur GET /salles/{id}/
+    // gel de la salle (gelMotif, gelNote, gelDepuis et gelJusqu absents si elle n'est pas gelée)
+    private boolean suspendu;
+    private MotifGel gelMotif;
+    private String gelNote;
+    private LocalDate gelDepuis;
+    private LocalDate gelJusqu;
 }

@@ -1,5 +1,5 @@
 import type {EtatMateriel, Materiel, MaterielRequest, Page, TypeMateriel} from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 import type {Localisation} from "../utils/materiels.ts";
 
 const URL = `/api/v1/materiels`;
@@ -31,7 +31,7 @@ const param = (e: Emplacement) => "salleId" in e ? `salleId=${e.salleId}` : `pos
 async function requete<T>(url: string, init: RequestInit = {}): Promise<T> {
     let response: Response;
     try {
-        response = await fetch(url, {...init, headers: authHeaders()});
+        response = await apiFetch(url, {...init, headers: authHeaders()});
     } catch {
         throw new MaterielError(0); // serveur injoignable
     }

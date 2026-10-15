@@ -1,5 +1,5 @@
 import type { Utilisateur, UtilisateurRequest, Page } from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/personnels`;
 
@@ -16,7 +16,7 @@ export class UtilisateurError extends Error {
 export async function getUtilisateurs(): Promise<Utilisateur[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });    } catch {
+        response = await apiFetch(`${URL}/`, { headers: authHeaders() });    } catch {
         throw new UtilisateurError(0); // serveur injoignable
     }
 
@@ -30,7 +30,7 @@ export async function getUtilisateurs(): Promise<Utilisateur[]> {
 export async function ajouterUtilisateur(utilisateur: UtilisateurRequest): Promise<Utilisateur> {
     let response: Response;
     try {
-        response = await fetch(URL, {
+        response = await apiFetch(URL, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(utilisateur),
@@ -47,7 +47,7 @@ export async function ajouterUtilisateur(utilisateur: UtilisateurRequest): Promi
 export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRequest): Promise<Utilisateur> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, {
+        response = await apiFetch(`${URL}/${id}/`, {
             method: "PUT",
             headers: authHeaders(),
             body: JSON.stringify(utilisateur),
@@ -65,7 +65,7 @@ export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRe
 export async function changerVerrou(id: number, verrouiller: boolean): Promise<Utilisateur> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/${verrouiller ? "verrouiller" : "déverrouiller"}/`, {
+        response = await apiFetch(`${URL}/${id}/${verrouiller ? "verrouiller" : "deverrouiller"}/`, {
             method: "PATCH",
             headers: authHeaders(),
         });
@@ -82,7 +82,7 @@ export async function changerVerrou(id: number, verrouiller: boolean): Promise<U
 export async function supprimerUtilisateur(id: number): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, {
+        response = await apiFetch(`${URL}/${id}/`, {
             method: "DELETE",
             headers: authHeaders(),
         });

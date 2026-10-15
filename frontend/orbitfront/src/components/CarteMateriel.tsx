@@ -17,13 +17,14 @@ import {CLASSE_ETAT_MATERIEL} from "../utils/materiels.ts";
 
 interface Props {
     materiel: Materiel;
-    depuis: Emplacement; // la salle ou le poste où il est posé
-    onChange: () => void; // le matériel a bougé ou changé : la page se recharge
+    depuis?: Emplacement; // la salle ou le poste où il est posé (absent en lecture seule)
+    onChange?: () => void; // le matériel a bougé ou changé : la page se recharge
+    lecture?: boolean; // « Mon poste » du stagiaire : fiche sans actions
 }
 
 type Action = "modifier" | "deplacer" | "stock" | "supprimer" | null;
 
-export default function CarteMateriel({materiel: m, depuis, onChange}: Props) {
+export default function CarteMateriel({materiel: m, depuis, onChange = () => {}, lecture = false}: Props) {
     const [defaillance, setDefaillance] = useState<Defaillance | null>(null);
     const [action, setAction] = useState<Action>(null);
     const [erreur, setErreur] = useState("");
@@ -98,20 +99,22 @@ export default function CarteMateriel({materiel: m, depuis, onChange}: Props) {
                             {LIBELLE_STATUT_DEFAILLANCE[defaillance.statut]}
                         </span>
                     </div>
-                    <Link to="/defaillances" className="btn sm">Voir la fiche</Link>
+                    {!lecture && <Link to="/defaillances" className="btn sm">Voir la fiche</Link>}
                 </div>
             )}
 
-            <div className="carte-actions">
-                <button type="button" className="btn sm" onClick={() => setAction("modifier")}>Modifier</button>
-                <button type="button" className="btn sm" onClick={() => setAction("deplacer")}>Changer d'emplacement</button>
-                <button type="button" className="btn sm" onClick={() => setAction("stock")}>Remettre en stock</button>
-                <button type="button" className="btn sm danger" onClick={() => setAction("supprimer")}>Supprimer</button>
-            </div>
+            {!lecture && depuis && (
+                <div className="carte-actions">
+                    <button type="button" className="btn sm" onClick={() => setAction("modifier")}>Modifier</button>
+                    <button type="button" className="btn sm" onClick={() => setAction("deplacer")}>Changer d'emplacement</button>
+                    <button type="button" className="btn sm" onClick={() => setAction("stock")}>Remettre en stock</button>
+                    <button type="button" className="btn sm danger" onClick={() => setAction("supprimer")}>Supprimer</button>
+                </div>
+            )}
 
             {action === "modifier" && <ModifierMaterielPopup materiel={m} onClose={fermer} onFait={fait}/>}
-            {action === "deplacer" && <DeplacerMaterielPopup materiel={m} depuis={depuis} onClose={fermer} onFait={fait}/>}
-            {action === "stock" && (
+            {action === "deplacer" && depuis && <DeplacerMaterielPopup materiel={m} depuis={depuis} onClose={fermer} onFait={fait}/>}
+            {action === "stock" && depuis && (
                 <Popup
                     open
                     onClose={fermer}

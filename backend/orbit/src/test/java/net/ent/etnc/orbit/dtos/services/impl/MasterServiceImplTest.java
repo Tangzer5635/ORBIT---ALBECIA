@@ -1,8 +1,9 @@
-package net.ent.etnc.orbit.services.impl;
+package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Master;
 import net.ent.etnc.orbit.repositories.MasterRepository;
 import net.ent.etnc.orbit.services.commons.ServiceException;
+import net.ent.etnc.orbit.services.impl.MasterServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

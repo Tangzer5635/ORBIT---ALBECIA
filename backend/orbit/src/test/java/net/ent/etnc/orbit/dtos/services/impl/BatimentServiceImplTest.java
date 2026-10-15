@@ -1,4 +1,4 @@
-package net.ent.etnc.orbit.services.impl;
+package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Salle;
@@ -6,6 +6,7 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
+import net.ent.etnc.orbit.services.impl.BatimentServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

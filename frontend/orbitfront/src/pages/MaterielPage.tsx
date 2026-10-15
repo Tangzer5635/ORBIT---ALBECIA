@@ -14,6 +14,7 @@ import {
     type Localisation, versRsql, NOM_TYPE,
 } from "../utils/materiels.ts";
 import {pluriel} from "../utils/postes.ts";
+import AjouterMaterielPopup from "../components/AjouterMaterielPopup.tsx";
 
 
 const TAILLE_PAGE = 20;
@@ -50,6 +51,8 @@ export default function MaterielPage() {
     const [resultat, setResultat] = useState<Page<Materiel>>();
     const [compteurs, setCompteurs] = useState<Compteurs>();
     const [erreur, setErreur] = useState("");
+    const [ajoutOuvert, setAjoutOuvert] = useState(false);
+    const [version, setVersion] = useState(0); // +1 = recharger la liste et les compteurs
 
     // la recherche part 500 ms après la dernière frappe pour pas faire de requête à chaque saisie
     useEffect(() => {
@@ -74,13 +77,12 @@ export default function MaterielPage() {
                 if (actif) setErreur("Impossible de charger le matériel.");
             });
         return () => { actif = false; };
-    }, [recherche, type, etat, localisation, page]);
+    }, [recherche, type, etat, localisation, page, version]);
 
-    // Les compteurs n'ont pas besoin de changer au changement de filtre, c'est le matériel en stock
-    //TODO le changer quand on pourra affecter ou supprimer
+    // Les compteurs ne changent pas avec les filtres, seulement quand du matériel est ajouté
     useEffect(() => {
         chargerCompteurs().then(setCompteurs).catch(() => {});
-    }, []);
+    }, [version]);
 
     // changer un filtre ramène toujours à la première pagination
     function changerType(t: TypeMateriel | null) { setType(t); setPage(0); }
@@ -92,7 +94,7 @@ export default function MaterielPage() {
             <h1>Matériel</h1>
             {resultat && compteurs && <p>{resultat.totalElements} sur {compteurs.total}</p>}
 
-            <button type="button" className="btn primary">
+            <button type="button" className="btn primary" onClick={() => setAjoutOuvert(true)}>
                 Ajouter un matériel
             </button>
             <button type="button">
@@ -180,6 +182,15 @@ export default function MaterielPage() {
                         Suivant
                     </button>
                 </nav>
+            )}
+
+            {ajoutOuvert && (
+                <AjouterMaterielPopup
+                    onClose={() => setAjoutOuvert(false)}
+                    onFait={() => {
+                        setAjoutOuvert(false);
+                        setVersion(v => v + 1);
+                    }}/>
             )}
         </>
     );

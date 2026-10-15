@@ -1,9 +1,10 @@
-import {Link, useParams} from "react-router-dom";
-import {getPostesBySalle, getSalleById} from "../services/salleService.ts";
+import {Link, useNavigate, useParams} from "react-router-dom";
+import {degelerSalle, getPostesBySalle, getSalleById, supprimerSalle} from "../services/salleService.ts";
 import {getMaterielById} from "../services/materielService.ts";
 import {getUtilisateur} from "../services/authService.ts";
 import {
     LIBELLE_ETAT_MATERIEL,
+    LIBELLE_MOTIF_GEL,
     type EtatPoste,
     type Formateur,
     type Materiel,
@@ -15,6 +16,7 @@ import {useEffect, useState} from "react";
 import Anneau from "../components/Anneau.tsx";
 import {
     ANNEAU_VIDE,
+    dateFr,
     estFormateur,
     etatPoste,
     ETATS_POSTE,
@@ -24,7 +26,7 @@ import {
     numeroPoste,
     pluriel
 } from "../utils/postes.ts";
-import {CLASSE_ETAT_MATERIEL} from "../utils/materiels.ts";
+import {CLASSE_ETAT_MATERIEL, NOM_TYPE} from "../utils/materiels.ts";
 import PanneauSalle from "../components/PanneauSalle.tsx";
 import PanneauPoste from "../components/PanneauPoste.tsx";
 import PanneauMateriel from "../components/PanneauMateriel.tsx";
@@ -32,7 +34,10 @@ import AffecterStagiairePopup from "../components/AffecterStagiairePopup.tsx";
 import AffecterMaterielPopup from "../components/AffecterMaterielPopup.tsx";
 import AffecterStagePopup from "../components/AffecterStagePopup.tsx";
 import AffecterFormateurPopup from "../components/AffecterFormateurPopup.tsx";
+import ModifierSallePopup from "../components/ModifierSallePopup.tsx";
+import GelerSallePopup from "../components/GelerSallePopup.tsx";
 import Popup from "../components/Popup.tsx";
+import {retirerStagiaireDuPoste} from "../services/posteService.ts";
 import {retirerStageDeSalle} from "../services/stageService.ts";
 import {retirerFormateurDeSalle} from "../services/formateurService.ts";
 
@@ -53,7 +58,8 @@ function parTables(postes: Poste[]): Poste[][] {
     return tables;
 }
 
-type PopupOuverte = "stagiaire" | "materiel" | "stage" | "retirerStage" | "formateur" | null;
+type PopupOuverte = "stagiaire" | "retirerStagiaire" | "materiel" | "stage" | "retirerStage" | "formateur"
+    | "modifier" | "geler" | "supprimer" | null;
 
 // key = salleId : changer de salle repart d'un état propre (filtre, sélection, popups)
 export default function SalleDetailPage() {
@@ -62,6 +68,7 @@ export default function SalleDetailPage() {
 }
 
 function SalleDetail({salleId}: { salleId: string }) {
+    const navigate = useNavigate();
     const [salle, setSalle] = useState<Salle | null>(null);
     const [postes, setPostes] = useState<Poste[]>([]);
     const [materielsSalle, setMaterielsSalle] = useState<Materiel[]>([]);
@@ -75,6 +82,8 @@ function SalleDetail({salleId}: { salleId: string }) {
     const [erreurStage, setErreurStage] = useState("");
     const [formateurARetirer, setFormateurARetirer] = useState<Formateur | null>(null);
     const [erreurFormateur, setErreurFormateur] = useState("");
+    const [erreurAction, setErreurAction] = useState(""); // erreur de la popup de confirmation ouverte
+    const [info, setInfo] = useState(""); // message après « Modifier la salle » (matériel manquant)
     const [rechargement, setRechargement] = useState(0); // +1 = recharger la salle et ses postes
     const [refuse, setRefuse] = useState(false); // salle introuvable ou non affectée au formateur
 
@@ -97,7 +106,18 @@ function SalleDetail({salleId}: { salleId: string }) {
     }, [salleId, peutGerer, rechargement]);
 
     const recharger = () => setRechargement(n => n + 1);
-    const fermerPopup = () => setPopup(null);
+    const fermerPopup = () => {
+        setPopup(null);
+        setErreurAction("");
+    };
+
+    // action d'une popup de confirmation : erreur affichée dans la popup si le back refuse
+    function confirmer(action: () => Promise<unknown>, apres = apresAction) {
+        setErreurAction("");
+        action()
+            .then(apres)
+            .catch(err => setErreurAction(err?.detail || "L'action a échoué."));
+    }
     const apresAction = () => {
         setPopup(null);
         recharger();
@@ -146,7 +166,8 @@ function SalleDetail({salleId}: { salleId: string }) {
     const panneau = posteSelectionne ? (
         <PanneauPoste key={posteSelectionne.id} poste={posteSelectionne} salle={salle} peutGerer={peutGerer}
                       onFermer={fermerPanneau}
-                      onAffecterStagiaire={() => setPopup("stagiaire")}
+                      onAffecterStagiaire={salle.suspendu ? undefined : () => setPopup("stagiaire")}
+                      onRetirerStagiaire={() => setPopup("retirerStagiaire")}
                       onAffecterMateriel={() => setPopup("materiel")}
                       onChange={recharger}/>
     ) : materielSelectionne ? (
@@ -154,7 +175,7 @@ function SalleDetail({salleId}: { salleId: string }) {
                          onFermer={fermerPanneau} onChange={recharger}/>
     ) : (
         <PanneauSalle salle={salle}
-                      onAffecterStage={peutGerer && salleDeCours ? () => setPopup("stage") : undefined}
+                      onAffecterStage={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("stage") : undefined}
                       onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
                       onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
                       onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}/>
@@ -190,13 +211,40 @@ function SalleDetail({salleId}: { salleId: string }) {
                 </div>
             </section>
 
-            {peutGerer && (
-                <div className="hero-row">
-                    <button type="button" className="btn">Modifier la salle</button>
-                    <button type="button" className="btn">Exporter la salle</button>
-                    <button type="button" className="btn">Geler la salle</button>
-                    <button type="button" className="btn danger">Supprimer la salle</button>
+            {salle.suspendu && (
+                <div className="note-gel">
+                    <p>
+                        <b>Salle gelée{salle.gelMotif && ` : ${LIBELLE_MOTIF_GEL[salle.gelMotif]}`}</b>
+                        {salle.gelNote && `, ${salle.gelNote}`}.
+                        {salle.gelDepuis && ` Depuis le ${dateFr(salle.gelDepuis)}`}
+                        {salle.gelJusqu && `, jusqu'au ${dateFr(salle.gelJusqu)} prévu`}.
+                        {" "}On ne peut plus y affecter de stage, de stagiaire ni de master.
+                    </p>
+                    {peutGerer && (
+                        <button type="button" className="btn sm primary"
+                                onClick={() => degelerSalle(salle.id).then(recharger).catch(() => setInfo("Impossible de dégeler la salle."))}>
+                            Dégeler la salle
+                        </button>
+                    )}
                 </div>
+            )}
+
+            {peutGerer && salleDeCours && (
+                <div className="hero-row">
+                    <button type="button" className="btn" onClick={() => setPopup("modifier")}>Modifier la salle</button>
+                    {/* export : plus tard */}
+                    <button type="button" className="btn" disabled title="Bientôt disponible">Exporter la salle</button>
+                    {!salle.suspendu &&
+                        <button type="button" className="btn" onClick={() => setPopup("geler")}>Geler la salle</button>}
+                    <button type="button" className="btn danger" onClick={() => setPopup("supprimer")}>Supprimer la salle</button>
+                </div>
+            )}
+
+            {info && (
+                <p className="note-chg" role="status">
+                    {info}
+                    <button type="button" className="muted small lien" onClick={() => setInfo("")}> Fermer</button>
+                </p>
             )}
 
             <section className="plan">
@@ -309,6 +357,47 @@ function SalleDetail({salleId}: { salleId: string }) {
                             .catch(() => setErreurStage("Impossible de retirer le stage."));
                     }}>
                     {erreurStage && <p className="error-message" role="alert">{erreurStage}</p>}
+                </Popup>
+            )}
+            {popup === "modifier" && (
+                <ModifierSallePopup
+                    salle={salle}
+                    postes={postes}
+                    onClose={fermerPopup}
+                    onFait={manquants => {
+                        const liste = Object.entries(manquants)
+                            .map(([type, n]) => NOM_TYPE[type as TypeMateriel]
+                                ? pluriel(n ?? 0, ...NOM_TYPE[type as TypeMateriel])
+                                : `${n} ${type}`);
+                        setInfo(liste.length
+                            ? `Salle modifiée, mais il manque dans le stock : ${liste.join(", ")}. Les postes concernés sont à compléter.`
+                            : "");
+                        apresAction();
+                    }}/>
+            )}
+            {popup === "geler" && <GelerSallePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {popup === "supprimer" && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Supprimer la salle ${salle.numSalle}`}
+                    description={`Ses postes sont supprimés et tout son matériel retourne au stock du bâtiment${salle.stageNom ? `, le stage ${salle.stageNom} n'a plus de salle` : ""}. Cette action est définitive.`}
+                    confirmLabel="Supprimer la salle"
+                    variant="danger"
+                    onConfirm={() => confirmer(() => supprimerSalle(salle.id), () => navigate(-1))}>
+                    {erreurAction && <p className="error-message" role="alert">{erreurAction}</p>}
+                </Popup>
+            )}
+            {popup === "retirerStagiaire" && posteSelectionne?.occupantId && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Retirer ${posteSelectionne.occupant} du poste`}
+                    description={`${nomPoste(posteSelectionne)} redevient libre. Le stagiaire reste dans son stage et pourra être assis ailleurs.`}
+                    confirmLabel="Retirer du poste"
+                    variant="danger"
+                    onConfirm={() => confirmer(() => retirerStagiaireDuPoste(posteSelectionne.id, posteSelectionne.occupantId!))}>
+                    {erreurAction && <p className="error-message" role="alert">{erreurAction}</p>}
                 </Popup>
             )}
             {popup === "stagiaire" && posteSelectionne && (

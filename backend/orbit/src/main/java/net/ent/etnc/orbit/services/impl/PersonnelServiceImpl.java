@@ -217,6 +217,12 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Personnel> findByNid(String nid) {
+        return repository.findByNid(nid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Personnel> stagiairesSansPoste(Long idStage) {
         return repository.stagiairesSansPoste(idStage);
     }

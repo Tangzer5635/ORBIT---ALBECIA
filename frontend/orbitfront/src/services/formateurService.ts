@@ -1,5 +1,5 @@
 import type {Page, Salle, Utilisateur} from "../types/types.ts";
-import {authHeaders} from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 
 export class FormateurError extends Error {
     status: number;
@@ -15,7 +15,7 @@ export class FormateurError extends Error {
 async function requete<T>(url: string, method = "GET"): Promise<T> {
     let response: Response;
     try {
-        response = await fetch(url, {method, headers: authHeaders()});
+        response = await apiFetch(url, {method, headers: authHeaders()});
     } catch {
         throw new FormateurError(0); // serveur injoignable
     }

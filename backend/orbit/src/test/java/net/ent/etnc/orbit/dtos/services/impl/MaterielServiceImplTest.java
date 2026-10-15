@@ -1,4 +1,4 @@
-package net.ent.etnc.orbit.services.impl;
+package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.entities.Materiel;
@@ -12,6 +12,7 @@ import net.ent.etnc.orbit.services.DefaillanceService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
+import net.ent.etnc.orbit.services.impl.MaterielServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -227,7 +228,7 @@ class MaterielServiceImplTest {
         assertThatThrownBy(() -> service.deleteById(1L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("archive-le");
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete((Materiel) any());
     }
 
     @Test
