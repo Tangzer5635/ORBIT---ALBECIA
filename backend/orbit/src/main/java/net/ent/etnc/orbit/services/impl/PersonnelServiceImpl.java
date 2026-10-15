@@ -78,6 +78,30 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     }
 
     /**
+     * Applique le formulaire de modification sur le compte existant (le formulaire n'a ni NID ni rôle : on ne peut
+     * pas passer par {@link #update}, dont l'entité est validée dès l'entrée de la méthode).
+     */
+    @Override
+    @Transactional
+    public Personnel modifier(Long id, Personnel donnees) throws ServiceException {
+        Personnel user = trouver(id);
+        if (donnees.getNid() != null && !donnees.getNid().isBlank()) {
+            user.setNid(donnees.getNid());
+        }
+        user.setNom(donnees.getNom());
+        user.setPrenom(donnees.getPrenom());
+        user.setLogin(donnees.getLogin());
+        if (donnees.getPassword() != null && !donnees.getPassword().isBlank()) {
+            user.setMotDePasse(passwordEncoder.encode(donnees.getPassword()));
+        }
+        try {
+            return repository.saveAndFlush(user);
+        } catch (Exception e) {
+            throw new ServiceException("Erreur lors de la mise à jour", e);
+        }
+    }
+
+    /**
      * Supprime un compte et le retire de partout : son poste est libéré, il quitte ses salles et les
      * défaillances qu'il a traitées perdent leur technicien. On ne supprime ni son propre compte, ni le
      * dernier administrateur, ni un compte ayant signalé des défaillances (on garde leur trace).

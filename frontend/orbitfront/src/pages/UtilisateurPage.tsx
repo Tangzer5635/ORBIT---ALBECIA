@@ -186,8 +186,7 @@ export default function UtilisateurPage() {
 
         setEnvoi(true);
         try {
-            if (aModifier) await modifierUtilisateur(aModifier.id, dto);
-            else await ajouterUtilisateur(dto);
+            if (aModifier) await modifierUtilisateur(aModifier.id, dto, aModifier);            else await ajouterUtilisateur(dto);
             fermerPopup();
             recharger();
         } catch (err) {

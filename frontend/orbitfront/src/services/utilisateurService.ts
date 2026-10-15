@@ -7,10 +7,42 @@ export class UtilisateurError extends Error {
     status: number;
     detail: string | undefined;
 
-    constructor(status: number) {
+    constructor(status: number, detail?: string) {
         super("Erreur utilisateur " + status);
         this.status = status;
+        this.detail = detail;
     }
+}
+
+// Message d'erreur du back : texte simple (règle métier) ou objet {champ: message} (validation du formulaire)
+async function erreurDepuis(response: Response): Promise<UtilisateurError> {
+    const texte = await response.text().catch(() => "");
+    let detail: string | undefined = texte || undefined;
+    try {
+        const json = JSON.parse(texte);
+        if (json && typeof json === "object") detail = Object.values(json).join(" ");
+    } catch {
+        // pas du JSON : on garde le texte tel quel
+    }
+    return new UtilisateurError(response.status, detail);
+}
+
+// Envoie une requête JSON au back et renvoie l'utilisateur de la réponse
+async function envoyer(url: string, method: string, body?: object): Promise<Utilisateur> {
+    let response: Response;
+    try {
+        response = await apiFetch(url, {
+            method,
+            headers: authHeaders(),
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    } catch {
+        throw new UtilisateurError(0); // serveur injoignable
+    }
+
+    if (!response.ok) throw await erreurDepuis(response);
+
+    return await response.json();
 }
 
 // Filtres acceptés par GET /personnels/ (tous facultatifs)
@@ -38,7 +70,7 @@ export async function getUtilisateurs(filtres: FiltresUtilisateur, page = 0, siz
         throw new UtilisateurError(0); // serveur injoignable
     }
 
-    if (!response.ok) throw new UtilisateurError(response.status);
+    if (!response.ok) throw await erreurDepuis(response);
 
     return await response.json();
 }
@@ -48,40 +80,22 @@ export async function compterUtilisateurs(filtres: FiltresUtilisateur): Promise<
     return (await getUtilisateurs(filtres, 0, 1)).totalElements;
 }
 
-// Méthode pour ajouter un utilisateur
+// Méthode pour ajouter un utilisateur (le "/" final est obligatoire : le controller est mappé sur "/")
 export async function ajouterUtilisateur(utilisateur: UtilisateurRequest): Promise<Utilisateur> {
-    let response: Response;
-    try {
-        response = await apiFetch(URL, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(utilisateur),
-        });
-    } catch {
-        throw new UtilisateurError(0);
-    }
-
-    if (!response.ok) throw new UtilisateurError(response.status);
-
-    return await response.json();
+    return envoyer(`${URL}/`, "POST", utilisateur);
 }
 
-// Méthode pour modifier un utilisateur (sans motDePasse, le mot de passe ne change pas)
-export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRequest): Promise<Utilisateur> {
-    let response: Response;
-    try {
-        response = await apiFetch(`${URL}/${id}/`, {
-            method: "PUT",
-            headers: authHeaders(),
-            body: JSON.stringify(utilisateur),
-        });
-    } catch {
-        throw new UtilisateurError(0);
+// Méthode pour modifier un utilisateur. Le PUT ne porte que l'identité et le mot de passe (vide = inchangé) :
+// le rôle et l'état actif ont leurs propres endpoints, appelés seulement s'ils ont changé.
+export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRequest, ancien: Utilisateur): Promise<Utilisateur> {
+    const {role, active, ...identite} = utilisateur;
+
+    let modifie = await envoyer(`${URL}/${id}/`, "PUT", identite);
+    if (role !== ancien.role) modifie = await envoyer(`${URL}/${id}/role/`, "PATCH", {role});
+    if (active !== undefined && active !== ancien.active) {
+        modifie = await envoyer(`${URL}/${id}/${active ? "activer" : "desactiver"}/`, "PATCH");
     }
-
-    if (!response.ok) throw new UtilisateurError(response.status);
-
-    return await response.json();
+    return modifie;
 }
 
 // Méthode pour verrouiller ou déverrouiller un compte
@@ -96,7 +110,7 @@ export async function changerVerrou(id: number, verrouiller: boolean): Promise<U
         throw new UtilisateurError(0);
     }
 
-    if (!response.ok) throw new UtilisateurError(response.status);
+    if (!response.ok) throw await erreurDepuis(response);
 
     return await response.json();
 }
@@ -113,5 +127,5 @@ export async function supprimerUtilisateur(id: number): Promise<void> {
         throw new UtilisateurError(0);
     }
 
-    if (!response.ok) throw new UtilisateurError(response.status);
+    if (!response.ok) throw await erreurDepuis(response);
 }
