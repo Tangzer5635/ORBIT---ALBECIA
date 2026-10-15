@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.dtos.assemblers;
 
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.FormateurDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Salle;
@@ -29,10 +30,10 @@ public class SalleAssembler {
     }
 
     /** Formateurs attribués à la salle (charge les personnels : à n'appeler que pour une salle). */
-    public List<String> formateurs(Salle salle) {
+    public List<FormateurDto> formateurs(Salle salle) {
         return salle.getPersonnels().stream()
                 .filter(p -> p.getRole() == Role.FORMATEUR)
-                .map(p -> p.getPrenom() + " " + p.getNom())
+                .map(p -> new FormateurDto(p.getId(), p.getPrenom(), p.getNom()))
                 .toList();
     }
 

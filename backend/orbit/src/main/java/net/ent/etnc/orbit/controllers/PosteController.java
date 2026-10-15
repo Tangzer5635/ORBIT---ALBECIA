@@ -90,7 +90,9 @@ public class PosteController {
 
     @GetMapping(value = "/", params = "salle")
     @PreAuthorize("hasRole('TECHNIQUE')")
-    public ResponseEntity<List<PosteResponseDto>> getBySalle(@RequestParam("salle") Long idSalle) {
+    public ResponseEntity<List<PosteResponseDto>> getBySalle(@RequestParam("salle") Long idSalle,
+                                                             @AuthenticationPrincipal Personnel utilisateur) {
+        salleService.verifierAcces(idSalle, utilisateur);
         List<Poste> postes = posteService.findBySalleAvecDetails(idSalle);
         Map<Long, EtatPoste> etats = posteService.etats(postes);
         return ResponseEntity.ok(postes.stream()

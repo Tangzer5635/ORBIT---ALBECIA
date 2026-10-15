@@ -8,16 +8,19 @@ import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.TableauInteractif;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.enums.EtatPoste;
+import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.repositories.SalleRepository;
 import net.ent.etnc.orbit.repositories.projections.IdCompte;
+import net.ent.etnc.orbit.repositories.projections.SalleBatiment;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
@@ -25,6 +28,7 @@ import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -277,7 +281,30 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional(readOnly = true)
     public List<SalleCarteDto> findCartesDuBatiment(Long idBatiment) {
-        List<Salle> salles = repository.findByBatiment(idBatiment);
+        return cartes(repository.findByBatiment(idBatiment));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SalleCarteDto> findCartesDuFormateur(Long idFormateur) {
+        List<Salle> salles = repository.findByPersonnels_Id(idFormateur);
+        List<SalleCarteDto> cartes = cartes(salles);
+        if (cartes.isEmpty()) return cartes;
+        Map<Long, String> batiments = repository.batimentsDesSalles(salles.stream().map(Salle::getId).toList()).stream()
+                .collect(Collectors.toMap(SalleBatiment::idSalle, SalleBatiment::numBatiment));
+        cartes.forEach(c -> c.setNumBatiment(batiments.get(c.getId())));
+        return cartes;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void verifierAcces(Long idSalle, Personnel utilisateur) {
+        if (utilisateur.getRole() == Role.FORMATEUR && !repository.existsByIdAndPersonnels_Id(idSalle, utilisateur.getId()))
+            throw new AccessDeniedException("Salle " + idSalle + " non affectée à ce formateur");
+    }
+
+    /** Cartes de ces salles : tout est compté en base, nombre de requêtes fixe. */
+    private List<SalleCarteDto> cartes(List<Salle> salles) {
         if (salles.isEmpty()) return List.of();
         List<Long> ids = salles.stream().map(Salle::getId).toList();
 

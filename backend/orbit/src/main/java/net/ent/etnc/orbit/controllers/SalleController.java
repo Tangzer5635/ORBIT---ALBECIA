@@ -7,6 +7,7 @@ import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,7 +38,7 @@ public class SalleController {
     }
 
     @GetMapping("/")
-    @PreAuthorize("hasRole('TECHNIQUE')")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Page<SalleResponseDto>> getAll(
             @PageableDefault(size = 30, sort = {"numSalle", "id"}) Pageable pageable
     ) {
@@ -44,9 +46,17 @@ public class SalleController {
                 .map(salleAssembler::toDto));
     }
 
+    /** Page « Mes salles » du formateur : uniquement les salles qui lui sont affectées. */
+    @GetMapping("/mes-salles/")
+    @PreAuthorize("hasRole('FORMATEUR')")
+    public ResponseEntity<List<SalleCarteDto>> getMesSalles(@AuthenticationPrincipal Personnel utilisateur) {
+        return ResponseEntity.ok(salleService.findCartesDuFormateur(utilisateur.getId()));
+    }
+
     @GetMapping("/{id}/")
     @PreAuthorize("hasRole('TECHNIQUE')")
-    public ResponseEntity<SalleResponseDto> getById(@PathVariable Long id) {
+    public ResponseEntity<SalleResponseDto> getById(@PathVariable Long id, @AuthenticationPrincipal Personnel utilisateur) {
+        salleService.verifierAcces(id, utilisateur);
         return salleService.findByIdAvecDetails(id)
                 .map(salle -> {
                     SalleResponseDto dto = salleAssembler.toDto(salle);
@@ -59,7 +69,7 @@ public class SalleController {
 
     /** Page /salles?batiment=XX : cartes des salles du bâtiment (pas de pagination). */
     @GetMapping(value = "/", params = "batiment")
-    @PreAuthorize("hasRole('TECHNIQUE')")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<List<SalleCarteDto>> getByBatiment(@RequestParam("batiment") Long idBatiment) {
         if (!batimentService.existsById(idBatiment)) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(salleService.findCartesDuBatiment(idBatiment));

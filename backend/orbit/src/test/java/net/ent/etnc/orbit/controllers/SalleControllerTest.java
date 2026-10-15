@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
@@ -229,9 +230,58 @@ class SalleControllerTest extends ControllerTestSupport {
                 .id(5L).numSalle("101").etage("1").type(TypeSalle.SalleDeCours).nbPostes(12)
                 .anneau(new AnneauDto(0, 10, 1, 1)).build()));
 
-        mockMvc.perform(get("/api/v1/salles/").param("batiment", "1").with(connecte(Role.FORMATEUR)))
+        mockMvc.perform(get("/api/v1/salles/").param("batiment", "1").with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nbPostes").value(12))
                 .andExpect(jsonPath("$[0].anneau.bonEtat").value(10));
+    }
+
+    @Test
+    void getByBatiment_doitRenvoyer403_quandFormateur() throws Exception {
+        mockMvc.perform(get("/api/v1/salles/").param("batiment", "1").with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAll_doitRenvoyer403_quandFormateur() throws Exception {
+        mockMvc.perform(get("/api/v1/salles/").with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isForbidden());
+    }
+
+    // ---------- mes salles ----------
+
+    @Test
+    void getMesSalles_doitRenvoyerLesSallesDuFormateurConnecte() throws Exception {
+        when(salleService.findCartesDuFormateur(1L)).thenReturn(List.of(SalleCarteDto.builder()
+                .id(5L).numSalle("101").numBatiment("201").etage("1").type(TypeSalle.SalleDeCours).nbPostes(12)
+                .anneau(new AnneauDto(0, 10, 1, 1)).build()));
+
+        mockMvc.perform(get("/api/v1/salles/mes-salles/").with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].numSalle").value("101"))
+                .andExpect(jsonPath("$[0].numBatiment").value("201"));
+    }
+
+    @Test
+    void getMesSalles_doitRenvoyer403_quandGestionnaire() throws Exception {
+        mockMvc.perform(get("/api/v1/salles/mes-salles/").with(connecte(Role.GESTIONNAIRE)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getMesSalles_doitRenvoyer401_quandNonAuthentifie() throws Exception {
+        mockMvc.perform(get("/api/v1/salles/mes-salles/"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ---------- accès d'un formateur à une salle ----------
+
+    @Test
+    void getById_doitRenvoyer403_quandSalleNonAffecteeAuFormateur() throws Exception {
+        doThrow(new AccessDeniedException("non affectée")).when(salleService).verifierAcces(eq(1L), any());
+
+        mockMvc.perform(get("/api/v1/salles/{id}/", 1L).with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isForbidden());
+        verify(salleService, never()).findByIdAvecDetails(any());
     }
 }

@@ -4,12 +4,14 @@ import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.services.commons.Service;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,15 @@ public interface SalleService extends Service<Salle, Long> {
 
     /** Page /salles?batiment=XX : tout est compté en base, nombre de requêtes fixe. */
     List<SalleCarteDto> findCartesDuBatiment(Long idBatiment);
+
+    /** Cartes des salles affectées à ce formateur (tous bâtiments), nombre de requêtes fixe. */
+    List<SalleCarteDto> findCartesDuFormateur(Long idFormateur);
+
+    /**
+     * Un formateur n'accède qu'aux salles qui lui sont affectées ; les autres rôles ne sont pas limités.
+     * @throws AccessDeniedException si c'est un formateur et que la salle ne lui est pas affectée
+     */
+    void verifierAcces(Long idSalle, Personnel utilisateur) throws AccessDeniedException;
 
     /** Salle où se trouve le matériel : posé directement dans la salle (stockage compris) ou sur un de ses postes. */
     Optional<Salle> localiser(Long idMateriel);

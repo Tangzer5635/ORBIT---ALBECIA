@@ -5,6 +5,7 @@ import {getUtilisateur} from "../services/authService.ts";
 import {
     LIBELLE_ETAT_MATERIEL,
     type EtatPoste,
+    type Formateur,
     type Materiel,
     type Poste,
     type Salle,
@@ -16,8 +17,10 @@ import {ANNEAU_VIDE, libelleEtage, pluriel} from "../utils/postes.ts";
 import PanneauPoste from "../components/PanneauPoste.tsx";
 import AffecterStagiairePopup from "../components/AffecterStagiairePopup.tsx";
 import AffecterStagePopup from "../components/AffecterStagePopup.tsx";
+import AffecterFormateurPopup from "../components/AffecterFormateurPopup.tsx";
 import Popup from "../components/Popup.tsx";
 import {retirerStageDeSalle} from "../services/stageService.ts";
+import {retirerFormateurDeSalle} from "../services/formateurService.ts";
 
 // ordre des tuiles, libellé et classe de couleur
 const ETATS: { etat: EtatPoste; libelle: string; classe: string }[] = [
@@ -61,7 +64,11 @@ export default function SalleDetailPage() {
     const [popupStagiaire, setPopupStagiaire] = useState(false);
     const [popupStage, setPopupStage] = useState<"affecter" | "retirer" | null>(null);
     const [erreurStage, setErreurStage] = useState("");
+    const [popupFormateur, setPopupFormateur] = useState(false);
+    const [formateurARetirer, setFormateurARetirer] = useState<Formateur | null>(null);
+    const [erreurFormateur, setErreurFormateur] = useState("");
     const [rechargement, setRechargement] = useState(0); // +1 = recharger la salle et ses postes
+    const [refuse, setRefuse] = useState(false); // salle introuvable ou non affectée au formateur
 
     useEffect(() => {
         if (!salleId) return;
@@ -70,6 +77,7 @@ export default function SalleDetailPage() {
         setPopupStagiaire(false);
         setPopupStage(null);
         setMaterielsSalle([]);
+        setRefuse(false);
         getSalleById(salleId)
             .then(s => {
                 setSalle(s);
@@ -80,13 +88,20 @@ export default function SalleDetailPage() {
                         .catch(console.error);
                 }
             })
-            .catch(console.error);
+            .catch(e => {
+                console.error(e);
+                setRefuse(true);
+            });
         getPostesBySalle(salleId).then(setPostes).catch(console.error);
     }, [salleId, peutGerer, rechargement]);
 
     const compte = (e: EtatPoste) => postes.filter(p => p.etat === e).length;
 
-    if (!salle) return <p className="muted">Chargement de la salle…</p>;
+    if (!salle) {
+        return refuse
+            ? <p className="error-message" role="alert">Cette salle n'existe pas ou ne fait pas partie de tes salles.</p>
+            : <p className="muted">Chargement de la salle…</p>;
+    }
 
     const posteFormateur = postes.find(estFormateur);
     const stagiaires = postes.filter(p => !estFormateur(p)).sort((a, b) => numero(a) - numero(b));
@@ -107,7 +122,10 @@ export default function SalleDetailPage() {
 
     const estompe = (p: Poste) => filtre !== null && p.etat !== filtre;
 
-    const posteSelectionne = postes.find(p => p.id === posteId && !estFormateur(p));
+    const posteSelectionne = postes.find(p => p.id === posteId);
+    const formateurs = salle.formateurs ?? [];
+    const nomFormateurs = formateurs.length === 0 ? "Aucun formateur"
+        : `${formateurs[0].prenom} ${formateurs[0].nom}${formateurs.length > 1 ? ` +${formateurs.length - 1}` : ""}`;
 
     return (
         <>
@@ -145,6 +163,8 @@ export default function SalleDetailPage() {
                     {salle.type === "SalleDeCours" && (salle.stageId
                         ? <button type="button" className="btn" onClick={() => setPopupStage("retirer")}>Retirer le stage</button>
                         : <button type="button" className="btn" onClick={() => setPopupStage("affecter")}>Affecter un stage</button>)}
+                    {salle.type === "SalleDeCours" &&
+                        <button type="button" className="btn" onClick={() => setPopupFormateur(true)}>Affecter un formateur</button>}
                     <button type="button" className="btn">Exporter la salle</button>
                     <button type="button" className="btn">Geler la salle</button>
                     <button type="button" className="btn danger">Supprimer la salle</button>
@@ -167,11 +187,14 @@ export default function SalleDetailPage() {
                                     ))}
                                 </div>
                                 {posteFormateur && (
-                                    <div
-                                        className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}`}>
+                                    <button type="button"
+                                            className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}${posteFormateur.id === posteId ? " select" : ""}`}
+                                            title="Poste formateur"
+                                            aria-pressed={posteFormateur.id === posteId}
+                                            onClick={() => setPosteId(posteFormateur.id)}>
                                         <b>Formateur</b>
-                                        <span>{pluriel(posteFormateur.materielsId.length, "matériel")}</span>
-                                    </div>
+                                        <span>{nomFormateurs}</span>
+                                    </button>
                                 )}
                             </div>
 
@@ -209,8 +232,40 @@ export default function SalleDetailPage() {
                     {posteSelectionne && (
                         <PanneauPoste poste={posteSelectionne} salle={salle} numero={numero(posteSelectionne)}
                                       onFermer={() => setPosteId(null)}
-                                      onAffecterStagiaire={() => setPopupStagiaire(true)}/>)}</div>
+                                      onAffecterStagiaire={() => setPopupStagiaire(true)}
+                                      formateur={estFormateur(posteSelectionne)}
+                                      onAffecterFormateur={peutGerer ? () => setPopupFormateur(true) : undefined}
+                                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}/>)}</div>
             </section>
+            {popupFormateur && (
+                <AffecterFormateurPopup
+                    salle={salle}
+                    onClose={() => setPopupFormateur(false)}
+                    onFait={() => {
+                        setPopupFormateur(false);
+                        setRechargement(n => n + 1);
+                    }}/>
+            )}
+            {formateurARetirer && (
+                <Popup
+                    open
+                    onClose={() => setFormateurARetirer(null)}
+                    title={`Retirer ${formateurARetirer.prenom} ${formateurARetirer.nom}`}
+                    description={`Ce formateur n'aura plus accès à la salle ${salle.numSalle}.`}
+                    confirmLabel="Retirer"
+                    variant="danger"
+                    onConfirm={() => {
+                        setErreurFormateur("");
+                        retirerFormateurDeSalle(formateurARetirer.id, salle.id)
+                            .then(() => {
+                                setFormateurARetirer(null);
+                                setRechargement(n => n + 1);
+                            })
+                            .catch(() => setErreurFormateur("Impossible de retirer le formateur."));
+                    }}>
+                    {erreurFormateur && <p className="error-message" role="alert">{erreurFormateur}</p>}
+                </Popup>
+            )}
             {popupStage === "affecter" && (
                 <AffecterStagePopup
                     salle={salle}

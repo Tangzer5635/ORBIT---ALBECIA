@@ -58,6 +58,20 @@ export async function getSalle(): Promise<Salle[]> {
     return data.content; //les salles sont dans "content" car on a des pages
 }
 
+// Salles affectées au formateur connecté (tous bâtiments)
+export async function getMesSalles(): Promise<SalleCarte[]> {
+    let response: Response;
+    try {
+        response = await fetch(`${URL}/mes-salles/`, {headers: authHeaders()});
+    } catch {
+        throw new SalleError(0);
+    }
+
+    if (!response.ok) throw new SalleError(response.status);
+
+    return await response.json();
+}
+
 export async function getSalleById(id: string): Promise<Salle> {
     let response: Response;
     try {

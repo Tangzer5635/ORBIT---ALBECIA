@@ -134,12 +134,21 @@ export interface Salle {
     anneau?: ComptesAnneau;
     stageId?: number | null; // stage accueilli (salle de cours)
     stageNom?: string | null;
+    formateurs?: Formateur[]; // formateurs attribués (GET /salles/{id}/ seulement)
+}
+
+// FormateurDto
+export interface Formateur {
+    id: number;
+    prenom: string;
+    nom: string;
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)
 export interface SalleCarte {
     id: number;
     numSalle: string;
+    numBatiment?: string | null; // seulement dans « Mes salles » (formateur)
     etage: string;
     type: TypeSalle;
     nbPostes: number;

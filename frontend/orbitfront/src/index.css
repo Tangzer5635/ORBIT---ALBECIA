@@ -1419,7 +1419,9 @@ h3 {
 }
 
 /* Disponible : hachure verte bordée de vert (tuile et poste) */
-.tuile.dispo,
+.tuile.dispo {
+    background: var(--hachure);
+}
 .plan-poste.dispo {
     background: var(--hachure);
     border: 2px solid var(--use);

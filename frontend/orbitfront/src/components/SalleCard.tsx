@@ -21,7 +21,10 @@ export default function SalleCard({ salle }: SalleCardProps) {
             <Anneau id={salle.id} comptes={salle.anneau}/>
             <div>
                 <Link to={`/salles/${salle.id}/`}><h3>Salle {salle.numSalle}</h3></Link>
-                <p>{libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}</p>
+                <p>
+                    {salle.numBatiment && `Bâtiment ${salle.numBatiment}, `}
+                    {libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}
+                </p>
                 <ul className="room-flags">
                     {salle.nbPostes === 0 ? (
                         <li className="dispo">Aucun poste</li>
