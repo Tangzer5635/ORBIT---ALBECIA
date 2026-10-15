@@ -2040,3 +2040,59 @@ button.plan-mat {
 .empty h2 {
     margin: 0 0 6px;
 }
+
+/* Ligne du matériel cliquable (ouvre la fiche) */
+.li-cliquable {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.li-cliquable:hover,
+.li-cliquable:focus-visible {
+    background: var(--card2);
+}
+
+/* Fiche d'un matériel (popup au clic sur la liste) */
+.popup-sous-titre {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.materiel-detail .popup-body {
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-section h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.detail-dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13.5px;
+}
+
+.detail-dl dt {
+    color: var(--muted);
+}
+
+.detail-dl dd {
+    margin: 0;
+}
+
+.materiel-detail > .carte-actions {
+    margin-top: 16px;
+}

@@ -64,7 +64,7 @@ public class DefaillanceController {
     }
 
     @GetMapping("/materiel/{idMateriel}/")
-    @PreAuthorize("hasRole('STAGIAIRE')")
+    @PreAuthorize("hasAnyRole('STAGIAIRE','TECHNIQUE')")
     public ResponseEntity<List<DefaillanceResponseDto>> getByMateriel(@PathVariable Long idMateriel) {
         return ResponseEntity.ok(defaillanceService.findByMateriel(idMateriel).stream()
                 .map(defaillanceAssembler::toDto)

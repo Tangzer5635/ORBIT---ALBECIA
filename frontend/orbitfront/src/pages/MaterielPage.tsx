@@ -13,8 +13,8 @@ import {
     ORDRE_TYPES,
     type Localisation, versRsql, NOM_TYPE,
 } from "../utils/materiels.ts";
-import {pluriel} from "../utils/postes.ts";
 import AjouterMaterielPopup from "../components/AjouterMaterielPopup.tsx";
+import MaterielLigne from "../components/MaterielLigne.tsx";
 
 
 const TAILLE_PAGE = 20;
@@ -89,38 +89,50 @@ export default function MaterielPage() {
     function changerEtat(e: EtatMateriel | null) { setEtat(e); setPage(0); }
     function changerLocalisation(l: Localisation) { setLocalisation(l); setPage(0); }
 
+    const recharger = () => setVersion(v => v + 1);
+
     return (
         <>
-            <h1>Matériel</h1>
-            {resultat && compteurs && <p>{resultat.totalElements} sur {compteurs.total}</p>}
+            <div className="page-head">
+                <h1>Matériel</h1>
+                {resultat && compteurs && (
+                    <span className="muted">{resultat.totalElements} sur {compteurs.total} en service</span>
+                )}
+            </div>
 
-            <button type="button" className="btn primary" onClick={() => setAjoutOuvert(true)}>
-                Ajouter un matériel
-            </button>
-            <button type="button">
-                Exporter l'inventaire
-            </button>
-
+            {/* matériel en stock, par type */}
             {compteurs && (
-                <div>
-                    <span>En stock</span>
-                    <ul>
-                        {ORDRE_TYPES.map((t, i) => (
-                            <li key={t}>{pluriel(compteurs.stock[i], NOM_TYPE[t][0], NOM_TYPE[t][1])}</li>
-                        ))}
-                    </ul>
+                <div className="stats">
+                    {ORDRE_TYPES.map((t, i) => (
+                        <div key={t} className="stat">
+                            <b>{compteurs.stock[i]}</b>
+                            <span>{NOM_TYPE[t][compteurs.stock[i] > 1 ? 1 : 0]} en stock</span>
+                        </div>
+                    ))}
                 </div>
             )}
 
-            <div role="search">
-                <input
-                    type="search"
-                    placeholder="Rechercher un matériel : modèle, n° de série"
-                    value={saisie}
-                    onChange={(e) => setSaisie(e.target.value)}
-                />
+            <div className="hero-row">
+                <button type="button" className="btn primary" onClick={() => setAjoutOuvert(true)}>
+                    Ajouter un matériel
+                </button>
+                {/* export : plus tard */}
+                <button type="button" className="btn" disabled title="Bientôt disponible">
+                    Exporter l'inventaire
+                </button>
+            </div>
 
-                <div>
+            <input
+                className="search"
+                type="search"
+                placeholder="Rechercher un matériel : modèle, n° de série"
+                aria-label="Rechercher un matériel"
+                value={saisie}
+                onChange={(e) => setSaisie(e.target.value)}
+            />
+
+            <div className="filters">
+                <div className="seg" role="group" aria-label="Type">
                     <button type="button" aria-pressed={type === null} onClick={() => changerType(null)}>
                         Tous les types
                     </button>
@@ -131,55 +143,55 @@ export default function MaterielPage() {
                     ))}
                 </div>
 
-                <div>
-                    <div>
-                        <button type="button" aria-pressed={etat === null} onClick={() => changerEtat(null)}>
-                            Tous les états
+                <div className="seg" role="group" aria-label="État">
+                    <button type="button" aria-pressed={etat === null} onClick={() => changerEtat(null)}>
+                        Tous les états
+                    </button>
+                    {ORDRE_ETATS.map((e) => (
+                        <button key={e} type="button" aria-pressed={etat === e} onClick={() => changerEtat(e)}>
+                            {LIBELLE_ETAT_MATERIEL[e]}
                         </button>
-                        {ORDRE_ETATS.map((e) => (
-                            <button key={e} type="button" aria-pressed={etat === e} onClick={() => changerEtat(e)}>
-                                {LIBELLE_ETAT_MATERIEL[e]}
-                            </button>
-                        ))}
-                    </div>
+                    ))}
+                </div>
 
-                    <div>
-                        {LOCALISATIONS.map((l) => (
-                            <button key={l} type="button" aria-pressed={localisation === l}
-                                    onClick={() => changerLocalisation(l)}>
-                                {LIBELLE_LOCALISATION[l]}
-                                {l === "ARCHIVE" && compteurs && ` (${compteurs.archives})`}
-                            </button>
-                        ))}
-                    </div>
+                <div className="seg" role="group" aria-label="Emplacement">
+                    {LOCALISATIONS.map((l) => (
+                        <button key={l} type="button" aria-pressed={localisation === l}
+                                onClick={() => changerLocalisation(l)}>
+                            {LIBELLE_LOCALISATION[l]}
+                            {l === "ARCHIVE" && compteurs && ` (${compteurs.archives})`}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {erreur && <p role="alert">{erreur}</p>}
-            {!resultat && !erreur && <p>Chargement du matériel…</p>}
-            {resultat && resultat.totalElements === 0 && <p>Aucun matériel ne correspond à ces filtres.</p>}
-
-            {resultat && resultat.content.length > 0 && (
-                <ul>
-                    {resultat.content.map((m) => (
-                        <li key={m.id}>
-                            {LIBELLE_TYPE_MATERIEL[m.type]} - {m.modele} - {LIBELLE_ETAT_MATERIEL[m.etat]}
-                            {" "}- garantie jusqu'au {new Date(m.dateFinGarantie).toLocaleDateString("fr-FR")}
-                        </li>
-                    ))}
-                </ul>
+            {erreur && <p className="error-message" role="alert">{erreur}</p>}
+            {!resultat && !erreur && <p className="muted">Chargement du matériel…</p>}
+            {resultat && resultat.totalElements === 0 && (
+                <p className="muted">Aucun matériel ne correspond à ces filtres.</p>
             )}
 
-            {/*Affichage des boutons de changement de page
-            https://developer.mozilla.org/fr/docs/Web/Accessibility/ARIA/Reference/Roles/navigation_role */}
+            {resultat && resultat.content.length > 0 && (
+                <div className="list">
+                    {resultat.content.map((m) => (
+                        <MaterielLigne key={m.id} materiel={m} onChange={recharger}/>
+                    ))}
+                </div>
+            )}
+
+            {/* boutons de changement de page */}
             {resultat && resultat.totalPages > 1 && (
-                <nav aria-label="Pagination">
-                    <button type="button" disabled={resultat.first} onClick={() => setPage((p) => p - 1)}>
-                        Précédent
+                <nav className="pagination" aria-label="Pages">
+                    <button type="button" className="btn sm" disabled={resultat.first}
+                            onClick={() => setPage((p) => p - 1)}>
+                        ‹ Précédent
                     </button>
-                    <span>Page {resultat.page + 1} sur {resultat.totalPages}</span>
-                    <button type="button" disabled={resultat.last} onClick={() => setPage((p) => p + 1)}>
-                        Suivant
+                    <span className="muted small">
+                        Page {resultat.page + 1} sur {resultat.totalPages} ({resultat.totalElements} matériels)
+                    </span>
+                    <button type="button" className="btn sm" disabled={resultat.last}
+                            onClick={() => setPage((p) => p + 1)}>
+                        Suivant ›
                     </button>
                 </nav>
             )}
@@ -189,7 +201,7 @@ export default function MaterielPage() {
                     onClose={() => setAjoutOuvert(false)}
                     onFait={() => {
                         setAjoutOuvert(false);
-                        setVersion(v => v + 1);
+                        recharger();
                     }}/>
             )}
         </>

@@ -1,7 +1,8 @@
 import {useEffect, useState} from "react";
 import {LIBELLE_TYPE_FORMATION, type Stage, type Utilisateur} from "../types/types.ts";
-import {getStages, getStagiaires} from "../services/stageService.ts";
+import {getStages, getStagiaires, StageError, supprimerStage} from "../services/stageService.ts";
 import GererStagiairesPopup from "../components/GererStagiairesPopup.tsx";
+import Popup from "../components/Popup.tsx";
 import ImporterStagesPopup from "../components/ImporterStagesPopup.tsx";
 import {pluriel} from "../utils/postes.ts";
 import {statutDe, type Statut} from "../utils/stages.ts";
@@ -24,6 +25,9 @@ export default function StagePage() {
     const [recherche, setRecherche] = useState("");
     const [stageOuvert, setStageOuvert] = useState<Stage | null>(null);
     const [importOuvert, setImportOuvert] = useState(false);
+    const [stageASupprimer, setStageASupprimer] = useState<Stage | null>(null);
+    const [erreurSuppression, setErreurSuppression] = useState("");
+    const [suppressionEnCours, setSuppressionEnCours] = useState(false);
     const [version, setVersion] = useState(0); // +1 = recharger les stages (après un import)
 
     useEffect(() => {
@@ -45,6 +49,27 @@ export default function StagePage() {
     // met à jour les stagiaires dont le stage a changé
     function majStagiaires(modifies: Utilisateur[]) {
         setStagiaires(liste => liste.map(s => modifies.find(m => m.id === s.id) ?? s));
+    }
+
+    function fermerSuppression() {
+        setStageASupprimer(null);
+        setErreurSuppression("");
+    }
+
+    // le back refuse un stage pas terminé, ou qui a encore des stagiaires ou une salle (message affiché dans la popup)
+    async function confirmerSuppression() {
+        if (!stageASupprimer) return;
+        setSuppressionEnCours(true);
+        setErreurSuppression("");
+        try {
+            await supprimerStage(stageASupprimer.id);
+            fermerSuppression();
+            setVersion(v => v + 1);
+        } catch (err) {
+            setErreurSuppression(err instanceof StageError && err.detail ? err.detail : "Suppression impossible.");
+        } finally {
+            setSuppressionEnCours(false);
+        }
     }
 
     return (
@@ -105,6 +130,11 @@ export default function StagePage() {
                                 <button type="button" className="btn sm" onClick={() => setStageOuvert(stage)}>
                                     Gérer les stagiaires
                                 </button>
+                                {statutDe(stage) === "TERMINE" && (
+                                    <button type="button" className="btn sm danger" onClick={() => setStageASupprimer(stage)}>
+                                        Supprimer
+                                    </button>
+                                )}
                             </span>
                         </div>
                     );
@@ -116,6 +146,20 @@ export default function StagePage() {
                 <ImporterStagesPopup
                     onClose={() => setImportOuvert(false)}
                     onImporte={() => setVersion(v => v + 1)}/>
+            )}
+
+            {stageASupprimer && (
+                <Popup
+                    open
+                    onClose={fermerSuppression}
+                    title={`Supprimer le stage ${stageASupprimer.nom}`}
+                    description="Seul un stage terminé peut être supprimé, et seulement s'il n'a plus de stagiaires ni de salle. Cette action est définitive."
+                    confirmLabel="Supprimer"
+                    variant="danger"
+                    loading={suppressionEnCours}
+                    onConfirm={confirmerSuppression}>
+                    {erreurSuppression && <p className="error-message" role="alert">{erreurSuppression}</p>}
+                </Popup>
             )}
 
             {stageOuvert && (

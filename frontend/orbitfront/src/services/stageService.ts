@@ -21,7 +21,7 @@ async function requete<T>(url: string, method = "GET", body?: BodyInit): Promise
     }
 
     if (!response.ok) throw new StageError(response.status, await response.text().catch(() => ""));
-    return await response.json();
+    return response.status === 204 ? (undefined as T) : await response.json();
 }
 
 export async function getStages(): Promise<Stage[]> {
@@ -44,6 +44,11 @@ export function ajouterAStage(idStagiaire: number, idStage: number): Promise<Uti
 
 export function supprimerAStage(idStagiaire: number, idStage: number): Promise<Utilisateur> {
     return requete(`/api/v1/personnels/${idStagiaire}/?stageId=${idStage}`, "DELETE");
+}
+
+// Un stage ne se supprime que s'il est terminé (le back refuse sinon, avec un message)
+export function supprimerStage(idStage: number): Promise<void> {
+    return requete(`/api/v1/stages/${idStage}/`, "DELETE");
 }
 
 export function affecterStageASalle(idStage: number, idSalle: number): Promise<Salle> {

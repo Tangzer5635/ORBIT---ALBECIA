@@ -82,6 +82,16 @@ export function affecterMaterielAPoste(id: number, posteId: number): Promise<Mat
     return requete(`${URL}/${id}/?posteId=${posteId}`, {method: "POST"});
 }
 
+// Affecte un matériel du stock à une salle de cours ou à un poste
+export function affecterMateriel(id: number, vers: Emplacement): Promise<Materiel> {
+    return requete(`${URL}/${id}/?${param(vers)}`, {method: "POST"});
+}
+
+// Archive un matériel en stock (il n'est plus utilisable ni modifiable, mais reste consultable)
+export function archiverMateriel(id: number): Promise<Materiel> {
+    return requete(`${URL}/${id}/archiver/`, {method: "PATCH"});
+}
+
 // Remet en stock un matériel posé dans une salle ou sur un poste
 export function remettreEnStock(id: number, depuis: Emplacement): Promise<Materiel> {
     return requete(`${URL}/${id}/?${param(depuis)}`, {method: "DELETE"});

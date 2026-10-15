@@ -4,6 +4,7 @@ import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.RSQLParserException;
 import cz.jirutka.rsql.parser.ast.*;
 import io.github.perplexhub.rsql.RSQLJPASupport;
+import io.github.perplexhub.rsql.RSQLOperators;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
@@ -32,7 +33,8 @@ public class RsqlFilterUtils {
         }
         Node root;
         try {
-            root = new RSQLParser().parse(filter);
+            // les opérateurs de la lib (=ilike=, =like=, =icase=...) : le parseur par défaut ne connaît que ==, =gt=, =in=...
+            root = new RSQLParser(RSQLOperators.supportedOperators()).parse(filter);
         } catch (RSQLParserException e) {
             throw new ServiceException("Filtre invalide : " + e.getMessage(), e);
         }
