@@ -112,9 +112,12 @@ public class PersonnelController {
         return ResponseEntity.ok(personnelService.findByRole(role, pageable).map(userAssembler::toDto));
     }
 
-    /** Stagiaires du stage sans poste (ex. ?stage=3&sansPoste) : ceux qu'on peut asseoir dans la salle du stage. */
+    /**
+     * Stagiaires du stage sans poste (ex. ?stage=3&sansPoste) : ceux qu'on peut asseoir dans la salle du stage.
+     * Ouvert au rôle technique (le formateur affecte aussi les stagiaires à un poste).
+     */
     @GetMapping(value = "/", params = {"stage", "sansPoste"})
-    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<List<UserResponseDto>> getSansPoste(@RequestParam("stage") Long idStage) {
         return ResponseEntity.ok(personnelService.stagiairesSansPoste(idStage).stream().map(userAssembler::toDto).toList());
     }

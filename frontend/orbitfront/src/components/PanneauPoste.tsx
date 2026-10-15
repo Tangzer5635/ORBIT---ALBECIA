@@ -8,7 +8,8 @@ import {NOM_TYPE, ORDRE_TYPES} from "../utils/materiels.ts";
 type Props = {
     poste: Poste;
     salle: Salle;
-    peutGerer: boolean; // gestionnaire ou admin : détail du matériel et actions
+    peutGerer: boolean; // gestionnaire ou admin : détail du matériel et actions sur le matériel
+    // affecter / retirer un stagiaire : tout le rôle technique (formateur compris), donc toujours ouvert ici
     onFermer: () => void;
     onAffecterStagiaire?: () => void; // absent si la salle est gelée
     onRetirerStagiaire: () => void;
@@ -49,14 +50,16 @@ export default function PanneauPoste({
                 <p className="muted small">Salle {salle.numSalle}{salle.stageNom && `, ${salle.stageNom}`}</p>
             </div>
 
-            {peutGerer && (
+            {(peutGerer || (!formateur && !poste.occupant && onAffecterStagiaire)) && (
                 <div className="poste-actions">
                     {!formateur && !poste.occupant && onAffecterStagiaire && (
                         <button type="button" className="btn primary" onClick={onAffecterStagiaire}>
                             Affecter un stagiaire
                         </button>
                     )}
-                    <button type="button" className="btn" onClick={onAffecterMateriel}>Affecter un matériel</button>
+                    {peutGerer && (
+                        <button type="button" className="btn" onClick={onAffecterMateriel}>Affecter un matériel</button>
+                    )}
                 </div>
             )}
 
@@ -74,11 +77,9 @@ export default function PanneauPoste({
                         <ul className="panneau-liste">
                             <li>
                                 {poste.occupant}
-                                {peutGerer && (
-                                    <button type="button" className="muted small lien" onClick={onRetirerStagiaire}>
-                                        Retirer du poste
-                                    </button>
-                                )}
+                                <button type="button" className="muted small lien" onClick={onRetirerStagiaire}>
+                                    Retirer du poste
+                                </button>
                             </li>
                         </ul>
                     ) : (

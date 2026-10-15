@@ -172,12 +172,17 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
         }
     }
 
-    /** On ne supprime pas un stage qui a encore des stagiaires ou une salle : il faut d'abord les retirer. */
+    /**
+     * On ne supprime qu'un stage terminé (date de fin passée), et qui n'a plus ni stagiaires ni salle :
+     * il faut d'abord les retirer.
+     */
     @Override
     @Transactional
     public void deleteById(Long id) {
         Stage stage = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("Stage " + id + " introuvable"));
+        if (!stage.getDateFin().isBefore(LocalDate.now()))
+            throw new ServiceException("Le stage " + stage.getNom() + " n'est pas terminé : on ne supprime qu'un stage terminé");
         if (personnelService.existeDansStage(id))
             throw new ServiceException("Le stage " + stage.getNom() + " contient encore des stagiaires");
         if (repository.nbSalles(id) > 0)

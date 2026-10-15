@@ -3,16 +3,22 @@ package net.ent.etnc.orbit.controllers;
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Poste;
+import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.AffecterStagiaireService;
+import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,6 +34,9 @@ class AffecterStagiaireControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private AffecterStagiaireService affecterStagiaireService;
+
+    @MockitoBean
+    private SalleService salleService;
 
     @MockitoBean
     private PosteAssembler posteAssembler;
@@ -58,9 +67,33 @@ class AffecterStagiaireControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void affecterStagiaire_doitRenvoyer403_quandFormateur() throws Exception {
+    void affecterStagiaire_doitRenvoyer200_quandFormateurDeLaSalle() throws Exception {
+        when(affecterStagiaireService.affecterAPoste(10L, 7L)).thenReturn(new Poste());
+        when(posteAssembler.toDto(any(Poste.class))).thenReturn(PosteResponseDto.builder().id(10L).build());
+
         mockMvc.perform(post("/api/v1/postes/{idPoste}/", 10L).param("stagiaireId", "7")
                         .with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void affecterStagiaire_doitRenvoyer403_quandFormateurPasDeCetteSalle() throws Exception {
+        Salle salle = new Salle();
+        salle.setId(5L);
+        when(salleService.salleDuPoste(10L)).thenReturn(Optional.of(salle));
+        doThrow(new AccessDeniedException("Salle 5 non affectée à ce formateur"))
+                .when(salleService).verifierAcces(any(), any());
+
+        mockMvc.perform(post("/api/v1/postes/{idPoste}/", 10L).param("stagiaireId", "7")
+                        .with(connecte(Role.FORMATEUR)))
+                .andExpect(status().isForbidden());
+        verify(affecterStagiaireService, never()).affecterAPoste(any(), any());
+    }
+
+    @Test
+    void affecterStagiaire_doitRenvoyer403_quandStagiaire() throws Exception {
+        mockMvc.perform(post("/api/v1/postes/{idPoste}/", 10L).param("stagiaireId", "7")
+                        .with(connecte(Role.STAGIAIRE)))
                 .andExpect(status().isForbidden());
         verify(affecterStagiaireService, never()).affecterAPoste(any(), any());
     }
