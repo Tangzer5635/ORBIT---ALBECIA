@@ -1,45 +1,76 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.RoleRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.UserCreateRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.UserUpdateRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
+import net.ent.etnc.orbit.dtos.responseDTO.commons.PageResponse;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.repositories.specifications.PersonnelSpecifications;
 import net.ent.etnc.orbit.services.PersonnelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/personnels")
 public class PersonnelController {
 
+    /** Champs utilisables dans le filtre RSQL (?filter=) : sert aussi de liste blanche. */
+    private static final Map<String, String> FILTERABLE = Map.of(
+            "nom", "nom",
+            "prenom", "prenom",
+            "login", "login");
+
     private final PersonnelService personnelService;
     private final UserAssembler userAssembler;
+    private final RsqlFilterUtils rsqlFilterUtils;
 
     @Autowired
-    public PersonnelController(PersonnelService personnelService, UserAssembler userAssembler) {
+    public PersonnelController(PersonnelService personnelService, UserAssembler userAssembler,
+                               RsqlFilterUtils rsqlFilterUtils) {
         this.personnelService = personnelService;
         this.userAssembler = userAssembler;
+        this.rsqlFilterUtils = rsqlFilterUtils;
     }
 
+    /**
+     * Une page d'utilisateurs filtrée par la base (même principe que GET /materiels/).
+     * Ex. : /personnels/?page=0&size=20&role=FORMATEUR&active=true&filter=(nom=ilike="dur",prenom=ilike="dur",login=ilike="dur")
+     */
     @GetMapping("/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<Page<UserResponseDto>> getAll(
+    public ResponseEntity<PageResponse<UserResponseDto>> getAll(
+            @RequestParam(required = false) String filter,
+            @RequestParam(name = "filtreRole", required = false) Role role,
+            @RequestParam(required = false) Boolean active,       // absent = actifs et inactifs
+            @RequestParam(required = false) Boolean verrouille,   // absent = verrouillés ou non
             @PageableDefault(size = 20, sort = {"nom", "prenom", "id"}) Pageable pageable
     ) {
-        return ResponseEntity.ok(personnelService.findAll(pageable)
-                .map(userAssembler::toDto));
+        List<Specification<Personnel>> specs = new ArrayList<>();
+        Specification<Personnel> rsql = rsqlFilterUtils.build(filter, FILTERABLE);
+        if (rsql != null) specs.add(rsql);
+        if (role != null) specs.add(PersonnelSpecifications.role(role));
+        if (active != null) specs.add(PersonnelSpecifications.active(active));
+        if (verrouille != null) specs.add(PersonnelSpecifications.verrouille(verrouille));
+
+        // allOf d'une liste vide = aucun filtre
+        Page<Personnel> page = personnelService.findAll(Specification.allOf(specs), pageable);
+        return ResponseEntity.ok(PageResponse.of(page, userAssembler::toDto));
     }
 
     @GetMapping("/{id}/")
