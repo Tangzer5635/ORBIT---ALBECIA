@@ -1,6 +1,6 @@
-import Anneau from "./Anneau.tsx";
-import {LIBELLE_MOTIF_GEL, type SalleCarte} from "../types/types.ts";
-import {dateFr, libelleEtage, pluriel} from "../utils/postes.ts";
+import Anneau from "../Utils/Anneau.tsx";
+import {LIBELLE_MOTIF_GEL, type SalleCarte} from "../../types/types.ts";
+import {dateFr, libelleEtage, pluriel} from "../../utils/postes.ts";
 import { Link } from "react-router-dom";
 
 interface SalleCardProps {

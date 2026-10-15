@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from "react";
 import {useLocation, useNavigate, useSearchParams} from "react-router-dom";
-import {getUtilisateur} from "../services/authService.ts";
-import {useBatiments} from "../context/BatimentsContext.tsx";
-import {niveau, pourcentageUtilisable} from "../utils/postes.ts";
+import {getUtilisateur} from "../../services/authService.ts";
+import {useBatiments} from "../../context/BatimentsContext.tsx";
+import {niveau, pourcentageUtilisable} from "../../utils/postes.ts";
 
 function IconeBatiment() {
     return (

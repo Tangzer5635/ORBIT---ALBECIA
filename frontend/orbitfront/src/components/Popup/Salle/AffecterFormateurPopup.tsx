@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
-import Popup from "./Popup.tsx";
-import type {Salle, Utilisateur} from "../types/types.ts";
-import {affecterFormateurASalle, FormateurError, getFormateurs} from "../services/formateurService.ts";
+import Popup from "../Popup.tsx";
+import type {Salle, Utilisateur} from "../../../types/types.ts";
+import {affecterFormateurASalle, FormateurError, getFormateurs} from "../../../services/formateurService.ts";
 
 interface Props {
     salle: Salle;

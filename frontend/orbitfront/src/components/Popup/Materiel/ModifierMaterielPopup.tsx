@@ -1,7 +1,7 @@
 import {useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_TYPE_MATERIEL, type Materiel} from "../types/types.ts";
-import {MaterielError, modifierMateriel} from "../services/materielService.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_TYPE_MATERIEL, type Materiel} from "../../../types/types.ts";
+import {MaterielError, modifierMateriel} from "../../../services/materielService.ts";
 
 interface Props {
     materiel: Materiel;

@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
-import Popup from "./Popup.tsx";
+import Popup from "../Popup.tsx";
 import ModifierMaterielPopup from "./ModifierMaterielPopup.tsx";
 import DeplacerMaterielPopup from "./DeplacerMaterielPopup.tsx";
 import {
@@ -9,11 +9,11 @@ import {
     LIBELLE_STATUT_DEFAILLANCE,
     LIBELLE_TYPE_MATERIEL,
     type Materiel,
-} from "../types/types.ts";
-import {archiverMateriel, MaterielError, supprimerMateriel} from "../services/materielService.ts";
-import {getDefaillancesDuMateriel} from "../services/defaillanceService.ts";
-import {CLASSE_ETAT_MATERIEL, localisationDe} from "../utils/materiels.ts";
-import {dateFr} from "../utils/postes.ts";
+} from "../../../types/types.ts";
+import {archiverMateriel, MaterielError, supprimerMateriel} from "../../../services/materielService.ts";
+import {getDefaillancesDuMateriel} from "../../../services/defaillanceService.ts";
+import {CLASSE_ETAT_MATERIEL, localisationDe} from "../../../utils/materiels.ts";
+import {dateFr} from "../../../utils/postes.ts";
 
 interface Props {
     materiel: Materiel;

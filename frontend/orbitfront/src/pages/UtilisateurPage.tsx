@@ -17,8 +17,8 @@ import {
     UtilisateurError,
 } from "../services/utilisateurService.ts";
 import {getUtilisateur} from "../services/authService.ts";
-import UtilisateurLigne from "../components/UtilisateurLigne.tsx";
-import Popup from "../components/Popup.tsx";
+import UtilisateurLigne from "../components/Utilisateur/UtilisateurLigne.tsx";
+import Popup from "../components/Popup/Popup.tsx";
 import {rechercheVersRsql} from "../utils/utilisateur.ts";
 
 const ROLES = Object.keys(LIBELLE_ROLE) as Role[];

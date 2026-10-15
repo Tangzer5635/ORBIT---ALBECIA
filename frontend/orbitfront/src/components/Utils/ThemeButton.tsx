@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { Moon, Sun } from "lucide-react";
 
 export default function ThemeButton() {
     const [clair, setClair] = useState(localStorage.getItem("orbit-theme") === "light");
@@ -13,7 +13,11 @@ export default function ThemeButton() {
 
     return (
         <button type="button" className="theme-button" onClick={() => setClair(!clair)}>
-            {clair ? "🌙" : "☀️"}
+            {clair ? (
+                <Moon size={20} color="black" strokeWidth={1.5} />
+            ) : (
+                <Sun size={20} color="white" strokeWidth={1.5} />
+            )}
         </button>
     );
 }

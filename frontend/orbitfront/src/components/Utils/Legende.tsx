@@ -1,5 +1,5 @@
-import type { ComptesAnneau } from "../types/types.ts";
-import { CLASSE_ETAT, LIBELLE_ETAT, ORDRE_ETATS } from "../utils/postes.ts";
+import type { ComptesAnneau } from "../../types/types.ts";
+import { CLASSE_ETAT, LIBELLE_ETAT, ORDRE_ETATS } from "../../utils/postes.ts";
 
 interface LegendeProps {
     comptes?: ComptesAnneau;

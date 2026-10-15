@@ -3,13 +3,13 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { useBatiments } from "../context/BatimentsContext.tsx";
 import { getSallesDuBatiment } from "../services/salleService.ts";
 import { getUtilisateur } from "../services/authService.ts";
-import Anneau from "../components/Anneau.tsx";
-import Legende from "../components/Legende.tsx";
-import SalleCard from "../components/SalleCard.tsx";
-import StockageCard from "../components/StockageCard.tsx";
+import Anneau from "../components/Utils/Anneau.tsx";
+import Legende from "../components/Utils/Legende.tsx";
+import SalleCard from "../components/Salle/SalleCard.tsx";
+import StockageCard from "../components/Salle/StockageCard.tsx";
 import type {SalleCarte} from "../types/types.ts";
 import {pluriel, pourcentageUtilisable, totalAnneau} from "../utils/postes.ts";
-import CreerSallePopup from "../components/CreerSallePopup.tsx";
+import CreerSallePopup from "../components/Popup/Salle/CreerSallePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";
 
 // résultat du dernier chargement, mémorisé avec le bâtiment concerné

@@ -8,8 +8,8 @@ import {
 } from "../types/types.ts";
 import {getMyPoste} from "../services/posteService.ts";
 import {getMesDefaillances, signalerDefaillance} from "../services/defaillanceService.ts";
-import Popup from "../components/Popup.tsx";
-import CarteMateriel from "../components/CarteMateriel.tsx";
+import Popup from "../components/Popup/Popup.tsx";
+import MaterielCard from "../components/Materiel/MaterielCard.tsx";
 import {dateFr, etatPoste} from "../utils/postes.ts";
 
 // "B2-S105-P04" -> "04"
@@ -116,7 +116,7 @@ export default function PostePage() {
                     {poste.materiels.length === 0
                         ? <p className="muted">Aucun matériel sur ce poste.</p>
                         : <div className="poste-materiels">
-                            {poste.materiels.map(m => <CarteMateriel key={m.id} materiel={m} lecture/>)}
+                            {poste.materiels.map(m => <MaterielCard key={m.id} materiel={m} lecture/>)}
                         </div>}
                 </div>
 

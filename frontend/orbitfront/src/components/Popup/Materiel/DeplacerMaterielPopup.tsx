@@ -1,10 +1,10 @@
 import {useEffect, useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_TYPE_MATERIEL, type Materiel, type Poste, type SalleCarte} from "../types/types.ts";
-import {affecterMateriel, deplacerMateriel, type Emplacement, MaterielError} from "../services/materielService.ts";
-import {getPostesBySalle, getSallesDuBatiment} from "../services/salleService.ts";
-import {useBatiments} from "../context/BatimentsContext.tsx";
-import {estFormateur, nomPoste, numeroPoste} from "../utils/postes.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_TYPE_MATERIEL, type Materiel, type Poste, type SalleCarte} from "../../../types/types.ts";
+import {affecterMateriel, deplacerMateriel, type Emplacement, MaterielError} from "../../../services/materielService.ts";
+import {getPostesBySalle, getSallesDuBatiment} from "../../../services/salleService.ts";
+import {useBatiments} from "../../../context/BatimentsContext.tsx";
+import {estFormateur, nomPoste, numeroPoste} from "../../../utils/postes.ts";
 
 interface Props {
     materiel: Materiel;

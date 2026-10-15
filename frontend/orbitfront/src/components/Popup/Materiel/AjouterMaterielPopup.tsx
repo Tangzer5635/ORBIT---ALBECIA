@@ -1,10 +1,10 @@
 import {useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_TYPE_MATERIEL, type TypeMateriel} from "../types/types.ts";
-import {ajouterMateriel, MaterielError} from "../services/materielService.ts";
-import {useBatiments} from "../context/BatimentsContext.tsx";
-import {ORDRE_TYPES} from "../utils/materiels.ts";
-import {dateFr} from "../utils/postes.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_TYPE_MATERIEL, type TypeMateriel} from "../../../types/types.ts";
+import {ajouterMateriel, MaterielError} from "../../../services/materielService.ts";
+import {useBatiments} from "../../../context/BatimentsContext.tsx";
+import {ORDRE_TYPES} from "../../../utils/materiels.ts";
+import {dateFr} from "../../../utils/postes.ts";
 
 interface Props {
     onClose: () => void;

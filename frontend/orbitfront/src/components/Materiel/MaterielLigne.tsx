@@ -1,8 +1,8 @@
 import {useState, type KeyboardEvent} from "react";
-import MaterielDetailPopup from "./MaterielDetailPopup.tsx";
-import {LIBELLE_ETAT_MATERIEL, LIBELLE_TYPE_MATERIEL, type Materiel} from "../types/types.ts";
-import {CLASSE_ETAT_MATERIEL, localisationDe} from "../utils/materiels.ts";
-import {dateFr} from "../utils/postes.ts";
+import MaterielDetailPopup from "../Popup/Materiel/MaterielDetailPopup.tsx";
+import {LIBELLE_ETAT_MATERIEL, LIBELLE_TYPE_MATERIEL, type Materiel} from "../../types/types.ts";
+import {CLASSE_ETAT_MATERIEL, localisationDe} from "../../utils/materiels.ts";
+import {dateFr} from "../../utils/postes.ts";
 
 interface Props {
     materiel: Materiel;

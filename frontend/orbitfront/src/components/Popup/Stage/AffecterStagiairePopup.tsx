@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
-import Popup from "./Popup.tsx";
-import type {Utilisateur} from "../types/types.ts";
-import {getStagiairesSansPoste} from "../services/stageService.ts";
-import {affecterStagiaireAPoste, PosteError} from "../services/posteService.ts";
+import Popup from "../Popup.tsx";
+import type {Utilisateur} from "../../../types/types.ts";
+import {getStagiairesSansPoste} from "../../../services/stageService.ts";
+import {affecterStagiaireAPoste, PosteError} from "../../../services/posteService.ts";
 
 interface Props {
     posteId: number;

@@ -1,8 +1,8 @@
 import {useEffect, useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_TYPE_MATERIEL, type Materiel} from "../types/types.ts";
-import {affecterMaterielAPoste, getMateriels, MaterielError} from "../services/materielService.ts";
-import {ORDRE_TYPES} from "../utils/materiels.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_TYPE_MATERIEL, type Materiel} from "../../../types/types.ts";
+import {affecterMaterielAPoste, getMateriels, MaterielError} from "../../../services/materielService.ts";
+import {ORDRE_TYPES} from "../../../utils/materiels.ts";
 
 interface Props {
     posteId: number;

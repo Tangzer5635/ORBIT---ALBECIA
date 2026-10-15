@@ -1,7 +1,7 @@
 import {useMemo, useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_TYPE_FORMATION, type Stage, type Utilisateur} from "../types/types.ts";
-import {ajouterAStage, StageError, supprimerAStage} from "../services/stageService.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_TYPE_FORMATION, type Stage, type Utilisateur} from "../../../types/types.ts";
+import {ajouterAStage, StageError, supprimerAStage} from "../../../services/stageService.ts";
 
 interface Props {
     stage: Stage;

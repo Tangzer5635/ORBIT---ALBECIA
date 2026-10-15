@@ -1,10 +1,10 @@
-import BatimentCard from "../components/BatimentCard.tsx";
+import BatimentCard from "../components/Batiment/BatimentCard.tsx";
 import {useState} from "react";
 import {ajouterBatiment, BatimentError, supprimerBatiment} from "../services/batimentService.ts";
 import {useBatiments} from "../context/BatimentsContext.tsx";
 import {ANNEAU_VIDE} from "../utils/postes.ts";
-import Legende from "../components/Legende.tsx";
-import Popup from "../components/Popup.tsx";
+import Legende from "../components/Utils/Legende.tsx";
+import Popup from "../components/Popup/Popup.tsx";
 import type {Batiment} from "../types/types.ts";
 
 type PopupState = { type: "creer" } | { type: "supprimer"; batiment: Batiment } | null;

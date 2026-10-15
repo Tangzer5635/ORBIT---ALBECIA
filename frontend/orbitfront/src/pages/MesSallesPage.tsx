@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMesSalles } from "../services/salleService.ts";
-import Legende from "../components/Legende.tsx";
-import SalleCard from "../components/SalleCard.tsx";
+import Legende from "../components/Utils/Legende.tsx";
+import SalleCard from "../components/Salle/SalleCard.tsx";
 import type { SalleCarte } from "../types/types.ts";
 
 const parBatimentPuisNumero = (a: SalleCarte, b: SalleCarte) =>

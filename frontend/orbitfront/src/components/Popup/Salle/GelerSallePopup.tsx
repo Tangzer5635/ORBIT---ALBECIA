@@ -1,7 +1,7 @@
 import {useState} from "react";
-import Popup from "./Popup.tsx";
-import {LIBELLE_MOTIF_GEL, type MotifGel, type Salle} from "../types/types.ts";
-import {gelerSalle, SalleError} from "../services/salleService.ts";
+import Popup from "../Popup.tsx";
+import {LIBELLE_MOTIF_GEL, type MotifGel, type Salle} from "../../../types/types.ts";
+import {gelerSalle, SalleError} from "../../../services/salleService.ts";
 
 interface Props {
     salle: Salle;
