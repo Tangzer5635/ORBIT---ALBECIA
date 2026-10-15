@@ -2096,3 +2096,146 @@ button.plan-mat {
 .materiel-detail > .carte-actions {
     margin-top: 16px;
 }
+/* =========================================================
+   GESTION DES DÉFAILLANCES
+   ========================================================= */
+.li[aria-label], .list > button.li {
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    text-align: left;
+    transition: transform .12s, box-shadow .12s;
+}
+.list > button.li:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+}
+.list > button.li:focus-visible {
+    outline-offset: 3px;
+}
+.defaillance-fiche .f-sec {
+    margin-bottom: 18px;
+}
+.defaillance-fiche .f-sec h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+.defaillance-fiche .f-kv {
+    display: grid;
+    grid-template-columns: minmax(105px, auto) minmax(0, 1fr);
+    gap: 7px 14px;
+    margin: 0;
+    font-size: 14px;
+}
+.defaillance-fiche .f-kv dt {
+    color: var(--muted);
+}
+.defaillance-fiche .f-kv dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.defaillance-fiche .f-pbs {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+.defaillance-fiche .f-pbs li {
+    border-radius: 12px;
+    padding: 9px 12px;
+    background: var(--def-bg);
+    font-size: 14px;
+}
+.defaillance-fiche .f-pbs li.done {
+    background: var(--card2);
+    opacity: .8;
+}
+.defaillance-fiche .f-pbs small {
+    color: var(--muted);
+}
+
+/* Recherche et filtres de la page Défaillances — même langage visuel que Matériel */
+.defaillance-search {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 18px 0 12px;
+}
+
+.defaillance-filtres {
+    display: grid;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.defaillance-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.defaillance-types button {
+    white-space: nowrap;
+}
+
+.defaillance-dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+}
+
+.defaillance-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.defaillance-date input {
+    width: 142px;
+    min-width: 0;
+    padding: 5px 2px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    color-scheme: dark;
+}
+
+.defaillance-date input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.defaillance-reset {
+    min-height: 34px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .defaillance-search {
+        margin-top: 14px;
+    }
+    .defaillance-dates {
+        align-items: stretch;
+    }
+    .defaillance-date {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+    .defaillance-date input {
+        width: min(58%, 180px);
+    }
+    .defaillance-reset {
+        width: 100%;
+    }
+}

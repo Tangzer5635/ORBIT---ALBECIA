@@ -99,7 +99,7 @@ export default function CarteMateriel({materiel: m, depuis, onChange = () => {},
                             {LIBELLE_STATUT_DEFAILLANCE[defaillance.statut]}
                         </span>
                     </div>
-                    {!lecture && <Link to="/defaillances" className="btn sm">Voir la fiche</Link>}
+                    {!lecture && <Link to={`/defaillances?ouvrir=${defaillance.id}`} className="btn sm">Voir la fiche</Link>}
                 </div>
             )}
 

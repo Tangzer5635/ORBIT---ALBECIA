@@ -7,7 +7,8 @@ import {
     type MonPoste,
 } from "../types/types.ts";
 import {getMyPoste} from "../services/posteService.ts";
-import {getMesDefaillances} from "../services/defaillanceService.ts";
+import {getMesDefaillances, signalerDefaillance} from "../services/defaillanceService.ts";
+import Popup from "../components/Popup.tsx";
 import CarteMateriel from "../components/CarteMateriel.tsx";
 import {dateFr, etatPoste} from "../utils/postes.ts";
 
@@ -27,6 +28,11 @@ export default function PostePage() {
     const [poste, setPoste] = useState<MonPoste | null>();
     const [defaillances, setDefaillances] = useState<Defaillance[]>([]);
     const [erreurChargement, setErreurChargement] = useState<string>("");
+    const [signalementOuvert, setSignalementOuvert] = useState(false);
+    const [materielSignale, setMaterielSignale] = useState<number | "">("");
+    const [description, setDescription] = useState("");
+    const [envoiSignalement, setEnvoiSignalement] = useState(false);
+    const [erreurSignalement, setErreurSignalement] = useState("");
 
     useEffect(() => {
         getMyPoste()
@@ -62,6 +68,28 @@ export default function PostePage() {
     const etat = poste.etat ?? "UTILISE";
     const [titre, explication] = MESSAGES[etat];
     const numero = numeroCourt(poste.numPoste);
+    const ouvrirSignalement = () => {
+        setMaterielSignale(poste.materiels[0]?.id ?? "");
+        setDescription("");
+        setErreurSignalement("");
+        setSignalementOuvert(true);
+    };
+    const envoyerSignalement = async () => {
+        if (materielSignale === "") return setErreurSignalement("Sélectionnez le matériel concerné.");
+        if (description.trim().length < 5) return setErreurSignalement("Décrivez la défaillance en au moins 5 caractères.");
+        setEnvoiSignalement(true);
+        setErreurSignalement("");
+        try {
+            await signalerDefaillance(materielSignale, description);
+            const mes = await getMesDefaillances();
+            setDefaillances(mes);
+            setSignalementOuvert(false);
+        } catch (e) {
+            setErreurSignalement(e instanceof Error ? e.message : "Impossible de signaler cette défaillance.");
+        } finally {
+            setEnvoiSignalement(false);
+        }
+    };
 
     return (
         <>
@@ -75,8 +103,8 @@ export default function PostePage() {
                         Salle {poste.numSalle}, Bâtiment {poste.numBatiment}
                         {poste.stageNom && `, stage ${poste.stageNom}`}. {explication}
                     </p>
-                    {/* « Remonter une défaillance » : cas d'utilisation 3, à brancher plus tard */}
-                    <button type="button" className="btn primary" disabled title="Bientôt disponible">
+                    <button type="button" className="btn primary" onClick={ouvrirSignalement}
+                            disabled={poste.materiels.length === 0}>
                         Remonter une défaillance
                     </button>
                 </div>
@@ -123,6 +151,24 @@ export default function PostePage() {
                     </div>
                 </div>
             </div>
+            <Popup open={signalementOuvert} onClose={() => !envoiSignalement && setSignalementOuvert(false)}
+                   title="Remonter une défaillance"
+                   description="Décrivez le problème constaté sur un matériel de votre poste. Le formateur et le gestionnaire pourront le traiter."
+                   confirmLabel="Remonter la défaillance" onConfirm={() => void envoyerSignalement()}
+                   loading={envoiSignalement} disabled={materielSignale === "" || description.trim().length < 5}>
+                <label className="lbl" htmlFor="materiel-signale">Matériel concerné</label>
+                <select id="materiel-signale" className="input" value={materielSignale}
+                        onChange={e => setMaterielSignale(e.target.value ? Number(e.target.value) : "")}>
+                    {poste.materiels.length === 0 && <option value="">Aucun matériel disponible</option>}
+                    {poste.materiels.map(m => <option key={m.id} value={m.id}>{LIBELLE_TYPE_MATERIEL[m.type]} · {m.modele} · {m.numSerie}</option>)}
+                </select>
+                <label className="lbl" htmlFor="description-defaillance">Que se passe-t-il ?</label>
+                <textarea id="description-defaillance" className="input" rows={3} maxLength={500}
+                          placeholder="Décrivez la défaillance en une phrase" value={description}
+                          onChange={e => setDescription(e.target.value)}/>
+                <p className="muted small">{description.length}/500 caractères</p>
+                {erreurSignalement && <p className="error-message" role="alert">{erreurSignalement}</p>}
+            </Popup>
         </>
     );
 }
