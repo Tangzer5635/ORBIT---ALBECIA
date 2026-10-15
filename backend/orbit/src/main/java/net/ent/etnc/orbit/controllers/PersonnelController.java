@@ -91,9 +91,7 @@ public class PersonnelController {
     @PutMapping("/{id}/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
     public ResponseEntity<UserResponseDto> put(@PathVariable Long id, @Valid @RequestBody UserUpdateRequestDto userDto) {
-        Personnel user = userAssembler.toEntity(userDto);
-        user.setId(id);
-        return ResponseEntity.ok(userAssembler.toDto(personnelService.update(user)));
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.modifier(id, userAssembler.toEntity(userDto))));
     }
 
     @PatchMapping("/{id}/role/")

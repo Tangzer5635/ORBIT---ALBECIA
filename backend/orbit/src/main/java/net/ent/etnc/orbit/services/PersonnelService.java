@@ -17,6 +17,13 @@ public interface PersonnelService extends Service<Personnel, Long> {
     /** Personnel par son NID (10 chiffres), utilisé par l'import des stages. */
     Optional<Personnel> findByNid(String nid);
 
+    /**
+     * Modifie l'identité (nom, prénom, login) et le mot de passe d'un compte. Le NID n'est changé que s'il est
+     * fourni ; le rôle, l'activation, le verrouillage et le stage sont conservés (ils ont leurs propres endpoints).
+     * {@code donnees} vient du formulaire de modification : elle est incomplète, donc non validée comme une entité.
+     */
+    Personnel modifier(Long id, Personnel donnees) throws ServiceException;
+
     Personnel desactiver(Long id) throws ServiceException;
 
     Personnel activer(Long id) throws ServiceException;

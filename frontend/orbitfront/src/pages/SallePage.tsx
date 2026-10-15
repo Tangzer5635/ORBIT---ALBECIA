@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useBatiments } from "../context/BatimentsContext.tsx";
 import { getSallesDuBatiment } from "../services/salleService.ts";
 import { getUtilisateur } from "../services/authService.ts";
@@ -58,6 +58,10 @@ export default function SallePage() {
     }
 
     if (!idBatiment) {
+        // admin et gestionnaire (qui ont la barre des bâtiments) arrivent directement sur le premier bâtiment
+        if ((role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && batiments.length > 0) {
+            return <Navigate to={`/salles?batiment=${batiments[0].id}`} replace/>;
+        }
         return (
             <>
                 <div className="page-head"><h1>Salles</h1></div>
