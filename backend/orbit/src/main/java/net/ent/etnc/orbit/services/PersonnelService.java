@@ -8,6 +8,7 @@ import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PersonnelService extends Service<Personnel, Long> {
@@ -26,4 +27,7 @@ public interface PersonnelService extends Service<Personnel, Long> {
     Page<Personnel> findByRole(Role role, Pageable pageable) throws ServiceException;
 
     boolean existeDansStage(Long idStage) throws ServiceException;
+
+    /** Stagiaires actifs du stage qui n'ont pas encore de poste. */
+    List<Personnel> stagiairesSansPoste(Long idStage);
 }

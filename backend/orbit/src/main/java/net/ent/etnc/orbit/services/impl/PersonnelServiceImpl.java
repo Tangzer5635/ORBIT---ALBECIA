@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -212,6 +213,12 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     @Transactional(readOnly = true)
     public boolean existeDansStage(Long idStage) {
         return repository.existsByStage_Id(idStage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Personnel> stagiairesSansPoste(Long idStage) {
+        return repository.stagiairesSansPoste(idStage);
     }
 
 }

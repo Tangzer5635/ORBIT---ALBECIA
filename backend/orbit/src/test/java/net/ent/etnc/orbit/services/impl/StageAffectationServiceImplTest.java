@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.services.PersonnelService;
+import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.StageService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +28,9 @@ class StageAffectationServiceImplTest {
 
     @Mock
     private PersonnelService personnelService;
+
+    @Mock
+    private PosteService posteService;
 
     @InjectMocks
     private StageAffectationServiceImpl service;
@@ -89,11 +94,12 @@ class StageAffectationServiceImplTest {
     }
 
     @Test
-    void supprimerAStage_doitRetirerLeStage_quandStagiaireDansCeStage() {
+    void supprimerAStage_doitRetirerLeStageEtLibererSonPoste_quandStagiaireDansCeStage() {
         Personnel theo = personnel(7L, Role.STAGIAIRE, stage(3L, "WB47"));
         when(personnelService.findById(7L)).thenReturn(Optional.of(theo));
 
         assertThat(service.supprimerAStage(3L, 7L).getStage()).isNull();
+        verify(posteService).libererPosteDe(7L);
     }
 
     @Test

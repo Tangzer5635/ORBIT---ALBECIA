@@ -51,6 +51,7 @@ public class SalleController {
                 .map(salle -> {
                     SalleResponseDto dto = salleAssembler.toDto(salle);
                     dto.setAnneau(salleService.anneauDe(id));
+                    dto.setFormateurs(salleAssembler.formateurs(salle));
                     return ResponseEntity.ok(dto);
                 })
                 .orElse(ResponseEntity.notFound().build());

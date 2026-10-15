@@ -4,8 +4,10 @@ import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.enums.Role;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,6 +26,14 @@ public class SalleAssembler {
                 .stageId(salle.getStage() != null ? salle.getStage().getId() : null)
                 .stageNom(salle.getStage() != null ? salle.getStage().getNom() : null)
                 .build();
+    }
+
+    /** Formateurs attribués à la salle (charge les personnels : à n'appeler que pour une salle). */
+    public List<String> formateurs(Salle salle) {
+        return salle.getPersonnels().stream()
+                .filter(p -> p.getRole() == Role.FORMATEUR)
+                .map(p -> p.getPrenom() + " " + p.getNom())
+                .toList();
     }
 
     public Salle toEntity(SalleRequestDto salleDto) {

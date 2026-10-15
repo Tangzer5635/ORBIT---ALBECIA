@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class PosteAssembler {
@@ -28,7 +29,10 @@ public class PosteAssembler {
                 .id(poste.getId())
                 .numPoste(poste.getNumPoste())
                 .occupantId(poste.getOccupant() == null ? null : poste.getOccupant().getId())
+                .occupant(poste.getOccupant() == null ? null : poste.getOccupant().getPrenom() + " " + poste.getOccupant().getNom())
                 .materielsId(poste.getMateriels().stream().map(Materiel::getId).toList())
+                .materielsParType(poste.getMateriels().stream()
+                        .collect(Collectors.groupingBy(Materiel::getType, Collectors.counting())))
                 .build();
     }
 

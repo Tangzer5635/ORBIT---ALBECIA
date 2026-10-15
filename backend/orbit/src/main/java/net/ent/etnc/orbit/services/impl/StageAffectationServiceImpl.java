@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.services.PersonnelService;
+import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.StageAffectationService;
 import net.ent.etnc.orbit.services.StageService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -15,10 +16,13 @@ public class StageAffectationServiceImpl implements StageAffectationService {
 
     private final StageService stageService;
     private final PersonnelService personnelService;
+    private final PosteService posteService;
 
-    public StageAffectationServiceImpl(StageService stageService, PersonnelService personnelService) {
+    public StageAffectationServiceImpl(StageService stageService, PersonnelService personnelService,
+                                       PosteService posteService) {
         this.stageService = stageService;
         this.personnelService = personnelService;
+        this.posteService = posteService;
     }
 
     /** Un stagiaire n'est que dans un stage, et on ne le change pas de stage. */
@@ -39,6 +43,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
         return stagiaire;
     }
 
+    /** Sorti du stage, le stagiaire n'a plus sa place dans la salle du stage : son poste est libéré. */
     @Override
     @Transactional
     public Personnel supprimerAStage(Long idStage, Long idStagiaire) {
@@ -46,6 +51,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
         if (stagiaire.getStage() == null || !stagiaire.getStage().getId().equals(idStage))
             throw new ServiceException(nom(stagiaire) + " n'est pas dans ce stage");
         stagiaire.setStage(null);
+        posteService.libererPosteDe(idStagiaire);
         return stagiaire;
     }
 
