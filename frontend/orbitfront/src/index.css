@@ -324,6 +324,8 @@ h3 {
    3. BARRE DES BÂTIMENTS (.sub / .pills de la maquette)
    ========================================================= */
 .batimentBar {
+    position: relative; /* repère du menu déroulant */
+    z-index: 20;
     background: var(--card);
     border-bottom: 1px solid var(--line);
     box-shadow: 0 2px 14px rgba(40, 30, 110, 0.06);
@@ -335,31 +337,8 @@ h3 {
     margin: 0 auto;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     padding: 10px 24px;
-}
-
-/* Liste des pastilles : autant que la largeur le permet, le reste défile */
-.batimentBar-liste {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scroll-behavior: smooth; /* glissement au clic sur une flèche */
-    scrollbar-width: none;
-    cursor: grab;
-}
-
-/* Pendant le glisser à la souris : pas d'animation, curseur "main fermée" */
-.batimentBar-liste.drag {
-    cursor: grabbing;
-    scroll-behavior: auto;
-    user-select: none;
-}
-
-.batimentBar-liste::-webkit-scrollbar {
-    display: none;
 }
 
 /* Pastille d'un bâtiment */
@@ -404,37 +383,58 @@ h3 {
     opacity: 0.8;
 }
 
-/* Flèches gauche / droite */
-.batimentBar-fleche {
-    flex: none;
-    width: 36px;
-    height: 36px;
+/* Chevron du bouton : pivote quand le menu est ouvert */
+.batimentBar-chevron {
+    transition: transform 0.15s;
+}
+
+.batimentBar-chevron.ouvert {
+    transform: rotate(180deg);
+}
+
+/* Menu déroulant : par-dessus la page, collé sous la barre (pas d'écart pour ne pas perdre le survol) */
+.batimentBar-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+/* Grille de haut en bas : 10 bâtiments par ligne */
+.batimentBar-grille {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: 12px 24px 16px;
     display: grid;
-    place-items: center;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: var(--card2);
-    transition: background 0.15s, opacity 0.15s;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 6px;
 }
 
-.batimentBar-fleche svg {
-    width: 19px;
-    height: 19px;
-}
-
-.batimentBar-fleche:hover:not(:disabled) {
-    background: var(--accent-soft);
-}
-
-.batimentBar-fleche:disabled {
-    opacity: 0.35;
-    cursor: default;
+.batimentBar-grille .batiment {
+    justify-content: center;
+    padding: 7px 8px;
 }
 
 @media (max-width: 900px) {
     .batimentBar-inner {
         padding: 8px 14px;
+    }
+
+    /* moins de place : 5 par ligne */
+    .batimentBar-grille {
+        padding: 10px 14px 14px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .batimentBar-grille {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 

@@ -2,14 +2,13 @@ import BatimentCard from "../components/Batiment/BatimentCard.tsx";
 import {useState} from "react";
 import {ajouterBatiment, BatimentError, supprimerBatiment} from "../services/batimentService.ts";
 import {useBatiments} from "../context/BatimentsContext.tsx";
-import {ANNEAU_VIDE} from "../utils/postes.ts";
+import {ANNEAU_VIDE, batimentsParDisponibilite} from "../utils/postes.ts";
 import Legende from "../components/Utils/Legende.tsx";
 import Popup from "../components/Popup/Popup.tsx";
 import type {Batiment} from "../types/types.ts";
 
 type PopupState = { type: "creer" } | { type: "supprimer"; batiment: Batiment } | null;
 
-// Le matériel est dans les salles ou les stockages : sans salle et stockages vides, il n'y en a pas
 const aDuMateriel = (b: Batiment) => b.nbSalles > 0 || b.stockages.some((s) => s.nbMateriels > 0);
 
 export function BatimentsPage() {
@@ -100,7 +99,7 @@ export function BatimentsPage() {
             <Legende/>
 
             <div className="bat-grid">
-                {batiments.map((b) => (
+                {[...batiments].sort(batimentsParDisponibilite).map((b) => (
                     <BatimentCard key={b.id} batiment={b} onSupprime={ouvrirSuppression}/>
                 ))}
             </div>
