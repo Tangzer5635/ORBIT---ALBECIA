@@ -1,8 +1,9 @@
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useLocation, useNavigate, useSearchParams} from "react-router-dom";
 import {getUtilisateur} from "../../services/authService.ts";
 import {useBatiments} from "../../context/BatimentsContext.tsx";
-import {niveau, pourcentageUtilisable} from "../../utils/postes.ts";
+import {batimentsParDisponibilite, niveau, pourcentageUtilisable} from "../../utils/postes.ts";
+import type {Batiment} from "../../types/types.ts";
 
 function IconeBatiment() {
     return (
@@ -14,14 +15,15 @@ function IconeBatiment() {
     );
 }
 
-function Fleche({sens, ...props}: { sens: "gauche" | "droite" } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+// pastille d'un bâtiment : icône, numéro et % de postes utilisables
+function Pastille({batiment}: { batiment: Batiment }) {
+    const pct = pourcentageUtilisable(batiment.anneau);
     return (
-        <button type="button" className="batimentBar-fleche" {...props}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                 strokeLinejoin="round" aria-hidden="true">
-                <path d={sens === "gauche" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}/>
-            </svg>
-        </button>
+        <>
+            <IconeBatiment/>
+            {batiment.numBatiment}
+            {pct !== null && <span className={"pp " + niveau(pct)}>{pct}%</span>}
+        </>
     );
 }
 
@@ -31,98 +33,72 @@ export default function BatimentBar() {
     const navigate = useNavigate();
     const {pathname} = useLocation();
     const [params] = useSearchParams();
+    // "survol" : ouvert en passant sur le bouton, se ferme en quittant la barre
+    // "clic" : ouvert au clic, reste ouvert jusqu'à un clic dehors, Échap ou un 2e clic
+    const [mode, setMode] = useState<"survol" | "clic" | null>(null);
+    const ouvert = mode !== null;
+    const barRef = useRef<HTMLDivElement>(null);
 
-    const listeRef = useRef<HTMLElement>(null);
-    const [peutGauche, setPeutGauche] = useState(false);
-    const [peutDroite, setPeutDroite] = useState(false);
-    // état du glisser à la souris
-    const drag = useRef({enCours: false, aBouge: false, departX: 0, departScroll: 0});
-
-    // le bâtiment sélectionné vient de l'URL : /salles?batiment=2
-    const selection = pathname === "/salles" ? Number(params.get("batiment")) : null;
-
-    // active/désactive les flèches selon la position de la liste
-    const majFleches = useCallback(() => {
-        const el = listeRef.current;
-        if (!el) return;
-        setPeutGauche(el.scrollLeft > 0);
-        setPeutDroite(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-    }, []);
-
-    // recalcul quand la liste change ou que la fenêtre est redimensionnée
+    // menu ouvert : un clic en dehors de la barre ou Échap le ferme
     useEffect(() => {
-        majFleches();
-        window.addEventListener("resize", majFleches);
-        return () => window.removeEventListener("resize", majFleches);
-    }, [batiments, majFleches]);
+        if (!ouvert) return;
+        function clicDehors(e: PointerEvent) {
+            if (!barRef.current?.contains(e.target as Node)) setMode(null);
+        }
+        function echap(e: KeyboardEvent) {
+            if (e.key === "Escape") setMode(null);
+        }
+        document.addEventListener("pointerdown", clicDehors);
+        document.addEventListener("keydown", echap);
+        return () => {
+            document.removeEventListener("pointerdown", clicDehors);
+            document.removeEventListener("keydown", echap);
+        };
+    }, [ouvert]);
 
     if (utilisateur?.role === "STAGIAIRE" || utilisateur?.role === "FORMATEUR") return null;
 
-    // glisse d'une largeur visible vers la gauche ou la droite
-    function defiler(sens: -1 | 1) {
-        const el = listeRef.current;
-        if (el) el.scrollBy({left: sens * el.clientWidth, behavior: "smooth"});
-    }
+    // le bâtiment sélectionné vient de l'URL : /salles?batiment=2
+    const selection = pathname === "/salles" ? Number(params.get("batiment")) : null;
+    const courant = batiments.find((b) => b.id === selection);
+    const tries = [...batiments].sort(batimentsParDisponibilite);
 
-    // glisser à la souris
-    function onPointerDown(e: React.PointerEvent<HTMLElement>) {
-        if (e.pointerType !== "mouse" || e.button !== 0) return; // tactile : défilement natif
-        drag.current = {enCours: true, aBouge: false, departX: e.clientX, departScroll: e.currentTarget.scrollLeft};
-    }
-
-    function onPointerMove(e: React.PointerEvent<HTMLElement>) {
-        const d = drag.current;
-        if (!d.enCours) return;
-        const dx = e.clientX - d.departX;
-        if (!d.aBouge && Math.abs(dx) > 5) {
-            d.aBouge = true;
-            e.currentTarget.classList.add("drag");
-            e.currentTarget.setPointerCapture(e.pointerId);
-        }
-        if (d.aBouge) e.currentTarget.scrollLeft = d.departScroll - dx;
-    }
-
-    function onPointerFin(e: React.PointerEvent<HTMLElement>) {
-        drag.current.enCours = false;
-        e.currentTarget.classList.remove("drag");
-        // le clic qui suit un glisser ne doit pas sélectionner un bâtiment
-        setTimeout(() => { drag.current.aBouge = false; }, 0);
-    }
-
-    function onClickCapture(e: React.MouseEvent) {
-        if (drag.current.aBouge) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+    function choisir(id: number) {
+        setMode(null);
+        navigate(`/salles?batiment=${id}`);
     }
 
     return (
-        <div className="batimentBar">
+        <div className="batimentBar" ref={barRef}
+             onMouseLeave={() => setMode((m) => (m === "survol" ? null : m))}>
             <div className="batimentBar-inner">
-                <Fleche sens="gauche" aria-label="Bâtiments précédents"
-                        disabled={!peutGauche} onClick={() => defiler(-1)}/>
+                <button type="button" className={"batiment" + (courant ? " active" : "")}
+                        aria-expanded={ouvert} aria-controls="batimentBar-menu"
+                        onMouseEnter={() => setMode((m) => m ?? "survol")}
+                        onClick={() => setMode((m) => (m === "clic" ? null : "clic"))}>
+                    {courant ? <Pastille batiment={courant}/> : <><IconeBatiment/>Bâtiments</>}
+                    <svg className={"batimentBar-chevron" + (ouvert ? " ouvert" : "")} viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                         aria-hidden="true">
+                        <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                </button>
+                <span className="muted">{batiments.length} bâtiment{batiments.length > 1 ? "s" : ""}</span>
+            </div>
 
-                <nav className="batimentBar-liste" ref={listeRef} onScroll={majFleches} aria-label="Bâtiments"
-                     onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-                     onPointerUp={onPointerFin} onPointerCancel={onPointerFin}
-                     onClickCapture={onClickCapture}>
-                    {batiments.map((b) => {
-                        const pct = pourcentageUtilisable(b.anneau);
-                        return (
+            {ouvert && (
+                <nav id="batimentBar-menu" className="batimentBar-menu" aria-label="Bâtiments">
+                    <div className="batimentBar-grille">
+                        {tries.map((b) => (
                             <button key={b.id} type="button"
                                     className={"batiment" + (selection === b.id ? " active" : "")}
-                                    onClick={() => navigate(`/salles?batiment=${b.id}`)}>
-                                <IconeBatiment/>
-                                {b.numBatiment}
-                                {pct !== null && <span className={"pp " + niveau(pct)}>{pct}%</span>}
+                                    onClick={() => choisir(b.id)}>
+                                <Pastille batiment={b}/>
                             </button>
-                        );
-                    })}
+                        ))}
+                    </div>
                 </nav>
-
-                <Fleche sens="droite" aria-label="Bâtiments suivants"
-                        disabled={!peutDroite} onClick={() => defiler(1)}/>
-            </div>
+            )}
         </div>
     );
 }

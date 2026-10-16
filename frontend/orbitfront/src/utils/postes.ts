@@ -1,4 +1,4 @@
-import type { ComptesAnneau, EtatPoste, Poste } from "../types/types.ts";
+import type { Batiment, ComptesAnneau, EtatPoste, Poste } from "../types/types.ts";
 
 export const ANNEAU_VIDE: ComptesAnneau = { libre: 0, bonEtat: 0, defectueux: 0, aChanger: 0 };
 
@@ -38,6 +38,13 @@ export function libelleEtage(etage: string) {
     if (etage === "0") return "Rez-de-chaussée";
     if (etage === "1") return "1er étage";
     return `${etage}e étage`;
+}
+
+// comme les salles : les bâtiments les moins disponibles d'abord, ceux sans poste à la fin, puis par numéro
+export function batimentsParDisponibilite(a: Batiment, b: Batiment) {
+    const pa = pourcentageUtilisable(a.anneau) ?? 101;
+    const pb = pourcentageUtilisable(b.anneau) ?? 101;
+    return pa - pb || a.numBatiment.localeCompare(b.numBatiment, "fr", { numeric: true });
 }
 
 export function niveau(pct: number): "def" | "chg" | "use" {

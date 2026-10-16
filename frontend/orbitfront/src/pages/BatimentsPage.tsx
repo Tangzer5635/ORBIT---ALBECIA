@@ -2,7 +2,7 @@ import BatimentCard from "../components/Batiment/BatimentCard.tsx";
 import {useState} from "react";
 import {ajouterBatiment, BatimentError, supprimerBatiment} from "../services/batimentService.ts";
 import {useBatiments} from "../context/BatimentsContext.tsx";
-import {ANNEAU_VIDE} from "../utils/postes.ts";
+import {ANNEAU_VIDE, batimentsParDisponibilite} from "../utils/postes.ts";
 import Legende from "../components/Utils/Legende.tsx";
 import Popup from "../components/Popup/Popup.tsx";
 import type {Batiment} from "../types/types.ts";
@@ -100,7 +100,7 @@ export function BatimentsPage() {
             <Legende/>
 
             <div className="bat-grid">
-                {batiments.map((b) => (
+                {[...batiments].sort(batimentsParDisponibilite).map((b) => (
                     <BatimentCard key={b.id} batiment={b} onSupprime={ouvrirSuppression}/>
                 ))}
             </div>
