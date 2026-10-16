@@ -37,13 +37,11 @@ public class DefaillanceController {
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<DefaillanceResponseDto>> getAll(
             @RequestParam(required = false) StatutDefaillance statut,
-            @PageableDefault(size = 20) Pageable pageable
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal Personnel user
     ) {
-        Page<DefaillanceResponseDto> page = (statut == null
-                ? defaillanceService.findAll(pageable)
-                : defaillanceService.findByStatut(statut, pageable))
-                .map(defaillanceAssembler::toDto);
-        return ResponseEntity.ok(page);
+        return ResponseEntity.ok(defaillanceService.findPourUtilisateur(user, statut, pageable)
+                .map(defaillanceAssembler::toDto));
     }
 
     @GetMapping("/{id}/")

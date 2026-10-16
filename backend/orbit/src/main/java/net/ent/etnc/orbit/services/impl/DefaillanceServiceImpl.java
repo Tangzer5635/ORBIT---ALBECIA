@@ -105,6 +105,15 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<Defaillance> findPourUtilisateur(Personnel utilisateur, StatutDefaillance statut, Pageable pageable) {
+        if (utilisateur.getRole() == Role.FORMATEUR) {
+            return repository.findDansLesSallesDe(utilisateur.getId(), statut, pageable);
+        }
+        return statut == null ? repository.findAll(pageable) : repository.findByStatut(statut, pageable);
+    }
+
+    @Override
     public Defaillance create(Defaillance entity) throws ServiceException {
         throw new ServiceException("RG-D06", "Utiliser signaler()");
     }
