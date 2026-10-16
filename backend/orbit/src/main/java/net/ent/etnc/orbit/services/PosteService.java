@@ -15,6 +15,12 @@ public interface PosteService extends Service<Poste, Long> {
 
     Optional<Poste> posteDuMateriel(Long idMateriel);
 
+    /** Vrai si cette personne occupe déjà un poste. */
+    boolean occupeUnPoste(Long idPersonnel);
+
+    /** Libère le poste occupé par cette personne (rien si elle n'en a pas). */
+    void libererPosteDe(Long idPersonnel);
+
     /** Page de postes avec matériels chargés en 1 requête : pas de N+1 à l'assemblage du DTO. */
     Page<Poste> findAllAvecDetails(Pageable pageable);
 

@@ -49,6 +49,20 @@ public class AffecterMaterielController {
         return ResponseEntity.ok(dto(affecterMaterielService.retirerDuPoste(posteId, idMateriel)));
     }
 
+    /** Changer d'emplacement : le matériel quitte sa salle ou son poste pour cette salle de cours. */
+    @PatchMapping(value = "/", params = "salleId")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<MaterielResponseDto> deplacerVersSalle(@PathVariable Long idMateriel, @RequestParam Long salleId) {
+        return ResponseEntity.ok(dto(affecterMaterielService.deplacerVersSalle(salleId, idMateriel)));
+    }
+
+    /** Changer d'emplacement : le matériel quitte sa salle ou son poste pour ce poste. */
+    @PatchMapping(value = "/", params = "posteId")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<MaterielResponseDto> deplacerVersPoste(@PathVariable Long idMateriel, @RequestParam Long posteId) {
+        return ResponseEntity.ok(dto(affecterMaterielService.deplacerVersPoste(posteId, idMateriel)));
+    }
+
     private MaterielResponseDto dto(Materiel m) {
         return materielAssembler.toDto(m, materielService.etatDe(m));
     }

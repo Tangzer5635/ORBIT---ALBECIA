@@ -18,6 +18,9 @@ public interface DefaillanceService extends Service<Defaillance, Long> {
 
     List<Defaillance> findByMateriel(Long idMateriel) throws ServiceException;
 
+    /** Défaillances remontées par cette personne, les plus récentes d'abord (« Mon poste »). */
+    List<Defaillance> findBySignalePar(Long idPersonnel);
+
     /** {@code true} si le matériel a une défaillance signalée et non résolue (état DEFECTUEUX). */
     boolean aUneDefaillanceOuverte(Long idMateriel);
 
@@ -25,4 +28,7 @@ public interface DefaillanceService extends Service<Defaillance, Long> {
     boolean aDesDefaillances(Long idMateriel);
 
     Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable) throws ServiceException;
+
+    /** Onglet Défaillances : le formateur ne voit que celles de ses salles, gestionnaire et admin voient tout. */
+    Page<Defaillance> findPourUtilisateur(Personnel utilisateur, StatutDefaillance statut, Pageable pageable) throws ServiceException;
 }

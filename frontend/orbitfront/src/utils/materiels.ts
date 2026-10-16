@@ -14,6 +14,15 @@ export const ORDRE_TYPES: TypeMateriel[] = ["UC", "Ecran", "VideoProjecteur", "T
 
 export const ORDRE_ETATS: EtatMateriel[] = ["NORMAL", "A_REMPLACER", "DEFECTUEUX", "DISPONIBLE"];
 
+// classe de couleur (index.css) de chaque état
+export const CLASSE_ETAT_MATERIEL: Record<EtatMateriel, string> = {
+    NORMAL: "use",
+    A_REMPLACER: "chg",
+    DEFECTUEUX: "def",
+    DISPONIBLE: "dispo",
+    ARCHIVE: "",
+};
+
 // [singulier, pluriel] pour les phrases du type "3 unités centrales" pour la fonction pluriel
 export const NOM_TYPE: Record<TypeMateriel, [string, string]> = {
     UC: ["unité centrale", "unités centrales"],

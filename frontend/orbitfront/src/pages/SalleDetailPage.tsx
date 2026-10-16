@@ -1,27 +1,45 @@
-import {Link, useParams} from "react-router-dom";
-import {getPostesBySalle, getSalleById} from "../services/salleService.ts";
+import {Link, useNavigate, useParams} from "react-router-dom";
+import {degelerSalle, getPostesBySalle, getSalleById, supprimerSalle} from "../services/salleService.ts";
 import {getMaterielById} from "../services/materielService.ts";
 import {getUtilisateur} from "../services/authService.ts";
 import {
     LIBELLE_ETAT_MATERIEL,
+    LIBELLE_MOTIF_GEL,
     type EtatPoste,
+    type Formateur,
     type Materiel,
     type Poste,
     type Salle,
     type TypeMateriel,
 } from "../types/types.ts";
 import {useEffect, useState} from "react";
-import Anneau from "../components/Anneau.tsx";
-import {ANNEAU_VIDE, libelleEtage, pluriel} from "../utils/postes.ts";
-
-// ordre des tuiles, libellé et classe de couleur
-const ETATS: { etat: EtatPoste; libelle: string; classe: string }[] = [
-    {etat: "DEFECTUEUX", libelle: "Défectueux", classe: "def"},
-    {etat: "A_COMPLETER", libelle: "À compléter", classe: "inc"},
-    {etat: "A_CHANGER", libelle: "Prévoir changement", classe: "chg"},
-    {etat: "UTILISE", libelle: "Utilisé", classe: "use"},
-    {etat: "DISPONIBLE", libelle: "Disponible", classe: "dispo"},
-];
+import Anneau from "../components/Utils/Anneau.tsx";
+import {
+    ANNEAU_VIDE,
+    dateFr,
+    estFormateur,
+    etatPoste,
+    ETATS_POSTE,
+    libelleEtage,
+    nomCourt,
+    nomPoste,
+    numeroPoste,
+    pluriel
+} from "../utils/postes.ts";
+import {CLASSE_ETAT_MATERIEL, NOM_TYPE} from "../utils/materiels.ts";
+import PanneauSalle from "../components/Salle/PanneauSalle.tsx";
+import PanneauPoste from "../components/Poste/PanneauPoste.tsx";
+import PanneauMateriel from "../components/Materiel/PanneauMateriel.tsx";
+import AffecterStagiairePopup from "../components/Popup/Stage/AffecterStagiairePopup.tsx";
+import AffecterMaterielPopup from "../components/Popup/Materiel/AffecterMaterielPopup.tsx";
+import AffecterStagePopup from "../components/Popup/Stage/AffecterStagePopup.tsx";
+import AffecterFormateurPopup from "../components/Popup/Salle/AffecterFormateurPopup.tsx";
+import ModifierSallePopup from "../components/Popup/Salle/ModifierSallePopup.tsx";
+import GelerSallePopup from "../components/Popup/Salle/GelerSallePopup.tsx";
+import Popup from "../components/Popup/Popup.tsx";
+import {retirerStagiaireDuPoste} from "../services/posteService.ts";
+import {retirerStageDeSalle} from "../services/stageService.ts";
+import {retirerFormateurDeSalle} from "../services/formateurService.ts";
 
 // libellé court du matériel posé dans la salle (plan)
 const COURT: Record<TypeMateriel, string> = {
@@ -31,11 +49,7 @@ const COURT: Record<TypeMateriel, string> = {
     TableauInteractif: "TBI",
 };
 
-const classeEtat = (e?: EtatPoste) => ETATS.find(x => x.etat === e)?.classe ?? "";
-
-// "B201-S302-F" = poste formateur, "B201-S302-P07" -> 7
-const estFormateur = (p: Poste) => p.numPoste.endsWith("-F");
-const numero = (p: Poste) => Number(p.numPoste.match(/P(\d+)$/)?.[1] ?? 0);
+const classeEtat = (e?: EtatPoste) => etatPoste(e)?.classe ?? "";
 
 // regroupe les postes 2 par 2 (une table = 2 postes côte à côte)
 function parTables(postes: Poste[]): Poste[][] {
@@ -44,19 +58,36 @@ function parTables(postes: Poste[]): Poste[][] {
     return tables;
 }
 
+type PopupOuverte = "stagiaire" | "retirerStagiaire" | "materiel" | "stage" | "retirerStage" | "formateur"
+    | "modifier" | "geler" | "supprimer" | null;
+
+// key = salleId : changer de salle repart d'un état propre (filtre, sélection, popups)
 export default function SalleDetailPage() {
     const {salleId} = useParams();
+    return salleId ? <SalleDetail key={salleId} salleId={salleId}/> : null;
+}
+
+function SalleDetail({salleId}: { salleId: string }) {
+    const navigate = useNavigate();
     const [salle, setSalle] = useState<Salle | null>(null);
     const [postes, setPostes] = useState<Poste[]>([]);
     const [materielsSalle, setMaterielsSalle] = useState<Materiel[]>([]);
     const [filtre, setFiltre] = useState<EtatPoste | null>(null);
     const role = getUtilisateur()?.role;
     const peutGerer = role === "ADMINISTRATEUR" || role === "GESTIONNAIRE";
+    // élément choisi sur le plan (rien = « Vue de la salle »)
+    const [posteId, setPosteId] = useState<number | null>(null);
+    const [materielId, setMaterielId] = useState<number | null>(null);
+    const [popup, setPopup] = useState<PopupOuverte>(null);
+    const [erreurStage, setErreurStage] = useState("");
+    const [formateurARetirer, setFormateurARetirer] = useState<Formateur | null>(null);
+    const [erreurFormateur, setErreurFormateur] = useState("");
+    const [erreurAction, setErreurAction] = useState(""); // erreur de la popup de confirmation ouverte
+    const [info, setInfo] = useState(""); // message après « Modifier la salle » (matériel manquant)
+    const [rechargement, setRechargement] = useState(0); // +1 = recharger la salle et ses postes
+    const [refuse, setRefuse] = useState(false); // salle introuvable ou non affectée au formateur
 
     useEffect(() => {
-        if (!salleId) return;
-        setFiltre(null);
-        setMaterielsSalle([]);
         getSalleById(salleId)
             .then(s => {
                 setSalle(s);
@@ -67,28 +98,88 @@ export default function SalleDetailPage() {
                         .catch(console.error);
                 }
             })
-            .catch(console.error);
+            .catch(e => {
+                console.error(e);
+                setRefuse(true);
+            });
         getPostesBySalle(salleId).then(setPostes).catch(console.error);
-    }, [salleId, peutGerer]);
+    }, [salleId, peutGerer, rechargement]);
+
+    const recharger = () => setRechargement(n => n + 1);
+    const fermerPopup = () => {
+        setPopup(null);
+        setErreurAction("");
+    };
+
+    // action d'une popup de confirmation : erreur affichée dans la popup si le back refuse
+    function confirmer(action: () => Promise<unknown>, apres = apresAction) {
+        setErreurAction("");
+        action()
+            .then(apres)
+            .catch(err => setErreurAction(err?.detail || "L'action a échoué."));
+    }
+    const apresAction = () => {
+        setPopup(null);
+        recharger();
+    };
+
+    function choisirPoste(id: number) {
+        setPosteId(id);
+        setMaterielId(null);
+    }
+
+    function choisirMateriel(id: number) {
+        setMaterielId(id);
+        setPosteId(null);
+    }
+
+    function fermerPanneau() {
+        setPosteId(null);
+        setMaterielId(null);
+    }
 
     const compte = (e: EtatPoste) => postes.filter(p => p.etat === e).length;
 
-    if (!salle) return <p className="muted">Chargement de la salle…</p>;
+    if (!salle) {
+        return refuse
+            ? <p className="error-message" role="alert">Cette salle n'existe pas ou ne fait pas partie de tes salles.</p>
+            : <p className="muted">Chargement de la salle…</p>;
+    }
 
     const posteFormateur = postes.find(estFormateur);
-    const stagiaires = postes.filter(p => !estFormateur(p)).sort((a, b) => numero(a) - numero(b));
+    const stagiaires = postes.filter(p => !estFormateur(p)).sort((a, b) => numeroPoste(a) - numeroPoste(b));
     // 2 colonnes de tables : la moitié des tables à gauche, l'autre à droite
     const tables = parTables(stagiaires);
     const rangees: Poste[][][] = [];
     for (let i = 0; i < tables.length; i += 2) rangees.push(tables.slice(i, i + 2));
 
-    // pour un formateur (pas d'accès au détail du matériel) : seulement le type, sans état
-    const chips = peutGerer
-        ? materielsSalle.map(m => ({id: m.id, type: m.type, etat: m.etat}))
-        : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
-            Array.from({length: n ?? 0}, (_, i) => ({id: `${type}-${i}`, type: type as TypeMateriel, etat: undefined})));
-
     const estompe = (p: Poste) => filtre !== null && p.etat !== filtre;
+
+    const posteSelectionne = postes.find(p => p.id === posteId);
+    const materielSelectionne = materielsSalle.find(m => m.id === materielId);
+    const formateurs = salle.formateurs ?? [];
+    const nomFormateurs = formateurs.length === 0 ? "Aucun formateur"
+        : `${formateurs[0].prenom} ${formateurs[0].nom}${formateurs.length > 1 ? ` +${formateurs.length - 1}` : ""}`;
+    const salleDeCours = salle.type === "SalleDeCours";
+
+    // panneau de droite : le poste ou le matériel choisi, sinon la vue de la salle
+    const panneau = posteSelectionne ? (
+        <PanneauPoste key={posteSelectionne.id} poste={posteSelectionne} salle={salle} peutGerer={peutGerer}
+                      onFermer={fermerPanneau}
+                      onAffecterStagiaire={salle.suspendu ? undefined : () => setPopup("stagiaire")}
+                      onRetirerStagiaire={() => setPopup("retirerStagiaire")}
+                      onAffecterMateriel={() => setPopup("materiel")}
+                      onChange={recharger}/>
+    ) : materielSelectionne ? (
+        <PanneauMateriel key={materielSelectionne.id} materiel={materielSelectionne} salle={salle}
+                         onFermer={fermerPanneau} onChange={recharger}/>
+    ) : (
+        <PanneauSalle salle={salle}
+                      onAffecterStage={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("stage") : undefined}
+                      onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
+                      onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
+                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}/>
+    );
 
     return (
         <>
@@ -98,10 +189,13 @@ export default function SalleDetailPage() {
                 <Anneau id={`salle-${salle.id}`} comptes={salle.anneau ?? ANNEAU_VIDE} grand/>
                 <div>
                     <h1>Salle {salle.numSalle}</h1>
-                    <p>{libelleEtage(salle.etage)}, {pluriel(stagiaires.length, "poste")} stagiaire.</p>
+                    <p>
+                        {libelleEtage(salle.etage)}, {pluriel(stagiaires.length, "poste")} stagiaire.
+                        {salle.stageNom && ` Stage ${salle.stageNom}.`}
+                    </p>
 
                     <div className="tuiles">
-                        {ETATS.map(({etat, libelle, classe}) => (
+                        {ETATS_POSTE.map(({etat, libelle, classe}) => (
                             <button key={etat} type="button" className={`tuile ${classe}`}
                                     aria-pressed={filtre === etat}
                                     onClick={() => setFiltre(filtre === etat ? null : etat)}>
@@ -111,68 +205,216 @@ export default function SalleDetailPage() {
                         ))}
                     </div>
                     <p className="rleg-note">
-                        Le cercle indique la part du matériel utilisable (comme sur la carte de la salle). Les cases comptent les postes : clique dessus pour filtrer le plan.
+                        Le cercle indique la part du matériel utilisable (comme sur la carte de la salle). Les cases
+                        comptent les postes : clique dessus pour filtrer le plan.
                     </p>
                 </div>
             </section>
 
-            {peutGerer && (
-                <div className="hero-row">
-                    <button type="button" className="btn">Modifier la salle</button>
-                    <button type="button" className="btn">Affecter un stage</button>
-                    <button type="button" className="btn">Exporter la salle</button>
-                    <button type="button" className="btn">Geler la salle</button>
-                    <button type="button" className="btn danger">Supprimer la salle</button>
+            {salle.suspendu && (
+                <div className="note-gel">
+                    <p>
+                        <b>Salle gelée{salle.gelMotif && ` : ${LIBELLE_MOTIF_GEL[salle.gelMotif]}`}</b>
+                        {salle.gelNote && `, ${salle.gelNote}`}.
+                        {salle.gelDepuis && ` Depuis le ${dateFr(salle.gelDepuis)}`}
+                        {salle.gelJusqu && `, jusqu'au ${dateFr(salle.gelJusqu)} prévu`}.
+                        {" "}On ne peut plus y affecter de stage, de stagiaire ni de master.
+                    </p>
+                    {peutGerer && (
+                        <button type="button" className="btn sm primary"
+                                onClick={() => degelerSalle(salle.id).then(recharger).catch(() => setInfo("Impossible de dégeler la salle."))}>
+                            Dégeler la salle
+                        </button>
+                    )}
                 </div>
             )}
 
-            <section className="plan">
-                <div className="plan-salle">
-                    {/* haut de la salle : matériel de salle à gauche, poste formateur à droite */}
-                    <div className="plan-haut">
-                        <div className="plan-materiels">
-                            {chips.map(c => (
-                                <div key={c.id} className={`plan-mat ${c.etat === "DEFECTUEUX" ? "def" : c.etat === "A_REMPLACER" ? "chg" : "use"}`}>
-                                    <b>{COURT[c.type]}</b>
-                                    {c.etat && <span>{LIBELLE_ETAT_MATERIEL[c.etat]}</span>}
-                                </div>
-                            ))}
-                        </div>
-                        {posteFormateur && (
-                            <div className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}`}>
-                                <b>Formateur</b>
-                                <span>{pluriel(posteFormateur.materielsId.length, "matériel")}</span>
-                            </div>
-                        )}
-                    </div>
+            {peutGerer && salleDeCours && (
+                <div className="hero-row">
+                    <button type="button" className="btn" onClick={() => setPopup("modifier")}>Modifier la salle</button>
+                    {/* export : plus tard */}
+                    <button type="button" className="btn" disabled title="Bientôt disponible">Exporter la salle</button>
+                    {!salle.suspendu &&
+                        <button type="button" className="btn" onClick={() => setPopup("geler")}>Geler la salle</button>}
+                    <button type="button" className="btn danger" onClick={() => setPopup("supprimer")}>Supprimer la salle</button>
+                </div>
+            )}
 
-                    {/* postes stagiaires : rangées de 2 tables de 2 postes */}
-                    {rangees.map((rangee, r) => (
-                        <div key={r} className="plan-rangee">
-                            {rangee.map((table, t) => (
-                                <div key={t} className="plan-table">
-                                    {table.map(p => (
-                                        <div key={p.id}
-                                             className={`plan-poste ${classeEtat(p.etat)}${estompe(p) ? " estompe" : ""}`}
-                                             title={`Poste ${p.numPoste}`}>
-                                            <b>{numero(p)}</b>
-                                            <span>{p.occupantId ? "Occupé" : "Libre"}</span>
+            {info && (
+                <p className="note-chg" role="status">
+                    {info}
+                    <button type="button" className="muted small lien" onClick={() => setInfo("")}> Fermer</button>
+                </p>
+            )}
+
+            <section className="plan">
+                <div className="plan-corps ouvert">
+                    <div>
+                        <div className="plan-salle">
+                            {/* haut de la salle : matériel de salle à gauche, poste formateur à droite */}
+                            <div className="plan-haut">
+                                <div className="plan-materiels">
+                                    {peutGerer
+                                        ? materielsSalle.map(m => (
+                                            <button key={m.id} type="button"
+                                                    className={`plan-mat ${CLASSE_ETAT_MATERIEL[m.etat]}${m.id === materielId ? " select" : ""}`}
+                                                    aria-pressed={m.id === materielId}
+                                                    onClick={() => choisirMateriel(m.id)}>
+                                                <b>{COURT[m.type]}</b>
+                                                <span>{LIBELLE_ETAT_MATERIEL[m.etat]}</span>
+                                            </button>
+                                        ))
+                                        // formateur : pas d'accès au détail du matériel, seulement le type
+                                        : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
+                                            Array.from({length: n ?? 0}, (_, i) => (
+                                                <div key={`${type}-${i}`} className="plan-mat use">
+                                                    <b>{COURT[type as TypeMateriel]}</b>
+                                                </div>
+                                            )))}
+                                </div>
+                                {posteFormateur && (
+                                    <button type="button"
+                                            className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}${posteFormateur.id === posteId ? " select" : ""}`}
+                                            title="Poste formateur"
+                                            aria-pressed={posteFormateur.id === posteId}
+                                            onClick={() => choisirPoste(posteFormateur.id)}>
+                                        <b>Formateur</b>
+                                        <span>{nomFormateurs}</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* postes stagiaires : rangées de 2 tables de 2 postes */}
+                            {rangees.map((rangee, r) => (
+                                <div key={r} className="plan-rangee">
+                                    {rangee.map((table, t) => (
+                                        <div key={t} className="plan-table">
+                                            {table.map(p => (
+                                                <button key={p.id} type="button"
+                                                        className={`plan-poste ${classeEtat(p.etat)}${estompe(p) ? " estompe" : ""}${p.id === posteId ? " select" : ""}`}
+                                                        title={p.occupant ? `${nomPoste(p)} : ${p.occupant}` : nomPoste(p)}
+                                                        aria-pressed={p.id === posteId}
+                                                        onClick={() => choisirPoste(p.id)}>
+                                                    <b>{numeroPoste(p)}</b>
+                                                    <span>{p.occupant ? nomCourt(p.occupant) : "Libre"}</span>
+                                                </button>
+                                            ))}
                                         </div>
                                     ))}
                                 </div>
                             ))}
+
+                            {stagiaires.length === 0 &&
+                                <p className="muted">Aucun poste stagiaire dans cette salle.</p>}
                         </div>
-                    ))}
 
-                    {stagiaires.length === 0 && <p className="muted">Aucun poste stagiaire dans cette salle.</p>}
+                        <ul className="rleg plan-legende">
+                            {ETATS_POSTE.map(({etat, libelle, classe}) => (
+                                <li key={etat} className={classe}><i
+                                    className={`sw ${classe}`}/>{libelle} ({compte(etat)})</li>
+                            ))}
+                        </ul>
+                    </div>
+                    {panneau}
                 </div>
-
-                <ul className="rleg plan-legende">
-                    {ETATS.map(({etat, libelle, classe}) => (
-                        <li key={etat} className={classe}><i className={`sw ${classe}`}/>{libelle} ({compte(etat)})</li>
-                    ))}
-                </ul>
             </section>
+
+            {popup === "formateur" &&
+                <AffecterFormateurPopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {formateurARetirer && (
+                <Popup
+                    open
+                    onClose={() => setFormateurARetirer(null)}
+                    title={`Retirer ${formateurARetirer.prenom} ${formateurARetirer.nom}`}
+                    description={`Ce formateur n'aura plus accès à la salle ${salle.numSalle}.`}
+                    confirmLabel="Retirer"
+                    variant="danger"
+                    onConfirm={() => {
+                        setErreurFormateur("");
+                        retirerFormateurDeSalle(formateurARetirer.id, salle.id)
+                            .then(() => {
+                                setFormateurARetirer(null);
+                                recharger();
+                            })
+                            .catch(() => setErreurFormateur("Impossible de retirer le formateur."));
+                    }}>
+                    {erreurFormateur && <p className="error-message" role="alert">{erreurFormateur}</p>}
+                </Popup>
+            )}
+            {popup === "stage" && <AffecterStagePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {popup === "retirerStage" && salle.stageId && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Retirer le stage ${salle.stageNom}`}
+                    description="Les postes de la salle redeviennent libres : plus aucun stagiaire n'y est installé."
+                    confirmLabel="Retirer"
+                    variant="danger"
+                    onConfirm={() => {
+                        setErreurStage("");
+                        retirerStageDeSalle(salle.stageId!, salle.id)
+                            .then(apresAction)
+                            .catch(() => setErreurStage("Impossible de retirer le stage."));
+                    }}>
+                    {erreurStage && <p className="error-message" role="alert">{erreurStage}</p>}
+                </Popup>
+            )}
+            {popup === "modifier" && (
+                <ModifierSallePopup
+                    salle={salle}
+                    postes={postes}
+                    onClose={fermerPopup}
+                    onFait={manquants => {
+                        const liste = Object.entries(manquants)
+                            .map(([type, n]) => NOM_TYPE[type as TypeMateriel]
+                                ? pluriel(n ?? 0, ...NOM_TYPE[type as TypeMateriel])
+                                : `${n} ${type}`);
+                        setInfo(liste.length
+                            ? `Salle modifiée, mais il manque dans le stock : ${liste.join(", ")}. Les postes concernés sont à compléter.`
+                            : "");
+                        apresAction();
+                    }}/>
+            )}
+            {popup === "geler" && <GelerSallePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {popup === "supprimer" && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Supprimer la salle ${salle.numSalle}`}
+                    description={`Ses postes sont supprimés et tout son matériel retourne au stock du bâtiment${salle.stageNom ? `, le stage ${salle.stageNom} n'a plus de salle` : ""}. Cette action est définitive.`}
+                    confirmLabel="Supprimer la salle"
+                    variant="danger"
+                    onConfirm={() => confirmer(() => supprimerSalle(salle.id), () => navigate(-1))}>
+                    {erreurAction && <p className="error-message" role="alert">{erreurAction}</p>}
+                </Popup>
+            )}
+            {popup === "retirerStagiaire" && posteSelectionne?.occupantId && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Retirer ${posteSelectionne.occupant} du poste`}
+                    description={`${nomPoste(posteSelectionne)} redevient libre. Le stagiaire reste dans son stage et pourra être assis ailleurs.`}
+                    confirmLabel="Retirer du poste"
+                    variant="danger"
+                    onConfirm={() => confirmer(() => retirerStagiaireDuPoste(posteSelectionne.id, posteSelectionne.occupantId!))}>
+                    {erreurAction && <p className="error-message" role="alert">{erreurAction}</p>}
+                </Popup>
+            )}
+            {popup === "stagiaire" && posteSelectionne && (
+                <AffecterStagiairePopup
+                    posteId={posteSelectionne.id}
+                    numPoste={numeroPoste(posteSelectionne)}
+                    stageId={salle.stageId}
+                    onClose={fermerPopup}
+                    onFait={apresAction}/>
+            )}
+            {popup === "materiel" && posteSelectionne && (
+                <AffecterMaterielPopup
+                    posteId={posteSelectionne.id}
+                    titrePoste={nomPoste(posteSelectionne)}
+                    onClose={fermerPopup}
+                    onFait={apresAction}/>
+            )}
         </>
     );
 }

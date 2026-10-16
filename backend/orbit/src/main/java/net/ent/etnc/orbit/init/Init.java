@@ -3,19 +3,29 @@ package net.ent.etnc.orbit.init;
 import net.ent.etnc.orbit.models.entities.*;
 import net.ent.etnc.orbit.models.enums.ListeProcessus;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeFormation;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.*;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Component
 public class Init implements CommandLineRunner {
@@ -78,6 +88,9 @@ public class Init implements CommandLineRunner {
     private final AffecterMaterielService affecterMaterielService;
     private final DefaillanceService defaillanceService;
     private final ProcessusService processusService;
+    private final StageService stageService;
+    private final StageAffectationService stageAffectationService;
+    private final AffecterStageService affecterStageService;
 
     /** Processus installés sur chaque UC créée. */
     private final List<Processus> image = new ArrayList<>();
@@ -85,7 +98,9 @@ public class Init implements CommandLineRunner {
     public Init(PersonnelService personnelService, MaterielService materielService,
                 BatimentService batimentService, SalleService salleService,
                 PosteService posteService, AffecterMaterielService affecterMaterielService,
-                DefaillanceService defaillanceService, ProcessusService processusService) {
+                DefaillanceService defaillanceService, ProcessusService processusService,
+                StageService stageService, StageAffectationService stageAffectationService,
+                AffecterStageService affecterStageService) {
         this.personnelService = personnelService;
         this.materielService = materielService;
         this.batimentService = batimentService;
@@ -94,6 +109,9 @@ public class Init implements CommandLineRunner {
         this.affecterMaterielService = affecterMaterielService;
         this.defaillanceService = defaillanceService;
         this.processusService = processusService;
+        this.stageService = stageService;
+        this.stageAffectationService = stageAffectationService;
+        this.affecterStageService = affecterStageService;
     }
 
     @Override
@@ -135,12 +153,19 @@ public class Init implements CommandLineRunner {
         personnelService.desactiver(inactif.getId());
         verrouille.setVerrouille(true);
 
+        // ---------- Stages (resources/init/stages.csv) ----------
+        // les 3 stagiaires fixes sont dans WB47 ; les générés remplissent les stages dans l'ordre du fichier,
+        // ceux qui restent n'ont pas de stage (pour tester l'ajout)
+        List<Stage> stages = creerStages(formateurs, stagiairesFixes, stagiairesGeneres);
+
         // ---------- Processus ----------
         for (String nom : PROCESSUS_AUTORISES) image.add(processusService.create(buildProcessus(nom, ListeProcessus.BLANCHE)));
         for (String nom : PROCESSUS_INTERDITS) processusService.create(buildProcessus(nom, ListeProcessus.NOIRE));
 
-        // Postes à occuper, remplis à la fin pour répartir les stagiaires sur tout le parc
-        List<Poste> aOccuper = new ArrayList<>();
+        // Postes à occuper de chaque salle (clé : id de la salle), remplis par les stagiaires du stage de la salle
+        Map<Long, List<Poste>> aOccuper = new HashMap<>();
+        // Salles de cours équipées, dans l'ordre de création : elles accueilleront les premiers stages en cours
+        List<Salle> sallesDeCours = new ArrayList<>();
 
         // ---------- Bâtiments, salles, postes, matériel ----------
         for (String numBatiment : NUMEROS_BATIMENTS) {
@@ -153,7 +178,7 @@ public class Init implements CommandLineRunner {
                 int nbSallesEtage = 1 + random.nextInt(3);
                 for (int n = 1; n <= nbSallesEtage; n++) {
                     String numSalle = String.format("%d%02d", etage, n); // 001, 002, 101, 102...
-                    creerSalleEquipee(batiment, numSalle, etage, stockage, formateurs, gestionnaire, aOccuper);
+                    creerSalleEquipee(batiment, numSalle, etage, stockage, formateurs, gestionnaire, aOccuper, sallesDeCours);
                 }
             }
 
@@ -170,14 +195,28 @@ public class Init implements CommandLineRunner {
             }
         }
 
-        // ---------- Occupants : un stagiaire n'a qu'un seul poste ----------
-        Collections.shuffle(aOccuper, random);
-        Collections.shuffle(stagiairesGeneres, random);
+        // ---------- Stages en cours dans les premières salles de cours, et leurs stagiaires assis ----------
+        // un stagiaire n'est assis que dans la salle de son stage ; 2 par stage restent sans poste
+        // (pour tester l'affectation depuis la page de la salle). Les 3 stagiaires fixes passent en premier.
+        List<Stage> enCours = stages.stream()
+                .filter(s -> !s.getDateDebut().isAfter(aujourdhui) && !s.getDateFin().isBefore(aujourdhui))
+                .limit(5)
+                .toList();
         List<Personnel> stagiaires = new ArrayList<>(stagiairesFixes);
         stagiaires.addAll(stagiairesGeneres);
-        // les postes en trop (plus de postes que de stagiaires) restent vides
-        for (int i = 0; i < Math.min(aOccuper.size(), stagiaires.size()); i++) {
-            aOccuper.get(i).setOccupant(stagiaires.get(i));
+        for (int i = 0; i < Math.min(enCours.size(), sallesDeCours.size()); i++) {
+            Stage stage = enCours.get(i);
+            Salle salle = sallesDeCours.get(i);
+            affecterStageService.affecterASalle(salle.getId(), stage.getId());
+
+            List<Personnel> duStage = stagiaires.stream()
+                    .filter(p -> p.getStage() != null && p.getStage().getId().equals(stage.getId()))
+                    .toList();
+            List<Poste> postes = new ArrayList<>(aOccuper.getOrDefault(salle.getId(), List.of()));
+            Collections.shuffle(postes, random);
+            for (int j = 0; j < Math.min(postes.size(), duStage.size() - 2); j++) {
+                postes.get(j).setOccupant(duStage.get(j));
+            }
         }
 
         // Réserve hors bâtiment, conservée comme avant.
@@ -189,12 +228,58 @@ public class Init implements CommandLineRunner {
     }
 
     /**
+     * Crée les stages du CSV puis y ajoute des stagiaires. Colonnes :
+     * nom;type;dateDebut;dateFin;nidFormateur;nbStagiaires (nbStagiaires ne sert qu'au jeu de données).
+     */
+    private List<Stage> creerStages(List<Personnel> formateurs, List<Personnel> stagiairesFixes,
+                                    List<Personnel> stagiairesGeneres) throws IOException, ServiceException {
+        List<Stage> stages = new ArrayList<>();
+        Map<String, Personnel> formateursParNid = formateurs.stream()
+                .collect(Collectors.toMap(Personnel::getNid, Function.identity()));
+        int suivant = 0; // prochain stagiaire généré à placer
+
+        for (String[] colonnes : lireCsv("init/stages.csv")) {
+            Stage stage = new Stage();
+            stage.setNom(colonnes[0]);
+            stage.setType(TypeFormation.valueOf(colonnes[1]));
+            stage.setDateDebut(LocalDate.parse(colonnes[2]));
+            stage.setDateFin(LocalDate.parse(colonnes[3]));
+            Personnel formateur = formateursParNid.get(colonnes[4]);
+            if (formateur == null) throw new IllegalStateException("Formateur " + colonnes[4] + " absent pour le stage " + colonnes[0]);
+            stage = stageService.creer(stage, formateur.getId());
+            stages.add(stage);
+
+            int nbStagiaires = Integer.parseInt(colonnes[5]);
+            if (stage.getNom().equals("WB47")) {
+                for (Personnel p : stagiairesFixes) stageAffectationService.ajouterAStage(stage.getId(), p.getId());
+                nbStagiaires -= stagiairesFixes.size();
+            }
+            for (int i = 0; i < nbStagiaires && suivant < stagiairesGeneres.size(); i++) {
+                stageAffectationService.ajouterAStage(stage.getId(), stagiairesGeneres.get(suivant++).getId());
+            }
+        }
+        return stages;
+    }
+
+    /** Lignes d'un CSV du classpath (séparateur « ; »), sans l'en-tête ni les lignes vides. */
+    private static List<String[]> lireCsv(String chemin) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new ClassPathResource(chemin).getInputStream(), StandardCharsets.UTF_8))) {
+            return reader.lines()
+                    .skip(1)
+                    .filter(ligne -> !ligne.isBlank())
+                    .map(ligne -> ligne.trim().split(";"))
+                    .toList();
+        }
+    }
+
+    /**
      * Crée une salle de cours avec son poste formateur et ses postes stagiaires.
      * Chaque salle d'au moins 5 postes a au moins un poste vide, défectueux, à changer et incomplet.
      */
     private void creerSalleEquipee(Batiment batiment, String numSalle, int etage, Salle stockage,
                                    List<Personnel> formateurs, Personnel gestionnaire,
-                                   List<Poste> aOccuper) throws ServiceException {
+                                   Map<Long, List<Poste>> aOccuper, List<Salle> sallesDeCours) throws ServiceException {
         Salle salle = salleService.create(batiment.getId(),
                 buildSalle(numSalle, Integer.toString(etage), TypeSalle.SalleDeCours));
         Personnel formateur = choisir(formateurs);
@@ -202,6 +287,7 @@ public class Init implements CommandLineRunner {
 
         int nbPostes = choisir(TAILLES_SALLES);
         if (nbPostes == 0) return; // salle de réunion : ni poste ni matériel
+        sallesDeCours.add(salle);
 
         // tout le matériel d'une salle est acheté à peu près en même temps, il y a moins de 18 mois
         LocalDate equipement = aujourdhui.minusMonths(1 + random.nextInt(18));
@@ -236,7 +322,7 @@ public class Init implements CommandLineRunner {
                 }
                 default -> { }
             }
-            if (profil != Profil.VIDE) aOccuper.add(poste);
+            if (profil != Profil.VIDE) aOccuper.computeIfAbsent(salle.getId(), k -> new ArrayList<>()).add(poste);
         }
 
         // 2 salles sur 3 ont un vidéoprojecteur, 1 sur 3 un tableau interactif (1 sur 4 en panne)

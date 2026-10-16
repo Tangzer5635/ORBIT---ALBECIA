@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {AuthError, login} from "../services/authService.ts";
 import logo from "../assets/orbit-logo.gif";
 import {PAGE_ACCUEIL} from "../config/acces.ts";
@@ -20,6 +20,8 @@ export function LoginPage() {
     const [error, setError] = useState("");
     const [chargement, setChargement] = useState(false);
     const navigate = useNavigate();
+    const [params] = useSearchParams();
+    const expiree = params.has("expiree"); // renvoyé ici par apiFetch quand le refresh est refusé
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -71,6 +73,9 @@ export function LoginPage() {
                     />
 
                     {error && <p className="error-message" role="alert">{error}</p>}
+                    {expiree && !error && (
+                        <p className="error-message" role="status">Votre session a expiré : reconnectez-vous.</p>
+                    )}
 
                     <button type="submit" className="login-button" disabled={chargement}>
                         {chargement ? "Connexion…" : "Se connecter"}

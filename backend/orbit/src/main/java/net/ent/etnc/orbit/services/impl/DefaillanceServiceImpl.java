@@ -82,6 +82,12 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
 
     @Override
     @Transactional(readOnly = true)
+    public List<Defaillance> findBySignalePar(Long idPersonnel) {
+        return repository.findBySignalePar_IdOrderByDateSignalementDesc(idPersonnel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean aUneDefaillanceOuverte(Long idMateriel) {
         return repository.existsByMateriel_IdAndStatut(idMateriel, StatutDefaillance.SIGNALEE);
     }
@@ -96,6 +102,15 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Transactional(readOnly = true)
     public Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable) throws ServiceException {
         return repository.findByStatut(statut, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Defaillance> findPourUtilisateur(Personnel utilisateur, StatutDefaillance statut, Pageable pageable) {
+        if (utilisateur.getRole() == Role.FORMATEUR) {
+            return repository.findDansLesSallesDe(utilisateur.getId(), statut, pageable);
+        }
+        return statut == null ? repository.findAll(pageable) : repository.findByStatut(statut, pageable);
     }
 
     @Override

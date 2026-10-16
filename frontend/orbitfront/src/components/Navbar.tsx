@@ -1,12 +1,32 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { getUtilisateur, logout } from "../services/authService.ts";
 import logo from "../assets/orbit-logo.gif";
 import { ACCES } from "../config/acces.ts";
-import ThemeButton from "./ThemeButton.tsx";
+import ThemeButton from "./Utils/ThemeButton.tsx";
+import { EVT_DEFAILLANCES, getDefaillances } from "../services/defaillanceService.ts";
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const utilisateur = getUtilisateur();
+    const role = utilisateur?.role;
+    const [aTraiter, setATraiter] = useState(0); // bulle à côté de « Défaillances »
+
+    // défaillances à traiter (filtrées par le back : le formateur ne compte que celles de ses salles),
+    // recomptées à chaque changement de page et après un signalement ou une résolution
+    useEffect(() => {
+        const accesDefaillances = ACCES.find((a) => a.path === "/defaillances")?.roles ?? [];
+        if (!role || !accesDefaillances.includes(role)) return;
+        const compter = () => {
+            getDefaillances("SIGNALEE", 0, 1)
+                .then((page) => setATraiter(page.totalElements))
+                .catch(() => setATraiter(0));
+        };
+        compter();
+        window.addEventListener(EVT_DEFAILLANCES, compter);
+        return () => window.removeEventListener(EVT_DEFAILLANCES, compter);
+    }, [role, pathname]);
 
     // si personne n'est connecté, pas de navbar (page de connexion)
     if (!utilisateur) return null;
@@ -37,6 +57,9 @@ export default function Navbar() {
                         {liensVisibles.map((a) => (
                             <NavLink key={a.path} to={a.path}>
                                 {a.labelParRole?.[utilisateur.role] ?? a.label}
+                                {a.path === "/defaillances" && aTraiter > 0 && (
+                                    <span className="nav-bulle" aria-label={`${aTraiter} à traiter`}>{aTraiter}</span>
+                                )}
                             </NavLink>
                         ))}
                     </nav>

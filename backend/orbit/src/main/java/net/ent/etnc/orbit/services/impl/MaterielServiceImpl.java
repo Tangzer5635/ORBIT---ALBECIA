@@ -1,14 +1,17 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
+import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
 import net.ent.etnc.orbit.services.MaterielService;
+import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -24,14 +27,16 @@ import java.util.Optional;
 public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepository> implements MaterielService {
 
     private final SalleService salleService;
+    private final PosteService posteService;
     /** @Lazy : DefaillanceService dépend déjà de MaterielService (dépendance circulaire sinon). */
     private final DefaillanceService defaillanceService;
 
     @Autowired
     public MaterielServiceImpl(MaterielRepository materielRepository, SalleService salleService,
-                               @Lazy DefaillanceService defaillanceService) {
+                               PosteService posteService, @Lazy DefaillanceService defaillanceService) {
         super(materielRepository);
         this.salleService = salleService;
+        this.posteService = posteService;
         this.defaillanceService = defaillanceService;
     }
 
@@ -80,6 +85,21 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<Materiel> findPourUtilisateur(Long id, Personnel utilisateur) {
+        Optional<Materiel> materiel = repository.findById(id);
+        if (materiel.isPresent() && utilisateur.getRole() == Role.FORMATEUR) {
+            boolean dansSesSalles = salleDe(materiel.get())
+                    .map(s -> s.getPersonnels().stream().anyMatch(p -> p.getId().equals(utilisateur.getId())))
+                    .orElse(false);
+            if (!dansSesSalles) {
+                throw new ServiceException("Ce matériel n'est pas dans vos salles");
+            }
+        }
+        return materiel;
+    }
+
+    @Override
     @Transactional
     public void desinstallerPartout(Processus processus) {
         repository.findUcAvecProcessus(processus.getId()).forEach(uc -> uc.removeProcessus(processus));
@@ -91,12 +111,9 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         Materiel materiel = trouver(id);
         if (defaillanceService.aDesDefaillances(id))
             throw new ServiceException("Ce matériel a un historique de défaillances : archive-le au lieu de le supprimer");
-        if (!materiel.isArchive() && !salleService.estEnStock(id))
-            throw new ServiceException("Un matériel affecté ne peut pas être supprimé, remets-le en stock d'abord");
-        Salle salle = salleService.salleDuMateriel(id).orElse(null);
-        if (salle != null) {
-            salle.removeMateriel(materiel);
-        }
+        // affecté ou en stock : on le sort d'abord de son poste ou de sa salle
+        posteService.posteDuMateriel(id).ifPresent(poste -> poste.removeMateriel(materiel));
+        salleService.salleDuMateriel(id).ifPresent(salle -> salle.removeMateriel(materiel));
         repository.delete(materiel);
     }
 

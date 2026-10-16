@@ -67,6 +67,18 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
 
     @Override
     @Transactional(readOnly = true)
+    public boolean occupeUnPoste(Long idPersonnel) {
+        return repository.existsByOccupant_Id(idPersonnel);
+    }
+
+    @Override
+    @Transactional
+    public void libererPosteDe(Long idPersonnel) {
+        repository.liberer(idPersonnel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Poste> findAllAvecDetails(Pageable pageable) {
         Page<Poste> page = repository.findAll(pageable);
         if (page.hasContent())

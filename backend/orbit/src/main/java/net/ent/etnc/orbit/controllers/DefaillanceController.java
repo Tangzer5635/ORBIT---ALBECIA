@@ -37,13 +37,11 @@ public class DefaillanceController {
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<DefaillanceResponseDto>> getAll(
             @RequestParam(required = false) StatutDefaillance statut,
-            @PageableDefault(size = 20) Pageable pageable
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal Personnel user
     ) {
-        Page<DefaillanceResponseDto> page = (statut == null
-                ? defaillanceService.findAll(pageable)
-                : defaillanceService.findByStatut(statut, pageable))
-                .map(defaillanceAssembler::toDto);
-        return ResponseEntity.ok(page);
+        return ResponseEntity.ok(defaillanceService.findPourUtilisateur(user, statut, pageable)
+                .map(defaillanceAssembler::toDto));
     }
 
     @GetMapping("/{id}/")
@@ -54,8 +52,17 @@ public class DefaillanceController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/materiel/{idMateriel}/")
+    /** Défaillances remontées par l'utilisateur connecté (« Mon poste »). */
+    @GetMapping("/mes/")
     @PreAuthorize("hasRole('STAGIAIRE')")
+    public ResponseEntity<List<DefaillanceResponseDto>> getMes(@AuthenticationPrincipal Personnel user) {
+        return ResponseEntity.ok(defaillanceService.findBySignalePar(user.getId()).stream()
+                .map(defaillanceAssembler::toDto)
+                .toList());
+    }
+
+    @GetMapping("/materiel/{idMateriel}/")
+    @PreAuthorize("hasAnyRole('STAGIAIRE','TECHNIQUE')")
     public ResponseEntity<List<DefaillanceResponseDto>> getByMateriel(@PathVariable Long idMateriel) {
         return ResponseEntity.ok(defaillanceService.findByMateriel(idMateriel).stream()
                 .map(defaillanceAssembler::toDto)

@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useBatiments } from "../context/BatimentsContext.tsx";
 import { getSallesDuBatiment } from "../services/salleService.ts";
 import { getUtilisateur } from "../services/authService.ts";
-import Anneau from "../components/Anneau.tsx";
-import Legende from "../components/Legende.tsx";
-import SalleCard from "../components/SalleCard.tsx";
-import StockageCard from "../components/StockageCard.tsx";
+import Anneau from "../components/Utils/Anneau.tsx";
+import Legende from "../components/Utils/Legende.tsx";
+import SalleCard from "../components/Salle/SalleCard.tsx";
+import StockageCard from "../components/Salle/StockageCard.tsx";
 import type {SalleCarte} from "../types/types.ts";
 import {pluriel, pourcentageUtilisable, totalAnneau} from "../utils/postes.ts";
-import CreerSallePopup from "../components/CreerSallePopup.tsx";
+import CreerSallePopup from "../components/Popup/Salle/CreerSallePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";
 
 // résultat du dernier chargement, mémorisé avec le bâtiment concerné
@@ -58,6 +58,10 @@ export default function SallePage() {
     }
 
     if (!idBatiment) {
+        // admin et gestionnaire (qui ont la barre des bâtiments) arrivent directement sur le premier bâtiment
+        if ((role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && batiments.length > 0) {
+            return <Navigate to={`/salles?batiment=${batiments[0].id}`} replace/>;
+        }
         return (
             <>
                 <div className="page-head"><h1>Salles</h1></div>
@@ -91,7 +95,8 @@ export default function SallePage() {
                         {(role === "ADMINISTRATEUR" || role === "GESTIONNAIRE") && (
                             <div className="hero-row">
                                 <button type="button" className="btn primary" onClick={() => setCreerOuvert(true)}>Créer une salle</button>
-                                <button type="button" className="btn">Importer une salle</button>
+                                {/* import : P2 */}
+                                <button type="button" className="btn" disabled title="Bientôt disponible">Importer une salle</button>
                             </div>
                         )}
                     </div>

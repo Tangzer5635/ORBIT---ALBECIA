@@ -78,6 +78,33 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
         return materiel;
     }
 
+    /** Une seule transaction : si l'affectation échoue, le retrait est annulé (le matériel ne reste pas en stock). */
+    @Override
+    @Transactional
+    public Materiel deplacerVersSalle(Long idSalle, Long idMateriel) {
+        remettreEnStock(idMateriel);
+        return affecterASalle(idSalle, idMateriel);
+    }
+
+    @Override
+    @Transactional
+    public Materiel deplacerVersPoste(Long idPoste, Long idMateriel) {
+        remettreEnStock(idMateriel);
+        return affecterAPoste(idPoste, idMateriel);
+    }
+
+    /** Retire le matériel de son poste ou de sa salle de cours actuelle. */
+    private void remettreEnStock(Long idMateriel) {
+        Poste poste = posteService.posteDuMateriel(idMateriel).orElse(null);
+        if (poste != null) {
+            retirerDuPoste(poste.getId(), idMateriel);
+            return;
+        }
+        Salle salle = salleService.salleDuMateriel(idMateriel)
+                .orElseThrow(() -> new ServiceException("Ce matériel n'est affecté à aucune salle"));
+        retirerDeSalle(salle.getId(), idMateriel);
+    }
+
     private void sortirDuStock(Materiel materiel) {
         if (materiel.isArchive())
             throw new ServiceException("Un matériel archivé ne peut pas être affecté");

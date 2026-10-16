@@ -8,6 +8,8 @@ import net.ent.etnc.orbit.dtos.responseDTO.MonPosteResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.PosteResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
+import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -63,7 +65,14 @@ public class PosteController {
     public ResponseEntity<MonPosteResponseDto> getMyPoste(@AuthenticationPrincipal Personnel utilisateur) {
         List<MonPosteLigne> lignes = posteService.lignesMonPoste(utilisateur.getId());
         if (lignes.isEmpty()) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(posteAssembler.toDtoMonPoste(lignes));
+        MonPosteResponseDto dto = posteAssembler.toDtoMonPoste(lignes);
+        if (dto.getIdSalle() != null) {
+            List<Poste> postesSalle = posteService.findBySalleAvecDetails(dto.getIdSalle());
+            String stageNom = salleService.findById(dto.getIdSalle())
+                    .map(Salle::getStage).map(Stage::getNom).orElse(null);
+            posteAssembler.completerPlan(dto, postesSalle, posteService.etats(postesSalle), stageNom);
+        }
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/")
@@ -90,7 +99,9 @@ public class PosteController {
 
     @GetMapping(value = "/", params = "salle")
     @PreAuthorize("hasRole('TECHNIQUE')")
-    public ResponseEntity<List<PosteResponseDto>> getBySalle(@RequestParam("salle") Long idSalle) {
+    public ResponseEntity<List<PosteResponseDto>> getBySalle(@RequestParam("salle") Long idSalle,
+                                                             @AuthenticationPrincipal Personnel utilisateur) {
+        salleService.verifierAcces(idSalle, utilisateur);
         List<Poste> postes = posteService.findBySalleAvecDetails(idSalle);
         Map<Long, EtatPoste> etats = posteService.etats(postes);
         return ResponseEntity.ok(postes.stream()

@@ -1,5 +1,5 @@
 import type {Page, Processus, ProcessusRequest} from "../types/types.ts";
-import { authHeaders } from "./api.ts";
+import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/processus`;
 
@@ -15,7 +15,7 @@ export class ProcessusError extends Error {
 export async function getProcessus(): Promise<Processus[]> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/`, { headers: authHeaders() });
     } catch {
         throw new ProcessusError(0); // serveur injoignable
     }
@@ -30,7 +30,7 @@ export async function getProcessus(): Promise<Processus[]> {
 export async function ajouterProcessus(processus: ProcessusRequest): Promise<Processus> {
     let response: Response;
     try {
-        response = await fetch(URL, {
+        response = await apiFetch(URL, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(processus),
@@ -48,7 +48,7 @@ export async function ajouterProcessus(processus: ProcessusRequest): Promise<Pro
 export async function supprimerProcessus(id: number): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(`${URL}/${id}/`, {
+        response = await apiFetch(`${URL}/${id}/`, {
             method: "DELETE",
             headers: authHeaders(),
         });

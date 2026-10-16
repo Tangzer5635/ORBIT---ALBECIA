@@ -139,10 +139,10 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
                 .collect(Collectors.groupingBy(StockageCompte::idBatiment, Collectors.mapping(
                         s -> new BatimentResponseDto.StockageDto(s.id(), s.numSalle(), s.nbMateriels()),
                         Collectors.toList())));
-        // anneau du bâtiment = anneaux de ses salles de cours additionnés
+        // anneau du bâtiment = anneaux de ses salles de cours additionnés (une salle gelée ne compte plus)
         List<Long> idsSalles = page.getContent().stream()
                 .flatMap(b -> b.getSalles().stream())
-                .filter(s -> s.getType() == TypeSalle.SalleDeCours)
+                .filter(s -> s.getType() == TypeSalle.SalleDeCours && !s.isSuspendu())
                 .map(Salle::getId).toList();
         Map<Long, AnneauDto> anneauxSalles = salleService.anneaux(idsSalles);
 
