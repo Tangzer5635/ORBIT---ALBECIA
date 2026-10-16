@@ -5,6 +5,7 @@ import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.dtos.requestDTO.MaterielRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.commons.PageResponse;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
 import net.ent.etnc.orbit.dtos.assemblers.MaterielAssembler;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
@@ -18,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -72,10 +74,11 @@ public class MaterielController {
         return ResponseEntity.ok(PageResponse.of(page, this::dto));
     }
 
+    /** Fiche d'un matériel. Ouverte au formateur pour le matériel de ses salles (« Remonter une défaillance »). */
     @GetMapping("/{id}/")
-    @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> getById(@PathVariable Long id) {
-        return materielService.findById(id)
+    @PreAuthorize("hasAnyRole('GESTIONNAIRE','FORMATEUR')")
+    public ResponseEntity<MaterielResponseDto> getById(@PathVariable Long id, @AuthenticationPrincipal Personnel user) {
+        return materielService.findPourUtilisateur(id, user)
                 .map(m -> ResponseEntity.ok(dto(m)))
                 .orElse(ResponseEntity.notFound().build());
     }

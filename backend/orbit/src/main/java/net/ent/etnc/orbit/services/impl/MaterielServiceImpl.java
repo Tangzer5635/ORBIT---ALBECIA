@@ -1,10 +1,12 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
+import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
@@ -80,6 +82,21 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     public Optional<Salle> salleDe(Materiel materiel) {
         if (materiel.isArchive()) return Optional.empty();
         return salleService.localiser(materiel.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Materiel> findPourUtilisateur(Long id, Personnel utilisateur) {
+        Optional<Materiel> materiel = repository.findById(id);
+        if (materiel.isPresent() && utilisateur.getRole() == Role.FORMATEUR) {
+            boolean dansSesSalles = salleDe(materiel.get())
+                    .map(s -> s.getPersonnels().stream().anyMatch(p -> p.getId().equals(utilisateur.getId())))
+                    .orElse(false);
+            if (!dansSesSalles) {
+                throw new ServiceException("Ce matériel n'est pas dans vos salles");
+            }
+        }
+        return materiel;
     }
 
     @Override

@@ -3,6 +3,13 @@ import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/defaillances`;
 
+// envoyé après un signalement ou une résolution : la bulle de la navbar se recompte
+export const EVT_DEFAILLANCES = "defaillances-changees";
+const prevenir = (resultat: Defaillance) => {
+    window.dispatchEvent(new Event(EVT_DEFAILLANCES));
+    return resultat;
+};
+
 export class DefaillanceError extends Error {
     status: number;
     detail: string;
@@ -54,17 +61,17 @@ export function getMesDefaillances(): Promise<Defaillance[]> {
 }
 
 export function resoudreDefaillance(id: number, noteSolution: string): Promise<Defaillance> {
-    return requete(`${URL}/${id}/resoudre/`, {
+    return requete<Defaillance>(`${URL}/${id}/resoudre/`, {
         method: "PATCH",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({noteSolution: noteSolution.trim() || null}),
-    });
+    }).then(prevenir);
 }
 
 export function signalerDefaillance(idMateriel: number, description: string): Promise<Defaillance> {
-    return requete(`${URL}/`, {
+    return requete<Defaillance>(`${URL}/`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({idMateriel, description: description.trim()}),
-    });
+    }).then(prevenir);
 }

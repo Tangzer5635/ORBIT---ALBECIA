@@ -28,4 +28,7 @@ public interface DefaillanceService extends Service<Defaillance, Long> {
     boolean aDesDefaillances(Long idMateriel);
 
     Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable) throws ServiceException;
+
+    /** Onglet Défaillances : le formateur ne voit que celles de ses salles, gestionnaire et admin voient tout. */
+    Page<Defaillance> findPourUtilisateur(Personnel utilisateur, StatutDefaillance statut, Pageable pageable) throws ServiceException;
 }
