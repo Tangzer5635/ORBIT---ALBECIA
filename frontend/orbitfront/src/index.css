@@ -2256,3 +2256,22 @@ button.plan-mat {
         width: 100%;
     }
 }
+
+
+/* ---------- Journal ---------- */
+.card-s h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+}
+
+.popup-body textarea.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre;
+    resize: vertical;
+}
+
+.popup-body .journal-copier {
+    align-self: flex-start;
+    margin-top: 10px;
+}

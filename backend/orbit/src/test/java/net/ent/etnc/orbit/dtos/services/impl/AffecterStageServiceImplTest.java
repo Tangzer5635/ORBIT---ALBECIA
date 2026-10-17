@@ -6,6 +6,7 @@ import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.projections.SalleDuStage;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.StageService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -31,6 +32,10 @@ class AffecterStageServiceImplTest {
 
     @Mock
     private SalleService salleService;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private AffecterStageServiceImpl service;

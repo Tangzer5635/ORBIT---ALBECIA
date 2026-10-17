@@ -7,12 +7,15 @@ import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.StatutDefaillance;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.repositories.DefaillanceRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,13 +35,16 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     private final MaterielService materielService;
     private final PosteService posteService;
     private final SalleService salleService;
+    private final JournalisationService journalisationService;
 
     @Autowired
-    public DefaillanceServiceImpl(DefaillanceRepository repository, MaterielService materielService, PosteService posteService, SalleService salleService) {
+    public DefaillanceServiceImpl(DefaillanceRepository repository, MaterielService materielService, PosteService posteService,
+                                  SalleService salleService, JournalisationService journalisationService) {
         super(repository);
         this.materielService = materielService;
         this.posteService = posteService;
         this.salleService = salleService;
+        this.journalisationService = journalisationService;
     }
 
     @Override
@@ -57,7 +63,10 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
         d.setDescription(description);
         d.setDateSignalement(LocalDateTime.now());
         d.setStatut(StatutDefaillance.SIGNALEE);
-        return super.create(d);
+        Defaillance creee = super.create(d);
+        journalisationService.journaliser(TypeAction.SIGNALEMENT,
+                "Défaillance #" + creee.getId() + " signalée sur le " + Libelles.materiel(materiel) + ou(idMateriel));
+        return creee;
     }
 
     @Override
@@ -71,7 +80,10 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
             throw new AccessDeniedException("Cette défaillance n'est pas dans vos salles");
         }
         d.resoudre(technicien, noteSolution);
-        return repository.saveAndFlush(d);
+        Defaillance resolue = repository.saveAndFlush(d);
+        journalisationService.journaliser(TypeAction.RESOLUTION,
+                "Défaillance #" + id + " résolue sur le " + Libelles.materiel(d.getMateriel()));
+        return resolue;
     }
 
     @Override
@@ -152,6 +164,13 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
                 : salleService.salleDuMateriel(idMateriel);
         return salle.map(s -> s.getPersonnels().stream().anyMatch(p -> memePersonne(p, user)))
                 .orElse(false);
+    }
+
+    /** Pour le journal : ", poste B2-S105-P07" ou ", salle 105" selon où est le matériel. */
+    private String ou(Long idMateriel) {
+        return posteService.posteDuMateriel(idMateriel).map(p -> ", " + Libelles.poste(p))
+                .or(() -> salleService.salleDuMateriel(idMateriel).map(s -> ", " + Libelles.salle(s)))
+                .orElse("");
     }
 
     private static boolean memePersonne(Personnel a, Personnel b) {

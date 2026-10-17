@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,24 +58,23 @@ class DefaillanceControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitRenvoyer200_sansFiltre() throws Exception {
-        when(defaillanceService.findAll(any())).thenReturn(new PageImpl<>(List.of(new Defaillance()), PageRequest.of(0, 20), 1));
+        when(defaillanceService.findPourUtilisateur(any(Personnel.class), isNull(), any()))
+                .thenReturn(new PageImpl<>(List.of(new Defaillance()), PageRequest.of(0, 20), 1));
         reponse(StatutDefaillance.SIGNALEE);
 
         mockMvc.perform(get("/api/v1/defaillances/").with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].numSerieMateriel").value("UC-0001"));
-        verify(defaillanceService, never()).findByStatut(any(), any());
     }
 
     @Test
     void getAll_doitFiltrerParStatut() throws Exception {
-        when(defaillanceService.findByStatut(eq(StatutDefaillance.SIGNALEE), any()))
+        when(defaillanceService.findPourUtilisateur(any(Personnel.class), eq(StatutDefaillance.SIGNALEE), any()))
                 .thenReturn(new PageImpl<>(List.of(new Defaillance()), PageRequest.of(0, 20), 1));
         reponse(StatutDefaillance.SIGNALEE);
 
         mockMvc.perform(get("/api/v1/defaillances/").param("statut", "SIGNALEE").with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isOk());
-        verify(defaillanceService, never()).findAll(any());
     }
 
     @Test
@@ -282,9 +282,10 @@ class DefaillanceControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void resoudre_doitRenvoyer400_quandNoteManquante() throws Exception {
+    void resoudre_doitRenvoyer400_quandNoteTropLongue() throws Exception {
+        // la note de solution est facultative (pas de @NotBlank dans ResoudreDefaillanceRequestDto), mais limitée à 500 caractères
         mockMvc.perform(patch("/api/v1/defaillances/{id}/resoudre/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"noteSolution\":\"" + "x".repeat(501) + "\"}"))
                 .andExpect(status().isBadRequest());
         verify(defaillanceService, never()).resoudre(any(), any(), any());
     }

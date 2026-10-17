@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.repositories.*;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import net.ent.etnc.orbit.services.impl.PersonnelServiceImpl;
@@ -47,6 +48,10 @@ class PersonnelServiceImplTest {
 
     @Mock
     private DefaillanceRepository defaillanceRepository;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private PersonnelServiceImpl service;

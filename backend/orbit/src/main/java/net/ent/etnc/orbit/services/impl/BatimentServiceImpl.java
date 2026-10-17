@@ -7,14 +7,17 @@ import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import net.ent.etnc.orbit.repositories.projections.StockageCompte;
 import net.ent.etnc.orbit.services.BatimentService;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,12 +37,15 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
     private final SalleService salleService;
     private final PosteService posteService;
+    private final JournalisationService journalisationService;
 
     @Autowired
-    public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService, PosteService posteService) {
+    public BatimentServiceImpl(BatimentRepository batimentRepository, SalleService salleService, PosteService posteService,
+                               JournalisationService journalisationService) {
         super(batimentRepository);
         this.salleService = salleService;
         this.posteService = posteService;
+        this.journalisationService = journalisationService;
     }
 
     /**
@@ -55,6 +61,8 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         stockage.setEtage(ETAGE_SALLE_STOCKAGE);
         stockage.setType(TypeSalle.SalleStockage);
         cree.addSalle(salleService.create(stockage));
+        journalisationService.journaliser(TypeAction.CREATION,
+                "Bâtiment " + batiment.getNumBatiment() + " créé (avec sa salle de stockage " + NUM_SALLE_STOCKAGE + ")");
         return cree;
     }
 
@@ -67,6 +75,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
         // 1. Détacher tout le matériel des salles et des postes
         List<Materiel> materiels = new ArrayList<>();
+        String vers = ""; // pour le journal : où est parti le matériel
         for (Salle salle : salles) {
             for (Poste poste : salle.getPostes()) {
                 List<Materiel> surPoste = List.copyOf(poste.getMateriels());
@@ -88,6 +97,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
             if (salles.contains(cible))
                 throw new ServiceException("La salle cible appartient au bâtiment supprimé");
             materiels.forEach(cible::addMateriel);
+            vers = ", " + materiels.size() + " matériel(s) déplacé(s) vers la " + Libelles.salle(cible);
         }
         for (Salle salle : salles) {
             for (Poste poste : List.copyOf(salle.getPostes())) {
@@ -98,6 +108,8 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
             salleService.supprimerAvecBatiment(salle.getId());
         }
         repository.delete(batiment);
+        journalisationService.journaliser(TypeAction.SUPPRESSION,
+                "Bâtiment " + batiment.getNumBatiment() + " supprimé avec ses " + salles.size() + " salle(s)" + vers);
     }
 
     @Override
@@ -110,6 +122,8 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
             throw new ServiceException("Une salle " + salle.getNumSalle() + " existe déjà dans ce bâtiment");
         batiment.addSalle(salle);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                Libelles.salle(salle) + " rattachée au bâtiment " + batiment.getNumBatiment());
         return batiment;
     }
 
@@ -124,6 +138,8 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
         batiment.removeSalle(salle);
+        journalisationService.journaliser(TypeAction.RETRAIT,
+                Libelles.salle(salle) + " détachée du bâtiment " + batiment.getNumBatiment());
     }
 
     @Override

@@ -7,6 +7,7 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -15,6 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -38,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MaterielController.class)
-@Import(WebSecurityConfig.class)
+@Import({WebSecurityConfig.class, RsqlFilterUtils.class}) // RsqlFilterUtils : composant réel, utilisé par getAll
 class MaterielControllerTest extends ControllerTestSupport {
 
     private static final String JSON_VALIDE = """
@@ -70,7 +72,7 @@ class MaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitRenvoyer200_quandGestionnaire() throws Exception {
-        when(materielService.findAll(any())).thenReturn(new PageImpl<>(List.of(materiel()), PageRequest.of(0, 20), 1));
+        when(materielService.findAll(any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(materiel()), PageRequest.of(0, 20), 1));
         reponse(EtatMateriel.DISPONIBLE);
 
         mockMvc.perform(get("/api/v1/materiels/").with(connecte(Role.GESTIONNAIRE)))
@@ -94,7 +96,7 @@ class MaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void getById_doitRenvoyer200_avecEtatCalcule() throws Exception {
-        when(materielService.findById(1L)).thenReturn(Optional.of(materiel()));
+        when(materielService.findPourUtilisateur(eq(1L), any())).thenReturn(Optional.of(materiel()));
         when(materielService.etatDe(any())).thenReturn(EtatMateriel.DEFECTUEUX);
         reponse(EtatMateriel.DEFECTUEUX);
 
@@ -106,7 +108,7 @@ class MaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void getById_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(materielService.findById(1L)).thenReturn(Optional.empty());
+        when(materielService.findPourUtilisateur(eq(1L), any())).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());

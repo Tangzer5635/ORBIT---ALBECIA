@@ -3,8 +3,10 @@ package net.ent.etnc.orbit.services.impl;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.enums.EtatPoste;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.repositories.PosteRepository;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -31,9 +33,12 @@ import java.util.stream.Collectors;
 @Service
 public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> implements PosteService {
 
+    private final JournalisationService journalisationService;
+
     @Autowired
-    public PosteServiceImpl(PosteRepository posteRepository) {
+    public PosteServiceImpl(PosteRepository posteRepository, JournalisationService journalisationService) {
         super(posteRepository);
+        this.journalisationService = journalisationService;
     }
 
     @Override
@@ -55,7 +60,10 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
                 .orElseThrow(() -> new ServiceException("Poste " + poste.getId() + " introuvable"));
         if (repository.existsByNumPosteAndIdNot(poste.getNumPoste(), poste.getId()))
             throw new ServiceException("Le poste " + poste.getNumPoste() + " existe déjà");
+        String ancien = existant.getNumPoste();
         existant.setNumPoste(poste.getNumPoste());
+        journalisationService.journaliser(TypeAction.MODIFICATION,
+                "Poste " + ancien + " renommé en " + poste.getNumPoste());
         return existant;
     }
 

@@ -5,10 +5,13 @@ import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.services.AffecterStagiaireService;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,12 +22,14 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
     private final PosteService posteService;
     private final SalleService salleService;
     private final PersonnelService personnelService;
+    private final JournalisationService journalisationService;
 
     public AffecterStagiaireServiceImpl(PosteService posteService, SalleService salleService,
-                                        PersonnelService personnelService) {
+                                        PersonnelService personnelService, JournalisationService journalisationService) {
         this.posteService = posteService;
         this.salleService = salleService;
         this.personnelService = personnelService;
+        this.journalisationService = journalisationService;
     }
 
     /** Un poste stagiaire libre reçoit un stagiaire du stage de la salle, qui n'a pas encore de poste. */
@@ -57,6 +62,8 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
             throw new ServiceException(nom(stagiaire) + " a déjà un poste");
 
         poste.setOccupant(stagiaire);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                "Stagiaire " + Libelles.personne(stagiaire) + " affecté au " + Libelles.poste(poste));
         return poste;
     }
 
@@ -66,7 +73,10 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
         Poste poste = poste(idPoste);
         if (poste.getOccupant() == null || !poste.getOccupant().getId().equals(idStagiaire))
             throw new ServiceException("Ce stagiaire n'est pas sur le poste " + poste.getNumPoste());
+        Personnel stagiaire = poste.getOccupant();
         poste.setOccupant(null);
+        journalisationService.journaliser(TypeAction.RETRAIT,
+                "Stagiaire " + Libelles.personne(stagiaire) + " retiré du " + Libelles.poste(poste));
         return poste;
     }
 

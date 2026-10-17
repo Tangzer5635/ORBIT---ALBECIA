@@ -355,3 +355,32 @@ export interface Defaillance {
     noteSolution: string | null;
     dateResolution: string | null;
 }
+
+//==========================================
+//      JOURNAL
+//==========================================
+
+// TypeAction.java : type d'une ligne du journal
+export const LIBELLE_ACTION = {
+    CONNEXION: "Connexion",
+    ECHEC_CONNEXION: "Échec de connexion",
+    DECONNEXION: "Déconnexion",
+    CREATION: "Création",
+    MODIFICATION: "Modification",
+    SUPPRESSION: "Suppression",
+    AFFECTATION: "Affectation",
+    RETRAIT: "Retrait",
+    SIGNALEMENT: "Signalement",
+    RESOLUTION: "Résolution",
+    IMPORT: "Import",
+} as const;
+export type TypeAction = keyof typeof LIBELLE_ACTION;
+
+// JournalisationResponseDto
+export interface Journalisation {
+    id: number;
+    dateHeure: string; // "2026-10-17T20:15:02.123456"
+    auteurId?: number; // absent si l'auteur est inconnu (échec de connexion)
+    action: TypeAction;
+    detail: string;
+}
