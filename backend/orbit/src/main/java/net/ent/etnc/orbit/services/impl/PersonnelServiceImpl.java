@@ -2,10 +2,13 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.repositories.*;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,11 +31,13 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
     private final SalleRepository salleRepository;
     private final DefaillanceRepository defaillanceRepository;
     private final StageRepository stageRepository;
+    private final JournalisationService journalisationService;
 
     @Autowired
     public PersonnelServiceImpl(PersonnelRepository personnelRepository, PasswordEncoder passwordEncoder,
                                 RefreshTokenService refreshTokenService, PosteRepository posteRepository,
-                                SalleRepository salleRepository, DefaillanceRepository defaillanceRepository, StageRepository stageRepository) {
+                                SalleRepository salleRepository, DefaillanceRepository defaillanceRepository, StageRepository stageRepository,
+                                JournalisationService journalisationService) {
         super(personnelRepository);
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
@@ -40,6 +45,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         this.salleRepository = salleRepository;
         this.defaillanceRepository = defaillanceRepository;
         this.stageRepository = stageRepository;
+        this.journalisationService = journalisationService;
     }
 
     @Override
@@ -49,7 +55,10 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
             throw new ServiceException("RG-U03", "Le mot de passe est obligatoire");
         }
         entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
-        return super.create(entity);
+        Personnel cree = super.create(entity);
+        journalisationService.journaliser(TypeAction.CREATION,
+                "Utilisateur " + Libelles.personne(entity) + " créé (" + entity.getRole().getLibelle() + ")");
+        return cree;
     }
 
     /**
@@ -94,11 +103,14 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         if (donnees.getPassword() != null && !donnees.getPassword().isBlank()) {
             user.setMotDePasse(passwordEncoder.encode(donnees.getPassword()));
         }
+        Personnel modifie;
         try {
-            return repository.saveAndFlush(user);
+            modifie = repository.saveAndFlush(user);
         } catch (Exception e) {
             throw new ServiceException("Erreur lors de la mise à jour", e);
         }
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Utilisateur " + Libelles.personne(user) + " modifié");
+        return modifie;
     }
 
     /**
@@ -128,6 +140,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         defaillanceRepository.retirerTechnicien(id);
         refreshTokenService.revokeAllForUser(user.getUsername());
         repository.deleteById(id);
+        journalisationService.journaliser(TypeAction.SUPPRESSION, "Utilisateur " + Libelles.personne(user) + " supprimé");
     }
 
     @Override
@@ -151,6 +164,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         }
         user.setActive(false);
         refreshTokenService.revokeAllForUser(user.getUsername());
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Compte " + Libelles.personne(user) + " désactivé");
         return repository.save(user);
     }
 
@@ -165,6 +179,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
             throw new ServiceException("RG-U12", "Ce compte est déjà actif.");
         }
         user.setActive(true);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Compte " + Libelles.personne(user) + " activé");
         return repository.save(user);
     }
 
@@ -184,6 +199,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         }
         user.setVerrouille(true);
         refreshTokenService.revokeAllForUser(user.getUsername());
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Compte " + Libelles.personne(user) + " verrouillé");
         return repository.save(user);
     }
 
@@ -195,6 +211,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
             throw new ServiceException("RG-U08", "Ce compte n'est pas verrouillé.");
         }
         user.setVerrouille(false);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Compte " + Libelles.personne(user) + " déverrouillé");
         return repository.save(user);
     }
 
@@ -216,9 +233,12 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         if (user.getRole() == Role.FORMATEUR && role != Role.FORMATEUR && stageRepository.existsByFormateur_Id(id)) {
             throw new ServiceException("Impossible de changer le rôle d'un formateur qui gère un stage.");
         }
+        Role ancien = user.getRole();
         user.setRole(role);
         if (role != Role.STAGIAIRE) user.setStage(null); // seul un stagiaire est dans un stage
         refreshTokenService.revokeAllForUser(user.getUsername());
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Rôle de " + Libelles.personne(user) + " changé : "
+                + ancien.getLibelle() + " → " + role.getLibelle());
         return repository.save(user);
     }
 

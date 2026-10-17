@@ -2,6 +2,7 @@ package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Master;
 import net.ent.etnc.orbit.repositories.MasterRepository;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import net.ent.etnc.orbit.services.impl.MasterServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,10 @@ class MasterServiceImplTest {
 
     @Mock
     private MasterRepository repository;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private MasterServiceImpl service;

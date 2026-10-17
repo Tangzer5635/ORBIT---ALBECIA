@@ -5,6 +5,7 @@ import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
@@ -33,6 +34,10 @@ class AffecterStagiaireServiceImplTest {
 
     @Mock
     private PersonnelService personnelService;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private AffecterStagiaireServiceImpl service;

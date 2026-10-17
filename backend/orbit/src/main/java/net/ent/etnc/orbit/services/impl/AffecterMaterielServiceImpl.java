@@ -3,50 +3,61 @@ package net.ent.etnc.orbit.services.impl;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.AffecterMaterielService;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Affectations du matériel. Chaque méthode publique écrit une seule ligne dans le journal :
+ * les méthodes privées ne journalisent pas, donc un déplacement (retrait + affectation) = une ligne.
+ */
 @Service
 public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     private final MaterielService materielService;
     private final SalleService salleService;
     private final PosteService posteService;
+    private final JournalisationService journalisationService;
 
-    public AffecterMaterielServiceImpl(MaterielService materielService, SalleService salleService, PosteService posteService) {
+    public AffecterMaterielServiceImpl(MaterielService materielService, SalleService salleService, PosteService posteService,
+                                       JournalisationService journalisationService) {
         this.materielService = materielService;
         this.salleService = salleService;
         this.posteService = posteService;
+        this.journalisationService = journalisationService;
     }
 
     @Override
     @Transactional
     public Materiel affecterASalle(Long idSalle, Long idMateriel) {
-        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        if (salle.getType() == TypeSalle.SalleStockage)
-            throw new ServiceException("On n'affecte pas un matériel à une salle de stockage");
-
-        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
+        Salle salle = salleDeCours(idSalle);
+        Materiel materiel = trouverMateriel(idMateriel);
         sortirDuStock(materiel);
         salle.addMateriel(materiel);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                Libelles.materiel(materiel) + " affecté à la " + Libelles.salle(salle));
         return materiel;
     }
 
     @Override
     @Transactional
     public Materiel affecterAPoste(Long idPoste, Long idMateriel) {
-        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
-        Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
+        Poste poste = trouverPoste(idPoste);
+        Materiel materiel = trouverMateriel(idMateriel);
         sortirDuStock(materiel);
         poste.addMateriel(materiel);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                Libelles.materiel(materiel) + " affecté au " + Libelles.poste(poste));
         return materiel;
     }
 
@@ -54,27 +65,19 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Transactional
     public Materiel retirerDeSalle(Long idSalle, Long idMateriel) {
         Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        if (salle.getType() == TypeSalle.SalleStockage)
-            throw new ServiceException("Ce matériel est déjà en stock");
-        Materiel materiel = chercher(salle.getMateriels(), idMateriel);
-        if (materiel == null)
-            throw new ServiceException("Ce matériel n'est pas dans cette salle");
-        salle.removeMateriel(materiel);
-        Salle stockage = salleService.trouverStockage(idSalle);
-        stockage.addMateriel(materiel);
+        Materiel materiel = enleverDeSalle(salle, idMateriel);
+        journalisationService.journaliser(TypeAction.RETRAIT,
+                Libelles.materiel(materiel) + " retiré de la " + Libelles.salle(salle) + " et remis en stock");
         return materiel;
     }
 
     @Override
     @Transactional
     public Materiel retirerDuPoste(Long idPoste, Long idMateriel) {
-        Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
-        Materiel materiel = chercher(poste.getMateriels(), idMateriel);
-        if (materiel == null)
-            throw new ServiceException("Ce matériel n'est pas sur ce poste");
-        poste.removeMateriel(materiel);
-        Salle stockage = salleService.trouverStockageDuPoste(idPoste);
-        stockage.addMateriel(materiel);
+        Poste poste = trouverPoste(idPoste);
+        Materiel materiel = enleverDuPoste(poste, idMateriel);
+        journalisationService.journaliser(TypeAction.RETRAIT,
+                Libelles.materiel(materiel) + " retiré du " + Libelles.poste(poste) + " et remis en stock");
         return materiel;
     }
 
@@ -82,27 +85,75 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel deplacerVersSalle(Long idSalle, Long idMateriel) {
-        remettreEnStock(idMateriel);
-        return affecterASalle(idSalle, idMateriel);
+        String origine = remettreEnStock(idMateriel);
+        Salle salle = salleDeCours(idSalle);
+        Materiel materiel = trouverMateriel(idMateriel);
+        sortirDuStock(materiel);
+        salle.addMateriel(materiel);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                Libelles.materiel(materiel) + " déplacé " + origine + " vers la " + Libelles.salle(salle));
+        return materiel;
     }
 
     @Override
     @Transactional
     public Materiel deplacerVersPoste(Long idPoste, Long idMateriel) {
-        remettreEnStock(idMateriel);
-        return affecterAPoste(idPoste, idMateriel);
+        String origine = remettreEnStock(idMateriel);
+        Poste poste = trouverPoste(idPoste);
+        Materiel materiel = trouverMateriel(idMateriel);
+        sortirDuStock(materiel);
+        poste.addMateriel(materiel);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                Libelles.materiel(materiel) + " déplacé " + origine + " vers le " + Libelles.poste(poste));
+        return materiel;
     }
 
-    /** Retire le matériel de son poste ou de sa salle de cours actuelle. */
-    private void remettreEnStock(Long idMateriel) {
+    /** Salle qui peut recevoir du matériel : pas une salle de stockage. */
+    private Salle salleDeCours(Long idSalle) {
+        Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+        if (salle.getType() == TypeSalle.SalleStockage)
+            throw new ServiceException("On n'affecte pas un matériel à une salle de stockage");
+        return salle;
+    }
+
+    /** Remet en stock un matériel de la salle (sans journaliser). */
+    private Materiel enleverDeSalle(Salle salle, Long idMateriel) {
+        if (salle.getType() == TypeSalle.SalleStockage)
+            throw new ServiceException("Ce matériel est déjà en stock");
+        Materiel materiel = chercher(salle.getMateriels(), idMateriel);
+        if (materiel == null)
+            throw new ServiceException("Ce matériel n'est pas dans cette salle");
+        salle.removeMateriel(materiel);
+        Salle stockage = salleService.trouverStockage(salle.getId());
+        stockage.addMateriel(materiel);
+        return materiel;
+    }
+
+    /** Remet en stock un matériel du poste (sans journaliser). */
+    private Materiel enleverDuPoste(Poste poste, Long idMateriel) {
+        Materiel materiel = chercher(poste.getMateriels(), idMateriel);
+        if (materiel == null)
+            throw new ServiceException("Ce matériel n'est pas sur ce poste");
+        poste.removeMateriel(materiel);
+        Salle stockage = salleService.trouverStockageDuPoste(poste.getId());
+        stockage.addMateriel(materiel);
+        return materiel;
+    }
+
+    /**
+     * Retire le matériel de son poste ou de sa salle de cours actuelle.
+     * @return d'où il vient, pour le journal : "du poste B2-S105-P07" ou "de la salle 105"
+     */
+    private String remettreEnStock(Long idMateriel) {
         Poste poste = posteService.posteDuMateriel(idMateriel).orElse(null);
         if (poste != null) {
-            retirerDuPoste(poste.getId(), idMateriel);
-            return;
+            enleverDuPoste(poste, idMateriel);
+            return "du " + Libelles.poste(poste);
         }
         Salle salle = salleService.salleDuMateriel(idMateriel)
                 .orElseThrow(() -> new ServiceException("Ce matériel n'est affecté à aucune salle"));
-        retirerDeSalle(salle.getId(), idMateriel);
+        enleverDeSalle(salle, idMateriel);
+        return "de la " + Libelles.salle(salle);
     }
 
     private void sortirDuStock(Materiel materiel) {
@@ -112,6 +163,14 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
         if (salle == null || salle.getType() != TypeSalle.SalleStockage)
             throw new ServiceException("Seul un matériel en stock peut être affecté");
         salle.removeMateriel(materiel);
+    }
+
+    private Poste trouverPoste(Long idPoste) {
+        return posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
+    }
+
+    private Materiel trouverMateriel(Long idMateriel) {
+        return materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
     }
 
     private Materiel chercher(List<Materiel> materiels, Long idMateriel) {

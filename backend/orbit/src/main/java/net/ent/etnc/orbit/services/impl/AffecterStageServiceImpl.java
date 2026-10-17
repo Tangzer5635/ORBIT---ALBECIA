@@ -2,10 +2,13 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.AffecterStageService;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.StageService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +20,13 @@ public class AffecterStageServiceImpl implements AffecterStageService {
 
     private final StageService stageService;
     private final SalleService salleService;
+    private final JournalisationService journalisationService;
 
-    public AffecterStageServiceImpl(StageService stageService, SalleService salleService) {
+    public AffecterStageServiceImpl(StageService stageService, SalleService salleService,
+                                    JournalisationService journalisationService) {
         this.stageService = stageService;
         this.salleService = salleService;
+        this.journalisationService = journalisationService;
     }
 
     /** Une salle de cours accueille un seul stage à la fois, et un stage n'a qu'une salle. */
@@ -44,6 +50,8 @@ public class AffecterStageServiceImpl implements AffecterStageService {
             throw new ServiceException("Le stage " + stage.getNom() + " est terminé");
 
         salle.setStage(stage);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                Libelles.stage(stage) + " affecté à la " + Libelles.salle(salle));
         return salle;
     }
 
@@ -56,8 +64,11 @@ public class AffecterStageServiceImpl implements AffecterStageService {
         if (salle.getStage() == null || !salle.getStage().getId().equals(idStage))
             throw new ServiceException("Ce stage n'est pas dans cette salle");
 
+        Stage stage = salle.getStage();
         salle.setStage(null);
         salle.getPostes().forEach(poste -> poste.setOccupant(null));
+        journalisationService.journaliser(TypeAction.RETRAIT,
+                Libelles.stage(stage) + " retiré de la " + Libelles.salle(salle) + " (postes libérés)");
         return salle;
     }
 }

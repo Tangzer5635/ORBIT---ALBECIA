@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -28,6 +29,10 @@ class AffecterFormateurServiceImplTest {
 
     @Mock
     private PersonnelService personnelService;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private AffecterFormateurServiceImpl service;

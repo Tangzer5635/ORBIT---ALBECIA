@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.dtos.services.impl;
 import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.enums.ListeProcessus;
 import net.ent.etnc.orbit.repositories.ProcessusRepository;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import net.ent.etnc.orbit.services.impl.ProcessusServiceImpl;
@@ -28,6 +29,10 @@ class ProcessusServiceImplTest {
 
     @Mock
     private MaterielService materielService;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private ProcessusServiceImpl service;
