@@ -12,6 +12,7 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.entities.TableauInteractif;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.VideoProjecteur;
@@ -298,6 +299,100 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         salle.setGelJusqu(null);
         journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelle(salle) + " dégelée");
         return salle;
+    }
+
+    @Override
+    @Transactional
+    public Salle deplacer(Long idSalle, Long idSalleCible) {
+        if (idSalle.equals(idSalleCible))
+            throw new ServiceException("Choisissez une autre salle que celle à déplacer");
+        Salle source = trouver(idSalle);
+        Salle cible = trouver(idSalleCible);
+        for (Salle s : List.of(source, cible)) {
+            if (s.getType() != TypeSalle.SalleDeCours)
+                throw new ServiceException("Seule une salle de cours se déplace");
+            if (s.isSuspendu())
+                throw new ServiceException("La salle " + s.getNumSalle() + " est gelée : dégelez-la avant le déplacement");
+        }
+        if (cible.getStage() != null)
+            throw new ServiceException("La salle " + cible.getNumSalle() + " accueille déjà le "
+                    + Libelles.stage(cible.getStage()) + " : retirez-le avant le déplacement");
+
+        // taille de la cible = ses postes stagiaires et son matériel de salle
+        verifierPlace(cible, "poste(s) stagiaire(s)", postesStagiaires(source), postesStagiaires(cible));
+        verifierPlace(cible, "vidéoprojecteur(s)", nbDeType(source, VideoProjecteur.TYPE), nbDeType(cible, VideoProjecteur.TYPE));
+        verifierPlace(cible, "tableau(x) interactif(s)", nbDeType(source, TableauInteractif.TYPE), nbDeType(cible, TableauInteractif.TYPE));
+
+        String libelleSource = libelle(source);
+        String libelleCible = libelle(cible);
+        Batiment batimentCible = batimentRepository.findBySalles_Id(idSalleCible)
+                .orElseThrow(() -> new ServiceException("La salle " + cible.getNumSalle() + " n'est dans aucun bâtiment"));
+
+        // 1. l'ancien contenu de la cible retourne au stock de son bâtiment (poste formateur compris)
+        if (!cible.getMateriels().isEmpty()) {
+            Salle reserve = trouverStockage(idSalleCible);
+            for (Materiel m : List.copyOf(cible.getMateriels())) {
+                cible.removeMateriel(m);
+                reserve.addMateriel(m);
+            }
+        }
+        for (Poste p : List.copyOf(cible.getPostes())) {
+            retirerPoste(p.getId());
+        }
+        // les anciens postes doivent être supprimés en base avant de reprendre leurs numéros
+        repository.flush();
+
+        // 2. postes de la source, renumérotés pour la cible ("B1-S101-P07" -> "B2-S204-P07")
+        int nbPostes = source.getPostes().size();
+        String prefixe = prefixePostes(batimentCible, cible);
+        for (Poste p : List.copyOf(source.getPostes())) {
+            source.removePoste(p);
+            p.setNumPoste(prefixe + p.getNumPoste().substring(p.getNumPoste().lastIndexOf('-') + 1));
+            cible.addPoste(p);
+        }
+
+        // 3. matériel de salle (vidéoprojecteurs, tableaux)
+        int nbMateriels = source.getMateriels().size();
+        for (Materiel m : List.copyOf(source.getMateriels())) {
+            source.removeMateriel(m);
+            cible.addMateriel(m);
+        }
+
+        // 4. formateurs attribués et master
+        for (Personnel p : List.copyOf(source.getPersonnels())) {
+            source.removePersonnel(p);
+            if (!cible.getPersonnels().contains(p)) cible.addPersonnel(p);
+        }
+        cible.setMaster(source.getMaster());
+        source.setMaster(null);
+
+        // 5. stage (un stage n'est que dans une salle : on le libère en base avant de le poser sur la cible)
+        Stage stage = source.getStage();
+        if (stage != null) {
+            source.setStage(null);
+            repository.flush();
+            cible.setStage(stage);
+        }
+
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelleSource + " déplacée vers la salle "
+                + libelleCible + " : " + nbPostes + " poste(s), " + nbMateriels + " matériel(s) de salle"
+                + (stage != null ? ", " + Libelles.stage(stage) : "") + " (ancien contenu de la salle "
+                + cible.getNumSalle() + " remis en stock)");
+        return cible;
+    }
+
+    private static void verifierPlace(Salle cible, String quoi, long besoin, long place) {
+        if (besoin > place)
+            throw new ServiceException("La salle " + cible.getNumSalle() + " n'a que " + place + " " + quoi
+                    + ", il en faut " + besoin);
+    }
+
+    private static long postesStagiaires(Salle salle) {
+        return salle.getPostes().stream().filter(p -> !p.getNumPoste().endsWith("-F")).count();
+    }
+
+    private static long nbDeType(Salle salle, String type) {
+        return salle.getMateriels().stream().filter(m -> type.equals(m.getType())).count();
     }
 
     private Salle trouver(Long idSalle) {
