@@ -1,6 +1,5 @@
 package net.ent.etnc.orbit.controllers;
 
-import net.ent.etnc.orbit.models.entities.Master;
 import net.ent.etnc.orbit.dtos.MasterDto;
 import net.ent.etnc.orbit.dtos.assemblers.MasterAssembler;
 import net.ent.etnc.orbit.services.MasterService;
@@ -45,22 +44,16 @@ public class MasterController {
     @PostMapping
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MasterDto> post(@RequestBody MasterDto masterDto) {
-        return ResponseEntity.ok(
-                masterAssembler.toDto(
-                        masterService.create(
-                                masterAssembler.toEntity(masterDto))));
+        return ResponseEntity.ok(masterAssembler.toDto(
+                masterService.creer(masterAssembler.toEntity(masterDto), masterDto.getProcessusIds())));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MasterDto> put(@PathVariable Long id, @RequestBody MasterDto masterDto) {
         if (!masterService.existsById(id)) return ResponseEntity.notFound().build();
-        Master master = masterAssembler.toEntity(masterDto);
-        master.setId(id);
-        return ResponseEntity.ok(
-                masterAssembler.toDto(
-                        masterService.update(
-                                master)));
+        return ResponseEntity.ok(masterAssembler.toDto(
+                masterService.modifier(id, masterAssembler.toEntity(masterDto), masterDto.getProcessusIds())));
     }
 
     @DeleteMapping("/{id}")

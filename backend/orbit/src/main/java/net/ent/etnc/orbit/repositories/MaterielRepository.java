@@ -18,4 +18,9 @@ public interface MaterielRepository extends BaseRepository<Materiel> {
 
     @Query("select u from UC u join u.processus p where p.id = :idProcessus")
     List<UC> findUcAvecProcessus(@Param("idProcessus") Long idProcessus);
+
+    /** UC posées sur les postes de cette salle. */
+    @Query("select u from UC u where u.id in "
+            + "(select m.id from Salle s join s.postes p join p.materiels m where s.id = :idSalle)")
+    List<UC> findUcDeLaSalle(@Param("idSalle") Long idSalle);
 }

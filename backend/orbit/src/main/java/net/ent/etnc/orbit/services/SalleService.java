@@ -61,6 +61,9 @@ public interface SalleService extends Service<Salle, Long> {
 
     Salle degeler(Long idSalle) throws ServiceException;
 
+    /** Salles où ce master est plaqué. */
+    List<Salle> sallesDuMaster(Long idMaster);
+
     /**
      * « Déplacer la salle » : postes (formateur compris), matériel de salle, stage, formateurs et master
      * passent dans la salle cible, qui doit avoir au moins autant de postes stagiaires, de vidéoprojecteurs

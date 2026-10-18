@@ -25,6 +25,9 @@ public class SalleResponseDto {
     private AnneauDto anneau;
     private Long stageId;     // stage accueilli par la salle, absent s'il n'y en a pas
     private String stageNom;
+    private Long masterId;    // master plaqué sur la salle, absent s'il n'y en a pas
+    private String masterNom; // "Dev (1.2)"
+    private String creePar;   // "Prénom Nom" du gestionnaire qui a créé la salle, absent si inconnu
     // détail du stage, seulement sur GET /salles/{id}/ (panneau « Vue de la salle »)
     private TypeFormation stageType;
     private LocalDate stageDateDebut;

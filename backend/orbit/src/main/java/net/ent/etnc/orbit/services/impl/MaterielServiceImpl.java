@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -113,6 +114,17 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Transactional
     public void desinstallerPartout(Processus processus) {
         repository.findUcAvecProcessus(processus.getId()).forEach(uc -> uc.removeProcessus(processus));
+    }
+
+    @Override
+    @Transactional
+    public int installerImage(Long idSalle, List<Processus> processus) {
+        List<UC> ucs = repository.findUcDeLaSalle(idSalle);
+        for (UC uc : ucs) {
+            List.copyOf(uc.getProcessus()).forEach(uc::removeProcessus);
+            processus.forEach(uc::addProcessus);
+        }
+        return ucs.size();
     }
 
     @Override

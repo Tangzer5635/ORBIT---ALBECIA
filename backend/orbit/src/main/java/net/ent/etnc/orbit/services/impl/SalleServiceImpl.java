@@ -35,6 +35,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,9 +131,16 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         Batiment batiment = trouverBatiment(idBatiment);
         if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
             throw new ServiceException("Une salle " + salle.getNumSalle() + " existe déjà dans ce bâtiment");
+        salle.setCreePar(nomUtilisateurCourant());
         Salle creee = create(salle);
         batiment.addSalle(creee);
         return creee;
+    }
+
+    /** « Prénom Nom » de l'utilisateur connecté (null au démarrage, dans l'Init). */
+    private static String nomUtilisateurCourant() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof Personnel p ? p.getPrenom() + " " + p.getNom() : null;
     }
 
     private Batiment trouverBatiment(Long idBatiment) {
@@ -393,6 +402,12 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     private static long nbDeType(Salle salle, String type) {
         return salle.getMateriels().stream().filter(m -> type.equals(m.getType())).count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Salle> sallesDuMaster(Long idMaster) {
+        return repository.findByMaster_Id(idMaster);
     }
 
     private Salle trouver(Long idSalle) {

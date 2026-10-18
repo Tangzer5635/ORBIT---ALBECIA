@@ -282,6 +282,7 @@ public class Init implements CommandLineRunner {
                                    Map<Long, List<Poste>> aOccuper, List<Salle> sallesDeCours) throws ServiceException {
         Salle salle = salleService.create(batiment.getId(),
                 buildSalle(numSalle, Integer.toString(etage), TypeSalle.SalleDeCours));
+        salle.setCreePar(gestionnaire.getPrenom() + " " + gestionnaire.getNom());
         Personnel formateur = choisir(formateurs);
         salle.addPersonnel(formateur);
 

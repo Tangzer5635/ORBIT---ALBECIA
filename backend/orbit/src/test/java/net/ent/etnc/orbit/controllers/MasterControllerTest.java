@@ -114,7 +114,7 @@ class MasterControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer200_quandValide() throws Exception {
         when(masterAssembler.toEntity(any(MasterDto.class))).thenReturn(master());
-        when(masterService.create(any())).thenReturn(master());
+        when(masterService.creer(any(), any())).thenReturn(master());
         reponse();
 
         mockMvc.perform(post("/api/v1/masters").with(connecte(Role.GESTIONNAIRE))
@@ -126,7 +126,7 @@ class MasterControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer400_quandNomDejaPris() throws Exception {
         when(masterAssembler.toEntity(any(MasterDto.class))).thenReturn(master());
-        when(masterService.create(any())).thenThrow(new ServiceException("Erreur lors de la sauvegarde"));
+        when(masterService.creer(any(), any())).thenThrow(new ServiceException("Erreur lors de la sauvegarde"));
 
         mockMvc.perform(post("/api/v1/masters").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
@@ -139,7 +139,7 @@ class MasterControllerTest extends ControllerTestSupport {
         mockMvc.perform(post("/api/v1/masters").with(connecte(Role.FORMATEUR))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isForbidden());
-        verify(masterService, never()).create(any());
+        verify(masterService, never()).creer(any(), any());
     }
 
     // ---------- put ----------
@@ -148,7 +148,7 @@ class MasterControllerTest extends ControllerTestSupport {
     void put_doitRenvoyer200_quandValide() throws Exception {
         when(masterService.existsById(1L)).thenReturn(true);
         when(masterAssembler.toEntity(any(MasterDto.class))).thenReturn(master());
-        when(masterService.update(any())).thenReturn(master());
+        when(masterService.modifier(any(), any(), any())).thenReturn(master());
         reponse();
 
         mockMvc.perform(put("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE))
@@ -163,7 +163,7 @@ class MasterControllerTest extends ControllerTestSupport {
         mockMvc.perform(put("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isNotFound());
-        verify(masterService, never()).update(any());
+        verify(masterService, never()).modifier(any(), any(), any());
     }
 
     @Test
