@@ -355,3 +355,17 @@ export interface Defaillance {
     noteSolution: string | null;
     dateResolution: string | null;
 }
+
+//===================================
+//      CALENDRIER
+//===================================
+export interface MoisGarantie {
+    mois: string;   // "2026-10"
+    nb: number;     // materiels dont la garantie se termine ce mois la
+}
+
+export interface CalendrierGaranties {
+    annee: number;
+    expirees: number;        // hors garantie à ce jour
+    mois: MoisGarantie[];    // janvier à décembre de l'année affichée
+}
