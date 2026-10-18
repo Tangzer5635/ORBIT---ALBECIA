@@ -42,7 +42,7 @@ async function requete<T>(url: string, init: RequestInit = {}): Promise<T> {
 
 // Méthode pour récupérer une page de matériels filtrés
 export async function getMateriels(filtres: FiltresMateriel, page = 0, size = 20): Promise<Page<Materiel>> {
-    // URLSearchParams encode les caractères spéciaux du filtre RSQL (; = " espaces)
+    // URLSearchParams encode les caractères spéciaux du filtre RSQL ( & ; = espace ...)
     const params = new URLSearchParams({ page: String(page), size: String(size), sort: "id" });
     if (filtres.filter) params.set("filter", filtres.filter);
     if (filtres.type) params.set("type", filtres.type);
