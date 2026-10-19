@@ -1,4 +1,4 @@
-import type {EtatMateriel, Materiel, MaterielRequest, Page, TypeMateriel} from "../types/types.ts";
+import type {CalendrierGaranties, EtatMateriel, Materiel, MaterielRequest, Page, TypeMateriel} from "../types/types.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 import type {Localisation} from "../utils/materiels.ts";
 
@@ -42,7 +42,7 @@ async function requete<T>(url: string, init: RequestInit = {}): Promise<T> {
 
 // Méthode pour récupérer une page de matériels filtrés
 export async function getMateriels(filtres: FiltresMateriel, page = 0, size = 20): Promise<Page<Materiel>> {
-    // URLSearchParams encode les caractères spéciaux du filtre RSQL (; = " espaces)
+    // URLSearchParams encode les caractères spéciaux du filtre RSQL ( & ; = espace ...)
     const params = new URLSearchParams({ page: String(page), size: String(size), sort: "id" });
     if (filtres.filter) params.set("filter", filtres.filter);
     if (filtres.type) params.set("type", filtres.type);
@@ -100,4 +100,18 @@ export function remettreEnStock(id: number, depuis: Emplacement): Promise<Materi
 // Changer d'emplacement : déplace un matériel affecté vers une autre salle ou un autre poste
 export function deplacerMateriel(id: number, vers: Emplacement): Promise<Materiel> {
     return requete(`${URL}/${id}/?${param(vers)}`, {method: "PATCH"});
+}
+
+export async function getCalendrierGaranties(annee: number): Promise<CalendrierGaranties> {
+    let response: Response;
+    try {
+        //on aura toujorus une année
+        response = await fetch(`${URL}/garanties/?annee=${annee}`, { headers: authHeaders() });
+    } catch {
+        throw new MaterielError(0); // serveur injoignable
+    }
+
+    if (!response.ok) throw new MaterielError(response.status);
+
+    return await response.json();
 }

@@ -11,7 +11,7 @@ export class ProcessusError extends Error {
     }
 }
 
-// Méthode pour récupérer la liste des processus
+// liste des processus
 export async function getProcessus(): Promise<Processus[]> {
     let response: Response;
     try {
@@ -26,7 +26,7 @@ export async function getProcessus(): Promise<Processus[]> {
     return data.content;
 }
 
-// Méthode pour ajouter un processus
+
 export async function ajouterProcessus(processus: ProcessusRequest): Promise<Processus> {
     let response: Response;
     try {
