@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.dtos.services.impl;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.StageService;
@@ -32,6 +33,10 @@ class StageAffectationServiceImplTest {
 
     @Mock
     private PosteService posteService;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private StageAffectationServiceImpl service;

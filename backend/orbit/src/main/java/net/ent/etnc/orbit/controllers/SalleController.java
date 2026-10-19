@@ -104,6 +104,13 @@ public class SalleController {
         return ResponseEntity.ok(salleAssembler.toDto(salleService.degeler(id)));
     }
 
+    /** « Déplacer la salle » : tout son contenu (postes, matériel, stage, formateurs, master) va dans la salle cible. */
+    @PatchMapping(value = "/{id}/deplacer/", params = "salleCibleId")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> deplacer(@PathVariable Long id, @RequestParam Long salleCibleId) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.deplacer(id, salleCibleId)));
+    }
+
     @DeleteMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

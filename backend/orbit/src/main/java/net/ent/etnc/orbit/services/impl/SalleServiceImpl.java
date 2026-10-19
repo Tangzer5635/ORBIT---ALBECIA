@@ -12,25 +12,31 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.entities.TableauInteractif;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.models.enums.MotifGel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
 import net.ent.etnc.orbit.repositories.SalleRepository;
 import net.ent.etnc.orbit.repositories.projections.IdCompte;
 import net.ent.etnc.orbit.repositories.projections.SalleBatiment;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,12 +60,15 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     private final PosteService posteService;
     private final BatimentRepository batimentRepository;
+    private final JournalisationService journalisationService;
 
     @Autowired
-    public SalleServiceImpl(SalleRepository salleRepository, PosteService posteService, BatimentRepository batimentRepository) {
+    public SalleServiceImpl(SalleRepository salleRepository, PosteService posteService, BatimentRepository batimentRepository,
+                            JournalisationService journalisationService) {
         super(salleRepository);
         this.posteService = posteService;
         this.batimentRepository = batimentRepository;
+        this.journalisationService = journalisationService;
     }
 
     @Override
@@ -68,7 +77,9 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         Salle salle = repository.findById(id).orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
+        String libelle = libelle(salle); // lu avant la suppression
         supprimer(salle);
+        journalisationService.journaliser(TypeAction.SUPPRESSION, "Salle " + libelle + " supprimée (matériel remis en stock)");
     }
 
     /** Seul chemin qui supprime une salle de stockage : appelé par la suppression du bâtiment. */
@@ -110,12 +121,26 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public Salle create(Long idBatiment, Salle salle) {
+        Salle creee = creerDans(idBatiment, salle);
+        journalisationService.journaliser(TypeAction.CREATION, "Salle " + libelle(creee) + " créée");
+        return creee;
+    }
+
+    /** Crée la salle dans le bâtiment (sans journaliser). */
+    private Salle creerDans(Long idBatiment, Salle salle) {
         Batiment batiment = trouverBatiment(idBatiment);
         if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
             throw new ServiceException("Une salle " + salle.getNumSalle() + " existe déjà dans ce bâtiment");
+        salle.setCreePar(nomUtilisateurCourant());
         Salle creee = create(salle);
         batiment.addSalle(creee);
         return creee;
+    }
+
+    /** « Prénom Nom » de l'utilisateur connecté (null au démarrage, dans l'Init). */
+    private static String nomUtilisateurCourant() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof Personnel p ? p.getPrenom() + " " + p.getNom() : null;
     }
 
     private Batiment trouverBatiment(Long idBatiment) {
@@ -153,7 +178,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         salle.setNumSalle(dto.getNumSalle());
         salle.setEtage(dto.getEtage());
         salle.setType(TypeSalle.SalleDeCours);
-        Salle creee = create(dto.getIdBatiment(), salle); // vérifie le bâtiment et le numéro en double
+        Salle creee = creerDans(dto.getIdBatiment(), salle); // vérifie le bâtiment et le numéro en double
         Batiment batiment = trouverBatiment(dto.getIdBatiment());
         Map<String, Deque<EnStock>> stock = stockDu(batiment);
         Map<String, Integer> manquants = new LinkedHashMap<>();
@@ -166,7 +191,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         for (String numero : numeros) {
             Poste poste = new Poste();
             poste.setNumPoste(numero);
-            Poste cree = creerPoste(creee.getId(), poste);
+            Poste cree = ajouterPoste(creee.getId(), poste);
             prendre(stock, UC.TYPE, 1, manquants).forEach(cree::addMateriel);
             prendre(stock, Ecran.TYPE, dto.getEcransParPoste(), manquants).forEach(cree::addMateriel);
         }
@@ -179,6 +204,9 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
                     creee.getNumSalle(), batiment.getNumBatiment(),
                     plusRien ? " (plus rien en stock)" : "", manquants);
         }
+        journalisationService.journaliser(TypeAction.CREATION, "Salle " + libelle(creee) + " créée équipée : "
+                + dto.getNbPostes() + " poste(s) stagiaire(s), " + dto.getNbVideoProjecteurs() + " vidéoprojecteur(s), "
+                + dto.getNbTableaux() + " tableau(x)" + manque(manquants));
         return new SalleEquipeeResponseDto(creee.getId(), manquants);
     }
 
@@ -202,7 +230,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         if (dto.getNbPostes() < postes.size()) {
             // les derniers postes disparaissent : matériel en stock, stagiaire sans poste
             for (Poste p : postes.subList(dto.getNbPostes(), postes.size())) {
-                supprimerPoste(p.getId());
+                retirerPoste(p.getId());
             }
         } else if (dto.getNbPostes() > postes.size()) {
             // même nombre d'écrans que les postes existants (1 si la salle n'en a pas)
@@ -214,7 +242,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
             for (int i = postes.size(); i < dto.getNbPostes(); i++) {
                 Poste poste = new Poste();
                 poste.setNumPoste(prefixe + String.format("P%02d", ++numero));
-                Poste cree = creerPoste(idSalle, poste);
+                Poste cree = ajouterPoste(idSalle, poste);
                 prendre(stock, UC.TYPE, 1, manquants).forEach(cree::addMateriel);
                 prendre(stock, Ecran.TYPE, Math.max(ecransParPoste, 1), manquants).forEach(cree::addMateriel);
             }
@@ -222,6 +250,9 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
         ajuster(salle, VideoProjecteur.TYPE, dto.getNbVideoProjecteurs(), stock, manquants);
         ajuster(salle, TableauInteractif.TYPE, dto.getNbTableaux(), stock, manquants);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + Libelles.salle(salle) + " du bâtiment "
+                + batiment.getNumBatiment() + " modifiée : " + dto.getNbPostes() + " poste(s) stagiaire(s), "
+                + dto.getNbVideoProjecteurs() + " vidéoprojecteur(s), " + dto.getNbTableaux() + " tableau(x)" + manque(manquants));
         return new SalleEquipeeResponseDto(idSalle, manquants);
     }
 
@@ -259,6 +290,8 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         salle.setGelNote(note == null || note.isBlank() ? null : note.trim());
         salle.setGelDepuis(LocalDate.now());
         salle.setGelJusqu(jusqu);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelle(salle) + " gelée (motif : "
+                + motif.name().toLowerCase().replace('_', ' ') + (jusqu != null ? ", jusqu'au " + jusqu : "") + ")");
         return salle;
     }
 
@@ -273,11 +306,123 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         salle.setGelNote(null);
         salle.setGelDepuis(null);
         salle.setGelJusqu(null);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelle(salle) + " dégelée");
         return salle;
+    }
+
+    @Override
+    @Transactional
+    public Salle deplacer(Long idSalle, Long idSalleCible) {
+        if (idSalle.equals(idSalleCible))
+            throw new ServiceException("Choisissez une autre salle que celle à déplacer");
+        Salle source = trouver(idSalle);
+        Salle cible = trouver(idSalleCible);
+        for (Salle s : List.of(source, cible)) {
+            if (s.getType() != TypeSalle.SalleDeCours)
+                throw new ServiceException("Seule une salle de cours se déplace");
+            if (s.isSuspendu())
+                throw new ServiceException("La salle " + s.getNumSalle() + " est gelée : dégelez-la avant le déplacement");
+        }
+        if (cible.getStage() != null)
+            throw new ServiceException("La salle " + cible.getNumSalle() + " accueille déjà le "
+                    + Libelles.stage(cible.getStage()) + " : retirez-le avant le déplacement");
+
+        // taille de la cible = ses postes stagiaires et son matériel de salle
+        verifierPlace(cible, "poste(s) stagiaire(s)", postesStagiaires(source), postesStagiaires(cible));
+        verifierPlace(cible, "vidéoprojecteur(s)", nbDeType(source, VideoProjecteur.TYPE), nbDeType(cible, VideoProjecteur.TYPE));
+        verifierPlace(cible, "tableau(x) interactif(s)", nbDeType(source, TableauInteractif.TYPE), nbDeType(cible, TableauInteractif.TYPE));
+
+        String libelleSource = libelle(source);
+        String libelleCible = libelle(cible);
+        Batiment batimentCible = batimentRepository.findBySalles_Id(idSalleCible)
+                .orElseThrow(() -> new ServiceException("La salle " + cible.getNumSalle() + " n'est dans aucun bâtiment"));
+
+        // 1. l'ancien contenu de la cible retourne au stock de son bâtiment (poste formateur compris)
+        if (!cible.getMateriels().isEmpty()) {
+            Salle reserve = trouverStockage(idSalleCible);
+            for (Materiel m : List.copyOf(cible.getMateriels())) {
+                cible.removeMateriel(m);
+                reserve.addMateriel(m);
+            }
+        }
+        for (Poste p : List.copyOf(cible.getPostes())) {
+            retirerPoste(p.getId());
+        }
+        // les anciens postes doivent être supprimés en base avant de reprendre leurs numéros
+        repository.flush();
+
+        // 2. postes de la source, renumérotés pour la cible ("B1-S101-P07" -> "B2-S204-P07")
+        int nbPostes = source.getPostes().size();
+        String prefixe = prefixePostes(batimentCible, cible);
+        for (Poste p : List.copyOf(source.getPostes())) {
+            source.removePoste(p);
+            p.setNumPoste(prefixe + p.getNumPoste().substring(p.getNumPoste().lastIndexOf('-') + 1));
+            cible.addPoste(p);
+        }
+
+        // 3. matériel de salle (vidéoprojecteurs, tableaux)
+        int nbMateriels = source.getMateriels().size();
+        for (Materiel m : List.copyOf(source.getMateriels())) {
+            source.removeMateriel(m);
+            cible.addMateriel(m);
+        }
+
+        // 4. formateurs attribués et master
+        for (Personnel p : List.copyOf(source.getPersonnels())) {
+            source.removePersonnel(p);
+            if (!cible.getPersonnels().contains(p)) cible.addPersonnel(p);
+        }
+        cible.setMaster(source.getMaster());
+        source.setMaster(null);
+
+        // 5. stage (un stage n'est que dans une salle : on le libère en base avant de le poser sur la cible)
+        Stage stage = source.getStage();
+        if (stage != null) {
+            source.setStage(null);
+            repository.flush();
+            cible.setStage(stage);
+        }
+
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelleSource + " déplacée vers la salle "
+                + libelleCible + " : " + nbPostes + " poste(s), " + nbMateriels + " matériel(s) de salle"
+                + (stage != null ? ", " + Libelles.stage(stage) : "") + " (ancien contenu de la salle "
+                + cible.getNumSalle() + " remis en stock)");
+        return cible;
+    }
+
+    private static void verifierPlace(Salle cible, String quoi, long besoin, long place) {
+        if (besoin > place)
+            throw new ServiceException("La salle " + cible.getNumSalle() + " n'a que " + place + " " + quoi
+                    + ", il en faut " + besoin);
+    }
+
+    private static long postesStagiaires(Salle salle) {
+        return salle.getPostes().stream().filter(p -> !p.getNumPoste().endsWith("-F")).count();
+    }
+
+    private static long nbDeType(Salle salle, String type) {
+        return salle.getMateriels().stream().filter(m -> type.equals(m.getType())).count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Salle> sallesDuMaster(Long idMaster) {
+        return repository.findByMaster_Id(idMaster);
     }
 
     private Salle trouver(Long idSalle) {
         return repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+    }
+
+    /** Pour le journal : "105 du bâtiment 2" (le numéro de salle n'est unique que dans son bâtiment). */
+    private String libelle(Salle salle) {
+        return salle.getNumSalle() + batimentRepository.findBySalles_Id(salle.getId())
+                .map(b -> " du bâtiment " + b.getNumBatiment()).orElse("");
+    }
+
+    /** Pour le journal : " (incomplète, il manque {UC=2})" s'il manquait du matériel en stock. */
+    private static String manque(Map<String, Integer> manquants) {
+        return manquants.isEmpty() ? "" : " (incomplète, il manque " + manquants + ")";
     }
 
     /** Stock du bâtiment, rangé par type (matériel archivé exclu). */
@@ -329,6 +474,13 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public Poste creerPoste(Long idSalle, Poste poste) {
+        Poste cree = ajouterPoste(idSalle, poste);
+        journalisationService.journaliser(TypeAction.CREATION, "Poste " + poste.getNumPoste() + " créé");
+        return cree;
+    }
+
+    /** Crée le poste dans la salle (sans journaliser : sert aussi à la création et à la modification de salle). */
+    private Poste ajouterPoste(Long idSalle, Poste poste) {
         Salle salle = repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("On ne crée pas de poste dans une salle de stockage");
@@ -340,6 +492,13 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     @Override
     @Transactional
     public void supprimerPoste(Long idPoste) {
+        Poste poste = retirerPoste(idPoste);
+        journalisationService.journaliser(TypeAction.SUPPRESSION,
+                "Poste " + poste.getNumPoste() + " supprimé (matériel remis en stock)");
+    }
+
+    /** Supprime le poste et remet son matériel en stock (sans journaliser : sert aussi à la modification de salle). */
+    private Poste retirerPoste(Long idPoste) {
         Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
         List<Materiel> aRanger = List.copyOf(poste.getMateriels());
         if (!aRanger.isEmpty()) {
@@ -352,6 +511,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         }
         repository.findByPostes_Id(idPoste).ifPresent(salle -> salle.removePoste(poste));
         posteService.delete(poste);
+        return poste;
     }
 
     @Override

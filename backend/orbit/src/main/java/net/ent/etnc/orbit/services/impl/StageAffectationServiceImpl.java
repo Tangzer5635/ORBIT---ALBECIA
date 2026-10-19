@@ -3,10 +3,13 @@ package net.ent.etnc.orbit.services.impl;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeAction;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.StageAffectationService;
 import net.ent.etnc.orbit.services.StageService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,12 +20,14 @@ public class StageAffectationServiceImpl implements StageAffectationService {
     private final StageService stageService;
     private final PersonnelService personnelService;
     private final PosteService posteService;
+    private final JournalisationService journalisationService;
 
     public StageAffectationServiceImpl(StageService stageService, PersonnelService personnelService,
-                                       PosteService posteService) {
+                                       PosteService posteService, JournalisationService journalisationService) {
         this.stageService = stageService;
         this.personnelService = personnelService;
         this.posteService = posteService;
+        this.journalisationService = journalisationService;
     }
 
     /** Un stagiaire n'est que dans un stage, et on ne le change pas de stage. */
@@ -40,6 +45,8 @@ public class StageAffectationServiceImpl implements StageAffectationService {
             throw new ServiceException(nom(stagiaire) + " est déjà dans le stage " + actuel.getNom() + " : on ne change pas de stage");
 
         stagiaire.setStage(stage);
+        journalisationService.journaliser(TypeAction.AFFECTATION,
+                "Stagiaire " + Libelles.personne(stagiaire) + " ajouté au " + Libelles.stage(stage));
         return stagiaire;
     }
 
@@ -50,8 +57,11 @@ public class StageAffectationServiceImpl implements StageAffectationService {
         Personnel stagiaire = stagiaire(idStagiaire);
         if (stagiaire.getStage() == null || !stagiaire.getStage().getId().equals(idStage))
             throw new ServiceException(nom(stagiaire) + " n'est pas dans ce stage");
+        Stage stage = stagiaire.getStage();
         stagiaire.setStage(null);
         posteService.libererPosteDe(idStagiaire);
+        journalisationService.journaliser(TypeAction.RETRAIT,
+                "Stagiaire " + Libelles.personne(stagiaire) + " retiré du " + Libelles.stage(stage) + " (poste libéré)");
         return stagiaire;
     }
 

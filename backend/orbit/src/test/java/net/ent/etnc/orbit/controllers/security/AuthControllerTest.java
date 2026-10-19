@@ -7,6 +7,7 @@ import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,9 @@ class AuthControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private UserAssembler userAssembler;
+
+    @MockitoBean
+    private JournalisationService journalisationService;
 
     private Personnel stagiaire() {
         return personnel(Role.STAGIAIRE);

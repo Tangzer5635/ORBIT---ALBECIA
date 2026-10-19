@@ -28,6 +28,8 @@ public interface SalleRepository extends BaseRepository<Salle> {
 
     List<Salle> findByPersonnels_Id(Long idPersonnel);
 
+    List<Salle> findByMaster_Id(Long idMaster);
+
     boolean existsByIdAndPersonnels_Id(Long idSalle, Long idPersonnel);
 
     /** Bâtiment de chacune de ces salles : une requête pour toutes les salles. */

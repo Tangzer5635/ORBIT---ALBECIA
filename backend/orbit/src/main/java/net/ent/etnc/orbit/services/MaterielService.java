@@ -9,6 +9,7 @@ import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.services.commons.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MaterielService extends Service<Materiel, Long> {
@@ -22,6 +23,8 @@ public interface MaterielService extends Service<Materiel, Long> {
     Optional<Materiel> findPourUtilisateur(Long id, Personnel utilisateur);
     void desinstallerPartout(Processus processus);
 
+    /** Image d'un master : chaque UC des postes de la salle a exactement ces processus. Renvoie le nombre d'UC. */
+    int installerImage(Long idSalle, List<Processus> processus);
     @Transactional
     CalendrierGarantiesDto calendrierGaranties(int annee);
 }

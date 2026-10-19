@@ -27,6 +27,10 @@ public class SalleAssembler {
                         .collect(Collectors.groupingBy(Materiel::getType, Collectors.counting())))
                 .stageId(salle.getStage() != null ? salle.getStage().getId() : null)
                 .stageNom(salle.getStage() != null ? salle.getStage().getNom() : null)
+                .masterId(salle.getMaster() != null ? salle.getMaster().getId() : null)
+                .masterNom(salle.getMaster() != null
+                        ? salle.getMaster().getNom() + " (" + salle.getMaster().getVersionMaster() + ")" : null)
+                .creePar(salle.getCreePar())
                 .suspendu(salle.isSuspendu())
                 .gelMotif(salle.getGelMotif())
                 .gelNote(salle.getGelNote())

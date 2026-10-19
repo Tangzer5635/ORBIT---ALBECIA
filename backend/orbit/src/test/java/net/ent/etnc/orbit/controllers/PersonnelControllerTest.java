@@ -6,6 +6,7 @@ import net.ent.etnc.orbit.dtos.requestDTO.UserUpdateRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -40,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PersonnelController.class)
-@Import(WebSecurityConfig.class)
+@Import({WebSecurityConfig.class, RsqlFilterUtils.class}) // RsqlFilterUtils : composant réel, utilisé par getAll
 class PersonnelControllerTest extends ControllerTestSupport {
 
     private static final String JSON_VALIDE = """
@@ -66,7 +67,7 @@ class PersonnelControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitRenvoyer200_quandAdmin() throws Exception {
-        when(personnelService.findAll(any())).thenReturn(
+        when(personnelService.findAll(any(), any(Pageable.class))).thenReturn(
                 new PageImpl<>(List.of(personnel(Role.STAGIAIRE)), PageRequest.of(0, 20), 1));
         reponse(false);
 
@@ -78,13 +79,13 @@ class PersonnelControllerTest extends ControllerTestSupport {
 
     @Test
     void getAll_doitTrierParNomPrenomId_etPaginerPar20() throws Exception {
-        when(personnelService.findAll(any())).thenReturn(new PageImpl<>(List.of()));
+        when(personnelService.findAll(any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/v1/personnels/").with(connecte(Role.ADMINISTRATEUR)))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(personnelService).findAll(captor.capture());
+        verify(personnelService).findAll(any(), captor.capture());
         assertThat(captor.getValue().getPageSize()).isEqualTo(20);
         assertThat(captor.getValue().getSort()).isEqualTo(Sort.by("nom", "prenom", "id"));
     }
@@ -205,7 +206,7 @@ class PersonnelControllerTest extends ControllerTestSupport {
     @Test
     void put_doitRenvoyer200_quandValide() throws Exception {
         when(userAssembler.toEntity(any(UserUpdateRequestDto.class))).thenReturn(personnel(Role.STAGIAIRE));
-        when(personnelService.update(any())).thenReturn(personnel(Role.STAGIAIRE));
+        when(personnelService.modifier(eq(7L), any())).thenReturn(personnel(Role.STAGIAIRE));
         reponse(false);
 
         mockMvc.perform(put("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
@@ -216,7 +217,7 @@ class PersonnelControllerTest extends ControllerTestSupport {
     @Test
     void put_doitRenvoyer400_quandIntrouvable() throws Exception {
         when(userAssembler.toEntity(any(UserUpdateRequestDto.class))).thenReturn(personnel(Role.STAGIAIRE));
-        when(personnelService.update(any())).thenThrow(new ServiceException("RG-U02", "Utilisateur introuvable"));
+        when(personnelService.modifier(eq(7L), any())).thenThrow(new ServiceException("RG-U02", "Utilisateur introuvable"));
 
         mockMvc.perform(put("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_MODIFICATION))

@@ -9,13 +9,16 @@ import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
 import net.ent.etnc.orbit.services.DefaillanceService;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +42,17 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     private final PosteService posteService;
     /** @Lazy : DefaillanceService dépend déjà de MaterielService (dépendance circulaire sinon). */
     private final DefaillanceService defaillanceService;
+    private final JournalisationService journalisationService;
 
     @Autowired
     public MaterielServiceImpl(MaterielRepository materielRepository, SalleService salleService,
-                               PosteService posteService, @Lazy DefaillanceService defaillanceService) {
+                               PosteService posteService, @Lazy DefaillanceService defaillanceService,
+                               JournalisationService journalisationService) {
         super(materielRepository);
         this.salleService = salleService;
         this.posteService = posteService;
         this.defaillanceService = defaillanceService;
+        this.journalisationService = journalisationService;
     }
 
     @Override
@@ -61,6 +68,8 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         materiel.setArchive(false);
         Materiel cree = repository.save(materiel);
         stockage.addMateriel(cree);
+        journalisationService.journaliser(TypeAction.CREATION,
+                Libelles.materiel(cree) + " ajouté en stock (" + Libelles.salle(stockage) + ")");
         return cree;
     }
 
@@ -82,7 +91,9 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         existant.setDateAcquisition(materiel.getDateAcquisition());
         if (existant instanceof UC uc && materiel instanceof UC modifie)
             uc.setNomMachine(modifie.getNomMachine());
-        return repository.save(existant);
+        Materiel enregistre = repository.save(existant);
+        journalisationService.journaliser(TypeAction.MODIFICATION, Libelles.materiel(existant) + " modifié");
+        return enregistre;
     }
 
     @Override
@@ -115,6 +126,17 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
+    public int installerImage(Long idSalle, List<Processus> processus) {
+        List<UC> ucs = repository.findUcDeLaSalle(idSalle);
+        for (UC uc : ucs) {
+            List.copyOf(uc.getProcessus()).forEach(uc::removeProcessus);
+            processus.forEach(uc::addProcessus);
+        }
+        return ucs.size();
+    }
+
+    @Override
+    @Transactional
     public void deleteById(Long id) {
         Materiel materiel = trouver(id);
         if (defaillanceService.aDesDefaillances(id))
@@ -123,6 +145,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         posteService.posteDuMateriel(id).ifPresent(poste -> poste.removeMateriel(materiel));
         salleService.salleDuMateriel(id).ifPresent(salle -> salle.removeMateriel(materiel));
         repository.delete(materiel);
+        journalisationService.journaliser(TypeAction.SUPPRESSION, Libelles.materiel(materiel) + " supprimé");
     }
 
     @Override
@@ -137,6 +160,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         salle.removeMateriel(materiel);
         materiel.setArchive(true);
         materiel.setDateArchivage(LocalDate.now());
+        journalisationService.journaliser(TypeAction.MODIFICATION, Libelles.materiel(materiel) + " archivé");
         return materiel;
     }
 
