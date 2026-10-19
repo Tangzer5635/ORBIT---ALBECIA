@@ -10,7 +10,7 @@ type Props = {
     onRetirerFormateur?: (formateur: Formateur) => void;
 };
 
-// Panneau de droite quand rien n'est sélectionné sur le plan : le stage et les formateurs de la salle
+// Panneau de droite quand rien n'est sélectionné sur le plan : stage, gestionnaire, formateurs et master de la salle
 export default function PanneauSalle({
                                          salle, onAffecterStage, onRetirerStage, onAffecterFormateur, onRetirerFormateur
                                      }: Props) {
@@ -48,6 +48,13 @@ export default function PanneauSalle({
             </section>
 
             <section className="panneau-section">
+                <h3>Gestionnaire</h3>
+                {salle.creePar
+                    ? <p>{salle.creePar} <span className="muted small">(a créé la salle)</span></p>
+                    : <p className="muted">Non renseigné</p>}
+            </section>
+
+            <section className="panneau-section">
                 <h3>Formateurs attribués</h3>
                 {formateurs.length === 0 ? (
                     <p className="muted">Aucun formateur attribué.</p>
@@ -67,6 +74,13 @@ export default function PanneauSalle({
                 {onAffecterFormateur &&
                     <button type="button" className="btn sm" onClick={onAffecterFormateur}>Attribuer un
                         formateur</button>}
+            </section>
+
+            <section className="panneau-section">
+                <h3>Master</h3>
+                {salle.masterNom
+                    ? <b>{salle.masterNom}</b>
+                    : <p className="muted">Aucun master plaqué sur cette salle.</p>}
             </section>
         </aside>
     );
