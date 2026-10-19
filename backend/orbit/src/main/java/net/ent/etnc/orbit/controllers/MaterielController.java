@@ -91,7 +91,7 @@ public class MaterielController {
         return ResponseEntity.ok(materielService.calendrierGaranties(annee));
     }
 
-    @PostMapping
+    @PostMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MaterielResponseDto> post(@Valid @RequestBody MaterielRequestDto materielRequestDto) {
         return ResponseEntity.ok(dto(materielService.creerEnStock(materielAssembler.toEntity(materielRequestDto), materielRequestDto.getIdStockage())));

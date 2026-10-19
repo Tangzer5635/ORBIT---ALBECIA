@@ -52,7 +52,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
 
     @Override
     @Transactional
-    public Stage creer(Stage stage, Long idFormateur) {
+    public Stage creer(Stage stage, Long idFormateur) throws ServiceException {
         Personnel formateur = formateur(idFormateur);
         stage.setFormateur(formateur);
         Stage cree = create(stage);
@@ -63,7 +63,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
 
     @Override
     @Transactional
-    public Stage modifier(Long id, Stage stage, Long idFormateur) {
+    public Stage modifier(Long id, Stage stage, Long idFormateur) throws ServiceException {
         stage.setId(id);
         stage.setFormateur(formateur(idFormateur));
         Stage modifie = update(stage);
@@ -73,7 +73,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
 
     @Override
     @Transactional
-    public Stage create(Stage stage) {
+    public Stage create(Stage stage) throws ServiceException {
         verifierDates(stage);
         if (repository.existsByNom(stage.getNom()))
             throw new ServiceException("Le stage " + stage.getNom() + " existe déjà");
@@ -82,7 +82,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
 
     @Override
     @Transactional
-    public Stage update(Stage stage) {
+    public Stage update(Stage stage) throws ServiceException {
         verifierDates(stage);
         if (repository.existsByNomAndIdNot(stage.getNom(), stage.getId()))
             throw new ServiceException("Le stage " + stage.getNom() + " existe déjà");
@@ -91,7 +91,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
 
     @Override
     @Transactional
-    public BilanImportStagesDto importer(String contenu) {
+    public BilanImportStagesDto importer(String contenu) throws ServiceException {
         List<String> lignes = contenu == null ? List.of()
                 : contenu.replace("\uFEFF", "").lines().map(String::strip).toList(); // retire le BOM ajouté par Excel
         if (lignes.stream().allMatch(String::isEmpty))
@@ -127,7 +127,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
      * Tout est vérifié avant d'écrire en base : une exception levée par le repository
      * annulerait l'import entier, pas seulement la ligne.
      */
-    private void importerLigne(String[] v, Map<String, Integer> col, List<String> crees, List<String> misAJour) {
+    private void importerLigne(String[] v, Map<String, Integer> col, List<String> crees, List<String> misAJour) throws ServiceException {
         String nom = valeur(v, col, "nom").toUpperCase(Locale.ROOT);
         if (!nom.matches("^[A-Z]{2}[0-9]{2}$"))
             throw new ServiceException("nom « " + nom + " » invalide (2 lettres puis 2 chiffres, ex. WB47)");
@@ -171,7 +171,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
         }
     }
 
-    private static String valeur(String[] v, Map<String, Integer> col, String colonne) {
+    private static String valeur(String[] v, Map<String, Integer> col, String colonne) throws ServiceException {
         int i = col.get(colonne);
         String valeur = i < v.length ? v[i].strip() : "";
         if (valeur.isEmpty()) throw new ServiceException(colonne + " manquant");
@@ -179,7 +179,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
     }
 
     /** "2026-08-07" ou "07/08/2026". */
-    private static LocalDate date(String texte) {
+    private static LocalDate date(String texte) throws ServiceException {
         try {
             return texte.contains("/") ? LocalDate.parse(texte, DATE_FR) : LocalDate.parse(texte);
         } catch (DateTimeParseException e) {
@@ -193,7 +193,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
      */
     @Override
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Long id) throws ServiceException {
         Stage stage = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("Stage " + id + " introuvable"));
         if (!stage.getDateFin().isBefore(LocalDate.now()))
@@ -214,13 +214,13 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Map<Long, SalleDuStage> sallesDesStages(Collection<Long> idsStages) {
+    public Map<Long, SalleDuStage> sallesDesStages(Collection<Long> idsStages) throws ServiceException {
         if (idsStages.isEmpty()) return Map.of();
         return repository.sallesDesStages(idsStages).stream()
                 .collect(Collectors.toMap(SalleDuStage::idStage, Function.identity(), (a, b) -> a));
     }
 
-    private Personnel formateur(Long idFormateur) {
+    private Personnel formateur(Long idFormateur) throws ServiceException {
         Personnel formateur = personnelService.findById(idFormateur)
                 .orElseThrow(() -> new ServiceException("Formateur " + idFormateur + " introuvable"));
         if (formateur.getRole() != Role.FORMATEUR)
@@ -228,7 +228,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
         return formateur;
     }
 
-    private void verifierDates(Stage stage) {
+    private void verifierDates(Stage stage) throws ServiceException {
         if (stage.getDateDebut() != null && stage.getDateFin() != null && stage.getDateFin().isBefore(stage.getDateDebut()))
             throw new ServiceException("La date de fin doit être après la date de début");
     }

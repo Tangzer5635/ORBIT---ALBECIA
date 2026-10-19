@@ -69,25 +69,25 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Poste> posteDuMateriel(Long idMateriel) {
+    public Optional<Poste> posteDuMateriel(Long idMateriel) throws ServiceException {
         return repository.findByMateriels_Id(idMateriel);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean occupeUnPoste(Long idPersonnel) {
+    public boolean occupeUnPoste(Long idPersonnel) throws ServiceException {
         return repository.existsByOccupant_Id(idPersonnel);
     }
 
     @Override
     @Transactional
-    public void libererPosteDe(Long idPersonnel) {
-        repository.liberer(idPersonnel);
+    public void libererPosteDe(Long idPersonnel) throws ServiceException {
+         repository.liberer(idPersonnel);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Poste> findAllAvecDetails(Pageable pageable) {
+    public Page<Poste> findAllAvecDetails(Pageable pageable) throws ServiceException {
         Page<Poste> page = repository.findAll(pageable);
         if (page.hasContent())
             repository.chargerMateriels(page.getContent().stream().map(Poste::getId).toList());
@@ -96,7 +96,7 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Poste> findByIdAvecDetails(Long id) {
+    public Optional<Poste> findByIdAvecDetails(Long id) throws ServiceException {
         Optional<Poste> poste = repository.findById(id);
         poste.ifPresent(p -> repository.chargerMateriels(List.of(p.getId())));
         return poste;
@@ -104,13 +104,13 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public List<MonPosteLigne> lignesMonPoste(Long idOccupant) {
+    public List<MonPosteLigne> lignesMonPoste(Long idOccupant) throws ServiceException {
         return repository.lignesMonPoste(idOccupant);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Poste> findBySalleAvecDetails(Long idSalle) {
+    public List<Poste> findBySalleAvecDetails(Long idSalle) throws ServiceException {
         List<Poste> postes = repository.findBySalle(idSalle);
         if (!postes.isEmpty())
             repository.chargerMateriels(postes.stream().map(Poste::getId).toList());
@@ -119,7 +119,7 @@ public class PosteServiceImpl extends AbstractService<Poste, PosteRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Map<Long, EtatPoste> etats(List<Poste> postes) {
+    public Map<Long, EtatPoste> etats(List<Poste> postes) throws ServiceException {
         List<Long> idsMateriels = postes.stream()
                 .flatMap(p -> p.getMateriels().stream()).map(Materiel::getId).toList();
         Set<Long> defectueux = idsMateriels.isEmpty() ? Set.of() : repository.materielsDefectueux(idsMateriels);

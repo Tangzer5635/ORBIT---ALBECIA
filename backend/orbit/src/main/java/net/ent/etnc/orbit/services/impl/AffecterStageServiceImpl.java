@@ -32,7 +32,7 @@ public class AffecterStageServiceImpl implements AffecterStageService {
     /** Une salle de cours accueille un seul stage à la fois, et un stage n'a qu'une salle. */
     @Override
     @Transactional
-    public Salle affecterASalle(Long idSalle, Long idStage) {
+    public Salle affecterASalle(Long idSalle, Long idStage) throws ServiceException {
         Salle salle = salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         Stage stage = stageService.findById(idStage)
@@ -58,7 +58,7 @@ public class AffecterStageServiceImpl implements AffecterStageService {
     /** Les postes de la salle repartent libres : plus de stage, plus de stagiaires assis dedans. */
     @Override
     @Transactional
-    public Salle retirerDeSalle(Long idSalle, Long idStage) {
+    public Salle retirerDeSalle(Long idSalle, Long idStage) throws ServiceException {
         Salle salle = salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         if (salle.getStage() == null || !salle.getStage().getId().equals(idStage))

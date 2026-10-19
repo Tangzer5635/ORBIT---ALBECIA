@@ -30,4 +30,6 @@ public interface PersonnelRepository extends BaseRepository<Personnel> {
     @Query("select p from Personnel p where p.stage.id = :idStage and p.active = true"
             + " and not exists (select po.id from Poste po where po.occupant = p) order by p.nom, p.prenom")
     List<Personnel> stagiairesSansPoste(@Param("idStage") Long idStage);
+
+    boolean existsByLogin(String login);
 }

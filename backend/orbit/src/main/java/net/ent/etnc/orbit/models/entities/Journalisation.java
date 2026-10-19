@@ -1,10 +1,7 @@
 package net.ent.etnc.orbit.models.entities;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.models.enums.TypeAction;
 import org.hibernate.annotations.Immutable;
@@ -26,6 +23,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(callSuper = true, of = {"dateHeure", "auteurId", "action", "detail"})
+@EqualsAndHashCode(callSuper = false)
 public class Journalisation extends AbstractPersistableWithIdSetter<Long> {
 
     @Column(name = "date_heure", nullable = false, updatable = false)

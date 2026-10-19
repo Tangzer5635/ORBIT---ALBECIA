@@ -61,7 +61,7 @@ public class RefreshTokenServiceImpl extends AbstractService<RefreshToken, Refre
      * @return le token brut à transmettre au client
      */
     @Override
-    public String createRefreshToken(String username) {
+    public String createRefreshToken(String username) throws ServiceException {
         String rawToken = generateRawToken();
         repository.save(buildToken(username, rawToken, UUID.randomUUID().toString()));
         return rawToken;
@@ -79,7 +79,7 @@ public class RefreshTokenServiceImpl extends AbstractService<RefreshToken, Refre
      */
     @Override
     @Transactional(noRollbackFor = ServiceException.class)
-    public RotateResult rotateRefreshToken(String rawToken) {
+    public RotateResult rotateRefreshToken(String rawToken) throws ServiceException {
         RefreshToken existing = repository.findByTokenHash(hash(rawToken))
                 .orElseThrow(() -> new ServiceException("RG-SEC01", "Refresh token invalide"));
 
@@ -111,7 +111,7 @@ public class RefreshTokenServiceImpl extends AbstractService<RefreshToken, Refre
      * Silencieux si le token est inconnu — l'opération est idempotente.
      */
     @Override
-    public void revokeToken(String rawToken) {
+    public void revokeToken(String rawToken) throws ServiceException {
         repository.findByTokenHash(hash(rawToken)).ifPresent(t -> {
             t.setRevoked(true);
             repository.save(t);
@@ -122,7 +122,7 @@ public class RefreshTokenServiceImpl extends AbstractService<RefreshToken, Refre
      * Révoque tous les refresh tokens d'un utilisateur (déconnexion totale).
      */
     @Override
-    public void revokeAllForUser(String username) {
+    public void revokeAllForUser(String username) throws ServiceException {
         repository.deleteAllByUsername(username);
         log.info("Toutes les sessions révoquées pour username={}", username);
     }
@@ -144,7 +144,7 @@ public class RefreshTokenServiceImpl extends AbstractService<RefreshToken, Refre
         return token;
     }
 
-    private void revokeFamily(String family) {
+    private void revokeFamily(String family) throws ServiceException {
         List<RefreshToken> familyTokens = repository.findAllByFamily(family);
         familyTokens.forEach(t -> t.setRevoked(true));
         repository.saveAll(familyTokens);

@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.models.entities;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -18,7 +19,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "defaillance")
-@ToString(callSuper = true, of = {"description", "dateSignalement", "statut"})
+@ToString(callSuper = true, of = {"description", "dateSignalement", "statut","noteSolution", "dateResolution"})
+@EqualsAndHashCode(callSuper = false)
 public class Defaillance extends AbstractPersistableWithIdSetter<Long> {
 
     @Getter @Setter

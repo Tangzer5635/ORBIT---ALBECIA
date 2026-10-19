@@ -34,7 +34,7 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
     /** Un formateur peut avoir plusieurs salles, et une salle plusieurs formateurs. */
     @Override
     @Transactional
-    public Salle affecter(Long idSalle, Long idFormateur) {
+    public Salle affecter(Long idSalle, Long idFormateur) throws ServiceException {
         Salle salle = trouverSalle(idSalle);
         Personnel formateur = personnelService.findById(idFormateur)
                 .orElseThrow(() -> new ServiceException("Personnel " + idFormateur + " introuvable"));
@@ -54,7 +54,7 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
 
     @Override
     @Transactional
-    public Salle retirer(Long idSalle, Long idFormateur) {
+    public Salle retirer(Long idSalle, Long idFormateur) throws ServiceException {
         Salle salle = trouverSalle(idSalle);
         Personnel formateur = affecte(salle, idFormateur)
                 .orElseThrow(() -> new ServiceException("Ce formateur n'est pas affecté à la salle " + salle.getNumSalle()));
@@ -65,12 +65,12 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
         return salle;
     }
 
-    private Salle trouverSalle(Long idSalle) {
+    private Salle trouverSalle(Long idSalle) throws ServiceException {
         return salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
     }
 
-    private static Optional<Personnel> affecte(Salle salle, Long idFormateur) {
+    private static Optional<Personnel> affecte(Salle salle, Long idFormateur) throws ServiceException {
         return salle.getPersonnels().stream().filter(p -> Objects.equals(p.getId(), idFormateur)).findFirst();
     }
 }

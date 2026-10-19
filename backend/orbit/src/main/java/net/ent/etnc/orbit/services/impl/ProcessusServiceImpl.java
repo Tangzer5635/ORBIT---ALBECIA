@@ -36,7 +36,7 @@ public class ProcessusServiceImpl extends AbstractService<Processus, ProcessusRe
 
     @Override
     @Transactional
-    public Processus create(Processus processus) {
+    public Processus create(Processus processus) throws ServiceException {
         if (repository.existsByNom(processus.getNom()))
             throw new ServiceException("Le processus " + processus.getNom() + " existe déjà");
         Processus cree = super.create(processus);
@@ -47,7 +47,7 @@ public class ProcessusServiceImpl extends AbstractService<Processus, ProcessusRe
 
     @Override
     @Transactional
-    public Processus changerListe(Long id, ListeProcessus liste) {
+    public Processus changerListe(Long id, ListeProcessus liste) throws ServiceException {
         Processus processus = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("Processus " + id + " introuvable"));
         if (processus.getListe() == liste)
@@ -71,7 +71,7 @@ public class ProcessusServiceImpl extends AbstractService<Processus, ProcessusRe
     /** Le processus est d'abord retiré des masters et désinstallé de toutes les UC. */
     @Override
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Long id) throws ServiceException {
         Processus processus = repository.findById(id)
                 .orElseThrow(() -> new ServiceException("Processus " + id + " introuvable"));
         masterService.retirerProcessusPartout(processus);

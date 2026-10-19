@@ -1,8 +1,10 @@
 package net.ent.etnc.orbit.models.entities;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.validator.constraints.Length;
 
 import java.util.ArrayList;
@@ -13,6 +15,8 @@ import java.util.List;
 @Entity
 @Table(name = "uc")
 @PrimaryKeyJoinColumn(name = "id", foreignKey = @ForeignKey(name = "fk_uc_materiel"))
+@ToString(callSuper = true, of = {"TYPE", "nomMachine"})
+@EqualsAndHashCode(callSuper = true)
 public class UC extends Materiel {
 
     public static final String TYPE = "UC";

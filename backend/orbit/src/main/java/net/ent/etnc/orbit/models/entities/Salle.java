@@ -19,11 +19,10 @@ import java.util.List;
 @Table(name = "salle",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_salle_batiment_id_num_salle", columnNames = {"batiment_id", "num_salle"}),
-                // un stage n'est que dans une salle (stage_id vide = pas de stage)
                 @UniqueConstraint(name = "uk_salle_stage", columnNames = {"stage_id"})
         })
 
-@ToString(callSuper = true, of = {"numSalle", "etage", "type"})
+@ToString(callSuper = true, of = {"numSalle", "etage", "type", "creePar", "suspendu", "gelDepuis", "gelJusqu"})
 public class Salle extends AbstractPersistableWithIdSetter<Long> {
 
     @Getter

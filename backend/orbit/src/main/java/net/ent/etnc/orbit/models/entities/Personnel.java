@@ -19,7 +19,7 @@ import java.util.Collection;
 @Table(name = "personnel",
         uniqueConstraints = @UniqueConstraint(name = "uk_USER_nid", columnNames = {"nid"}))
 @EqualsAndHashCode(callSuper = false, of = {"nid"})
-@ToString(callSuper = true, of = {"nid","login", "role"})
+@ToString(callSuper = true, of = {"nid","nom","prenom","login", "role", "active", "verrouille"})
 public class Personnel extends AbstractPersistableWithIdSetter<Long> implements UserDetails {
 
     @Getter
@@ -50,7 +50,7 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
 
     @Getter
     @Setter
-    @Column(name = "mot_de_passe", nullable = false)
+    @Column(name = "mot_de_passe", nullable = false) //pas de length pour le hash
     private String motDePasse;
 
     @Getter
@@ -63,7 +63,7 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     @Getter
     @Setter
     @Column(name = "active", nullable = false)
-    private boolean active = true;
+    private boolean active = false;
 
     @Getter
     @Setter

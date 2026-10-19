@@ -4,10 +4,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Entity
 @Table(name = "tableau_interactif")
 @PrimaryKeyJoinColumn(name = "id", foreignKey = @ForeignKey(name = "fk_tableau_interactif_materiel"))
+@ToString(callSuper = true, of = {"TYPE"})
+@EqualsAndHashCode(callSuper = true)
 public class TableauInteractif extends Materiel {
 
     public static final String TYPE = "TableauInteractif";

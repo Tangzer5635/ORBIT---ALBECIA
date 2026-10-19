@@ -37,7 +37,7 @@ public class JournalisationServiceImpl implements JournalisationService {
 
     @Override
     @Transactional
-    public void journaliser(TypeAction action, String detail) {
+    public void journaliser(TypeAction action, String detail) throws ServiceException {
         Long auteurId = idUtilisateurCourant();
         if (auteurId == null) return; // personne de connecté (jeu de données d'Init) : rien à tracer
         journaliser(auteurId, action, detail);
@@ -45,7 +45,7 @@ public class JournalisationServiceImpl implements JournalisationService {
 
     @Override
     @Transactional
-    public void journaliser(Long auteurId, TypeAction action, String detail) {
+    public void journaliser(Long auteurId, TypeAction action, String detail) throws ServiceException {
         Journalisation journalisation = repository.save(new Journalisation(auteurId, action, majuscule(detail)));
         String ligne = (journalisation.getAuteurId() == null ? "-" : journalisation.getAuteurId())
                 + " | " + journalisation.getAction() + " | " + journalisation.getDetail();
@@ -66,7 +66,7 @@ public class JournalisationServiceImpl implements JournalisationService {
     @Override
     @Transactional(readOnly = true)
     public Page<Journalisation> rechercher(Specification<Journalisation> filtre, LocalDateTime debut, LocalDateTime fin,
-                                           Pageable pageable) {
+                                           Pageable pageable) throws ServiceException {
         LocalDateTime d = debut == null ? DEBUT_PAR_DEFAUT : debut;
         LocalDateTime f = fin == null ? LocalDateTime.now() : fin;
         if (d.isAfter(f)) {
