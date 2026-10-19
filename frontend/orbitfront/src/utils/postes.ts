@@ -33,6 +33,9 @@ export function pourcentageUtilisable(anneau: ComptesAnneau | undefined): number
     return Math.round(((total - anneau.defectueux) / total) * 100);
 }
 
+// choix d'étage des formulaires : l'index est la valeur envoyée ("0" = rez-de-chaussée)
+export const ETAGES = ["Rez-de-chaussée", "1er étage", "2e étage", "3e étage"];
+
 // "0" -> "Rez-de-chaussée", "1" -> "1er étage", "2" -> "2e étage"
 export function libelleEtage(etage: string) {
     if (etage === "0") return "Rez-de-chaussée";

@@ -8,11 +8,12 @@ type Props = {
     onRetirerStage?: () => void;
     onAffecterFormateur?: () => void;
     onRetirerFormateur?: (formateur: Formateur) => void;
+    onPlaquerMaster?: () => void;
 };
 
 // Panneau de droite quand rien n'est sélectionné sur le plan : stage, gestionnaire, formateurs et master de la salle
 export default function PanneauSalle({
-                                         salle, onAffecterStage, onRetirerStage, onAffecterFormateur, onRetirerFormateur
+                                         salle, onAffecterStage, onRetirerStage, onAffecterFormateur, onRetirerFormateur, onPlaquerMaster,
                                      }: Props) {
     const formateurs = salle.formateurs ?? [];
 
@@ -20,7 +21,6 @@ export default function PanneauSalle({
         <aside className="poste-panneau" aria-label="Vue de la salle">
             <div>
                 <h2>Vue de la salle</h2>
-                <p className="muted small">Choisis un poste ou un matériel sur le plan pour afficher son détail ici.</p>
             </div>
 
             <section className="panneau-section">
@@ -81,6 +81,13 @@ export default function PanneauSalle({
                 {salle.masterNom
                     ? <b>{salle.masterNom}</b>
                     : <p className="muted">Aucun master plaqué sur cette salle.</p>}
+
+                {/* absent pour le formateur et sur une salle gelée */}
+                {onPlaquerMaster && (
+                    <button type="button" className="btn sm" onClick={onPlaquerMaster}>
+                        {salle.masterNom ? "Changer de master" : "Plaquer un master"}
+                    </button>
+                )}
             </section>
         </aside>
     );

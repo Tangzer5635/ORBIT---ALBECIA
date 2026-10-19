@@ -1,4 +1,4 @@
-import type {CalendrierGaranties, EtatMateriel, Materiel, MaterielRequest, Page, TypeMateriel} from "../types/types.ts";
+import type {AffectationMateriel, CalendrierGaranties, EtatMateriel, Materiel, MaterielRequest, Page, TypeMateriel} from "../types/types.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 import type {Localisation} from "../utils/materiels.ts";
 
@@ -114,4 +114,17 @@ export async function getCalendrierGaranties(annee: number): Promise<CalendrierG
     if (!response.ok) throw new MaterielError(response.status);
 
     return await response.json();
+}
+
+// Matériel en service dont la garantie se termine entre du (inclus) et au (exclu), la fin la plus proche d'abord.
+// Sans "du" : tout ce qui est déjà hors garantie avant "au".
+export async function getMaterielsFinGarantie(du: string | null, au: string): Promise<Materiel[]> {
+    const filtre = [du && `dateFinGarantie=ge=${du}`, `dateFinGarantie=lt=${au}`, "archive==false"].filter(Boolean).join(";");
+    const params = new URLSearchParams({filter: filtre, page: "0", size: "500", sort: "dateFinGarantie,asc"});
+    return (await requete<Page<Materiel>>(`${URL}/?${params}`)).content;
+}
+
+// Où se trouve le matériel : salle, bâtiment, poste et son occupant, stage, responsable
+export function getAffectationMateriel(id: number): Promise<AffectationMateriel> {
+    return requete(`${URL}/${id}/affectation/`);
 }

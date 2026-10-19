@@ -8,6 +8,7 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MasterRepository;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
+import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.ProcessusService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -45,6 +46,9 @@ class MasterServiceImplTest {
 
     @Mock
     private MaterielService materielService;
+
+    @Mock
+    private PosteService posteService;
 
     /** Mock : les tests de ce service ne vérifient pas le journal. */
     @Mock

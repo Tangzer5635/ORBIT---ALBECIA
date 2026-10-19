@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.controllers;
 
 import net.ent.etnc.orbit.dtos.assemblers.MaterielAssembler;
+import net.ent.etnc.orbit.dtos.responseDTO.AffectationMaterielDto;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.services.AffecterMaterielService;
@@ -23,6 +24,13 @@ public class AffecterMaterielController {
         this.affecterMaterielService = affecterMaterielService;
         this.materielAssembler = materielAssembler;
         this.materielService = materielService;
+    }
+
+    /** Où se trouve le matériel (fiche garantie du calendrier). */
+    @GetMapping("/affectation/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<AffectationMaterielDto> affectation(@PathVariable Long idMateriel) {
+        return ResponseEntity.ok(affecterMaterielService.affectation(idMateriel));
     }
 
     @PostMapping(value = "/", params = "salleId")

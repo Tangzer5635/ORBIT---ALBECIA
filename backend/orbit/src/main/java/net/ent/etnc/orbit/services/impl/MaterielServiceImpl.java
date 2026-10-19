@@ -128,6 +128,18 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Transactional
     public int installerImage(Long idSalle, List<Processus> processus) throws ServiceException {
         List<UC> ucs = repository.findUcDeLaSalle(idSalle);
+    public int installerImage(Long idSalle, List<Processus> processus) {
+        return installer(repository.findUcDeLaSalle(idSalle), processus);
+    }
+
+    @Override
+    @Transactional
+    public int installerImageSurPoste(Long idPoste, List<Processus> processus) {
+        return installer(repository.findUcDuPoste(idPoste), processus);
+    }
+
+    /** Chaque UC a exactement ces processus (les anciens sont retirés). */
+    private int installer(List<UC> ucs, List<Processus> processus) {
         for (UC uc : ucs) {
             List.copyOf(uc.getProcessus()).forEach(uc::removeProcessus);
             processus.forEach(uc::addProcessus);

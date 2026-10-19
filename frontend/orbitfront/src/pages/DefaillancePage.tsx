@@ -82,7 +82,7 @@ export default function DefaillancePage() {
                 .then(liste => { if (actif) setAutres(liste.filter(x => x.id !== d.id).sort((a, b) => b.dateSignalement.localeCompare(a.dateSignalement))); })
                 .catch(() => { if (actif) setAutres([]); });
         }).catch(e => { if (actif) setErreur(e instanceof Error ? e.message : "Impossible d'ouvrir cette défaillance."); })
-          .finally(() => { if (actif) setSearchParams(params => { params.delete("ouvrir"); return params; }, {replace: true}); });
+            .finally(() => { if (actif) setSearchParams(params => { params.delete("ouvrir"); return params; }, {replace: true}); });
         return () => { actif = false; };
     }, [searchParams, setSearchParams]);
 
@@ -210,7 +210,7 @@ export default function DefaillancePage() {
                                onChange={e => { setDateFin(e.target.value); setPage(0); }} />
                     </label>
                     {(typeFiltre || dateDebut || dateFin || saisie) && <button type="button" className="btn sm defaillance-reset"
-                        onClick={() => { setSaisie(""); setRecherche(""); setTypeFiltre(""); setDateDebut(""); setDateFin(""); setPage(0); }}>Réinitialiser</button>}
+                                                                               onClick={() => { setSaisie(""); setRecherche(""); setTypeFiltre(""); setDateDebut(""); setDateFin(""); setPage(0); }}>Réinitialiser</button>}
                 </div>
             </div>
 
@@ -247,19 +247,26 @@ export default function DefaillancePage() {
                 </div>
             )}
 
+            {/* titre vide : le titre est affiché dans l'en-tête coloré de la fiche */}
             <Popup open={selection !== null} onClose={fermer}
-                   title={selection?.description ?? "Fiche défaillance"}
-                   description={selection ? `Défaillance n° ${selection.id} · ${LIBELLE_STATUT_DEFAILLANCE[selection.statut]}` : undefined}
+                   title=""
                    confirmLabel={selection?.statut === "SIGNALEE" ? "Résoudre" : "Fermer"}
                    onConfirm={() => selection?.statut === "SIGNALEE" ? void traiter() : fermer()}
                    loading={enregistrement} cancelLabel={selection?.statut === "SIGNALEE" ? "Annuler" : "Retour"}>
                 {selection && <div className="defaillance-fiche">
+                    {/* en-tête rouge (signalée) ou vert (résolue), comme la maquette */}
+                    <div className={`f-head ${selection.statut === "SIGNALEE" ? "def" : "use"}`}>
+                        <div>
+                            <h2>{selection.description}</h2>
+                            <p>Défaillance n° {selection.id}</p>
+                        </div>
+                        <span className="pastille">{LIBELLE_STATUT_DEFAILLANCE[selection.statut]}</span>
+                    </div>
                     <section className="f-sec">
                         <h3>Signalement</h3>
                         <dl className="f-kv">
                             <dt>Remontée par</dt><dd>{selection.signalePar || "—"}</dd>
                             <dt>Le</dt><dd>{dateFr(selection.dateSignalement)}</dd>
-                            <dt>Statut</dt><dd>{LIBELLE_STATUT_DEFAILLANCE[selection.statut]}</dd>
                             <dt>Matériel</dt><dd>{LIBELLE_TYPE_MATERIEL[selection.typeMateriel]}</dd>
                             <dt>Numéro de série</dt><dd>{selection.numSerieMateriel || "—"}</dd>
                         </dl>

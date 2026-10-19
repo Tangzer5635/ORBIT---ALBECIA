@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import net.ent.etnc.orbit.models.enums.MotifGel;
+import net.ent.etnc.orbit.models.enums.TypeFormation;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 
 import java.time.LocalDate;
@@ -27,4 +28,7 @@ public class SalleCarteDto {
     private boolean suspendu; // salle gelée
     private MotifGel gelMotif;
     private LocalDate gelJusqu;
+    // stage de la salle (en cours, sinon le prochain) ; null si aucun
+    private String stageNom;
+    private TypeFormation stageType;
 }

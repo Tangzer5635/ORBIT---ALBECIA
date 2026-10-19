@@ -9,7 +9,7 @@ interface Props {
     onImporte: () => void; // des stages ont été créés ou modifiés : la page se recharge
 }
 
-const EN_TETE = "nom;type;dateDebut;dateFin;nidFormateur";
+const EN_TETE = "nom;type;dateDebut;dateFin;nidCDSF";
 const EXEMPLE = `${EN_TETE}\nVU82;ESR;2026-08-07;2027-04-07;2000000001\nWB48;PDI;2026-08-29;2027-01-29;2000000010\n`;
 
 // fichier d'exemple téléchargeable (même format que init/stages.csv)
@@ -65,7 +65,7 @@ export default function ImporterStagesPopup({onClose, onImporte}: Props) {
                 <li><b>nom</b> : 2 lettres puis 2 chiffres (ex. WB47)</li>
                 <li><b>type</b> : {Object.entries(LIBELLE_TYPE_FORMATION).map(([code, l]) => `${code} (${l})`).join(", ")}</li>
                 <li><b>dateDebut</b>, <b>dateFin</b> : 2026-08-07 ou 07/08/2026</li>
-                <li><b>nidFormateur</b> : NID à 10 chiffres d'un formateur existant</li>
+                <li><b>nidCDSF</b> : NID à 10 chiffres du CDSF (Chef de Section Formation) qui gère le stage, un formateur existant</li>
             </ul>
             <a className="btn sm" href={LIEN_EXEMPLE} download="exemple-stages.csv">Télécharger un exemple</a>
 

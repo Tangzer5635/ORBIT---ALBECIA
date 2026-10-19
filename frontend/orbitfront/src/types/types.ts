@@ -120,6 +120,8 @@ export interface Batiment {
 // BatimentRequestDto
 export interface BatimentRequest {
     numBatiment: string;
+    numSalleStockage?: string; // "199" côté back si vide
+    etageStockage?: string;    // "0" côté back si vide
 }
 //==========================================
 //      SALLES
@@ -194,6 +196,8 @@ export interface SalleCarte {
     suspendu: boolean; // salle gelée
     gelMotif?: MotifGel | null;
     gelJusqu?: string | null;
+    stageNom?: string | null;            // "VU82", absent si aucun stage
+    stageType?: TypeFormation | null;
 }
 
 // SalleRequestDto
@@ -266,6 +270,22 @@ export interface Materiel {
     processus?: Processus[];
     numSalle?: string; // Salle où se trouve le matériel (absents s'il est archivé)
     typeSalle?: TypeSalle;
+}
+
+// AffectationMaterielDto (GET /materiels/{id}/affectation/) : tout est null pour un matériel archivé
+export interface AffectationMateriel {
+    idSalle: number | null;
+    numSalle: string | null;
+    typeSalle: TypeSalle | null;
+    etage: string | null;
+    numBatiment: string | null;
+    idPoste: number | null;     // null : matériel posé dans la salle ou rangé en stock
+    numPoste: string | null;    // "B201-S302-P07", "B201-S302-F" = poste formateur
+    occupant: string | null;    // "Prénom Nom" du stagiaire du poste
+    stageNom: string | null;
+    stageDateDebut: string | null;
+    stageDateFin: string | null;
+    responsable: string | null; // gestionnaire qui a créé la salle
 }
 
 // MaterielRequestDto

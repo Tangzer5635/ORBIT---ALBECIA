@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Master;
+import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.ListeProcessus;
@@ -10,6 +11,7 @@ import net.ent.etnc.orbit.repositories.MasterRepository;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MasterService;
 import net.ent.etnc.orbit.services.MaterielService;
+import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.ProcessusService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
@@ -28,17 +30,19 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
     private final ProcessusService processusService;
     private final SalleService salleService;
     private final MaterielService materielService;
+    private final PosteService posteService;
     private final JournalisationService journalisationService;
 
     /** @Lazy : ProcessusService dépend aussi de MasterService (suppression d'un processus). */
     @Autowired
     public MasterServiceImpl(MasterRepository masterRepository, @Lazy ProcessusService processusService,
                              SalleService salleService, MaterielService materielService,
-                             JournalisationService journalisationService) {
+                             PosteService posteService, JournalisationService journalisationService) {
         super(masterRepository);
         this.processusService = processusService;
         this.salleService = salleService;
         this.materielService = materielService;
+        this.posteService = posteService;
         this.journalisationService = journalisationService;
     }
 
@@ -104,6 +108,25 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
         journalisationService.journaliser(TypeAction.AFFECTATION, libelle(master) + " plaqué sur la "
                 + Libelles.salle(salle) + " (" + nbUc + " UC)");
         return salle;
+    }
+
+    @Override
+    @Transactional
+    public Poste plaquerSurPoste(Long idPoste, Long idMaster) {
+        Master master = trouver(idMaster);
+        Poste poste = posteService.findById(idPoste)
+                .orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
+        Salle salle = salleService.salleDuPoste(idPoste)
+                .orElseThrow(() -> new ServiceException("Le poste " + poste.getNumPoste() + " n'est dans aucune salle"));
+        if (salle.isSuspendu())
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est gelée : dégelez-la avant d'y plaquer un master");
+
+        int nbUc = materielService.installerImageSurPoste(idPoste, master.getProcessus());
+        if (nbUc == 0)
+            throw new ServiceException("Le " + Libelles.poste(poste) + " n'a pas d'unité centrale");
+        journalisationService.journaliser(TypeAction.AFFECTATION, libelle(master) + " plaqué sur le "
+                + Libelles.poste(poste) + " (" + Libelles.salle(salle) + ")");
+        return poste;
     }
 
     @Override
