@@ -26,16 +26,18 @@ public interface DefaillanceRepository extends BaseRepository<Defaillance> {
     Page<Defaillance> findByStatut(StatutDefaillance statut, Pageable pageable);
 
     /**
-     * Défaillances du matériel des salles d'un formateur : matériel d'un poste de la salle ou posé dans la salle.
-     * Statut absent = signalées et résolues.
+     * Défaillances du matériel des salles d'un formateur (accès en cours) : matériel d'un poste de la salle
+     * ou posé dans la salle. Statut absent = signalées et résolues.
      */
     @Query("""
             select d from Defaillance d
             where (:statut is null or d.statut = :statut)
-              and (d.materiel.id in (select m.id from Salle s join s.personnels p join s.postes po join po.materiels m
-                                     where p.id = :idFormateur)
-                or d.materiel.id in (select m.id from Salle s join s.personnels p join s.materiels m
-                                     where p.id = :idFormateur))
+              and (d.materiel.id in (select m.id from Salle s join s.personnels f join s.postes po join po.materiels m
+                                     where key(f).id = :idFormateur
+                                       and (value(f) is null or value(f) >= current_date))
+                or d.materiel.id in (select m.id from Salle s join s.personnels f join s.materiels m
+                                     where key(f).id = :idFormateur
+                                       and (value(f) is null or value(f) >= current_date)))
             """)
     Page<Defaillance> findDansLesSallesDe(@Param("idFormateur") Long idFormateur,
                                           @Param("statut") StatutDefaillance statut, Pageable pageable);

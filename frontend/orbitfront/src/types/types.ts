@@ -182,6 +182,8 @@ export interface Formateur {
     id: number;
     prenom: string;
     nom: string;
+    jusqu?: string | null; // dernier jour d'accès à la salle (inclus), null = sans fin
+    expire?: boolean;      // date limite dépassée : le formateur n'a plus accès à la salle
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)
