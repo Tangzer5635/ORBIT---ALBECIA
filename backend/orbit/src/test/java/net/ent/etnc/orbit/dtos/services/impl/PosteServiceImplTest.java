@@ -5,6 +5,7 @@ import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.repositories.PosteRepository;
 import net.ent.etnc.orbit.repositories.projections.MonPosteLigne;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import net.ent.etnc.orbit.services.impl.PosteServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,10 @@ class PosteServiceImplTest {
 
     @Mock
     private PosteRepository repository;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private PosteServiceImpl service;

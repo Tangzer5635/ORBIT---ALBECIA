@@ -61,6 +61,12 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
             foreignKey = @ForeignKey(name = "fk_materiel_salle"))
     private List<Materiel> materiels = new ArrayList<>();
 
+    /** « Prénom Nom » du gestionnaire qui a créé la salle (copié : la suppression de son compte ne bloque rien). */
+    @Getter @Setter
+    @Size(max = 101, message = "creePar de max 101 caractères")
+    @Column(name = "cree_par", length = 101)
+    private String creePar;
+
     /** Salle gelée : visible, mais plus d'affectation de stage, de stagiaire ni de master. */
     @Getter @Setter
     @Column(name = "suspendu", nullable = false)

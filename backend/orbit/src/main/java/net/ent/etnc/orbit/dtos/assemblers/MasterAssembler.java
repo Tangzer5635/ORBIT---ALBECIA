@@ -10,12 +10,20 @@ import java.util.List;
 @Component
 public class MasterAssembler {
 
+    private final ProcessusAssembler processusAssembler;
+
+    public MasterAssembler(ProcessusAssembler processusAssembler) {
+        this.processusAssembler = processusAssembler;
+    }
+
     public MasterDto toDto(Master master) {
         return MasterDto.builder()
                 .id(master.getId())
                 .nom(master.getNom())
                 .versionMaster(master.getVersionMaster())
                 .dateCreation(master.getDateCreation())
+                .processusIds(master.getProcessus().stream().map(p -> p.getId()).toList())
+                .processus(master.getProcessus().stream().map(processusAssembler::toDto).toList())
                 .build();
     }
 
@@ -25,6 +33,7 @@ public class MasterAssembler {
                 .toList();
     }
 
+    /** Sans les processus : le service les retrouve à partir de {@code processusIds}. */
     public Master toEntity(MasterDto masterDto) {
         Master master = new Master();
         master.setNom(masterDto.getNom());

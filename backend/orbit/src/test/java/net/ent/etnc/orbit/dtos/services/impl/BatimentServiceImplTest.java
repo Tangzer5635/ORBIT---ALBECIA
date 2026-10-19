@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.BatimentRepository;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import net.ent.etnc.orbit.services.impl.BatimentServiceImpl;
@@ -30,6 +31,10 @@ class BatimentServiceImplTest {
 
     @Mock
     private SalleService salleService;
+
+    /** Mock : les tests de ce service ne vérifient pas le journal. */
+    @Mock
+    private JournalisationService journalisationService;
 
     @InjectMocks
     private BatimentServiceImpl service;

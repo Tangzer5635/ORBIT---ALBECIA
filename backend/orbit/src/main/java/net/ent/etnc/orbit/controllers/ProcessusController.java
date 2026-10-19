@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.ProcessusAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.ProcessusRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.ProcessusResponseDto;
+import net.ent.etnc.orbit.models.enums.ListeProcessus;
 import net.ent.etnc.orbit.services.ProcessusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,14 +27,15 @@ public class ProcessusController {
         this.processusAssembler = processusAssembler;
     }
 
+    /** Lecture ouverte au gestionnaire aussi : il compose les masters avec ces processus. */
     @GetMapping("/")
-    @PreAuthorize("hasAnyRole('FORMATEUR','ADMINISTRATEUR')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<ProcessusResponseDto>> getAll(@PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(processusService.findAll(pageable).map(processusAssembler::toDto));
     }
 
     @GetMapping("/{id}/")
-    @PreAuthorize("hasAnyRole('FORMATEUR','ADMINISTRATEUR')")
+    @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<ProcessusResponseDto> getById(@PathVariable Long id) {
         return processusService.findById(id)
                 .map(p -> ResponseEntity.ok(processusAssembler.toDto(p)))
@@ -44,6 +46,13 @@ public class ProcessusController {
     @PreAuthorize("hasAnyRole('FORMATEUR','ADMINISTRATEUR')")
     public ResponseEntity<ProcessusResponseDto> post(@Valid @RequestBody ProcessusRequestDto dto) {
         return ResponseEntity.ok(processusAssembler.toDto(processusService.create(processusAssembler.toEntity(dto))));
+    }
+
+    /** Passe le processus en liste blanche ou noire (?liste=BLANCHE ou ?liste=NOIRE). */
+    @PatchMapping(value = "/{id}/", params = "liste")
+    @PreAuthorize("hasAnyRole('FORMATEUR','ADMINISTRATEUR')")
+    public ResponseEntity<ProcessusResponseDto> changerListe(@PathVariable Long id, @RequestParam ListeProcessus liste) {
+        return ResponseEntity.ok(processusAssembler.toDto(processusService.changerListe(id, liste)));
     }
 
     @DeleteMapping("/{id}/")

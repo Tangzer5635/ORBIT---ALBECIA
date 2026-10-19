@@ -4,12 +4,15 @@ import net.ent.etnc.orbit.dtos.responseDTO.BilanImportStagesDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeFormation;
 import net.ent.etnc.orbit.repositories.StageRepository;
 import net.ent.etnc.orbit.repositories.projections.SalleDuStage;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
 import net.ent.etnc.orbit.services.StageService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,18 +40,25 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
     private static final DateTimeFormatter DATE_FR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final PersonnelService personnelService;
+    private final JournalisationService journalisationService;
 
     @Autowired
-    public StageServiceImpl(StageRepository stageRepository, PersonnelService personnelService) {
+    public StageServiceImpl(StageRepository stageRepository, PersonnelService personnelService,
+                            JournalisationService journalisationService) {
         super(stageRepository);
         this.personnelService = personnelService;
+        this.journalisationService = journalisationService;
     }
 
     @Override
     @Transactional
     public Stage creer(Stage stage, Long idFormateur) {
-        stage.setFormateur(formateur(idFormateur));
-        return create(stage);
+        Personnel formateur = formateur(idFormateur);
+        stage.setFormateur(formateur);
+        Stage cree = create(stage);
+        journalisationService.journaliser(TypeAction.CREATION,
+                "Stage " + stage.getNom() + " (" + stage.getType() + ") créé, formateur " + Libelles.personne(formateur));
+        return cree;
     }
 
     @Override
@@ -56,7 +66,9 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
     public Stage modifier(Long id, Stage stage, Long idFormateur) {
         stage.setId(id);
         stage.setFormateur(formateur(idFormateur));
-        return update(stage);
+        Stage modifie = update(stage);
+        journalisationService.journaliser(TypeAction.MODIFICATION, Libelles.stage(stage) + " modifié");
+        return modifie;
     }
 
     @Override
@@ -81,7 +93,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
     @Transactional
     public BilanImportStagesDto importer(String contenu) {
         List<String> lignes = contenu == null ? List.of()
-                : contenu.replace("﻿", "").lines().map(String::strip).toList(); // retire le BOM ajouté par Excel
+                : contenu.replace("\uFEFF", "").lines().map(String::strip).toList(); // retire le BOM ajouté par Excel
         if (lignes.stream().allMatch(String::isEmpty))
             throw new ServiceException("Le fichier est vide");
 
@@ -106,6 +118,8 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
                 erreurs.add("Ligne " + (n + 1) + " : " + e.getMessage());
             }
         }
+        journalisationService.journaliser(TypeAction.IMPORT, "Import de stages : " + crees.size() + " créé(s), "
+                + misAJour.size() + " mis à jour, " + erreurs.size() + " ligne(s) rejetée(s)");
         return new BilanImportStagesDto(crees, misAJour, erreurs);
     }
 
@@ -188,6 +202,7 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
         if (repository.nbSalles(id) > 0)
             throw new ServiceException("Le stage " + stage.getNom() + " est affecté à une salle : retirez-le d'abord");
         repository.delete(stage);
+        journalisationService.journaliser(TypeAction.SUPPRESSION, Libelles.stage(stage) + " supprimé");
     }
 
     @Override

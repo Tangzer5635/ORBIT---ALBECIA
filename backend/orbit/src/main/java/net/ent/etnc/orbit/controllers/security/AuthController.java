@@ -8,16 +8,22 @@ import net.ent.etnc.orbit.dtos.requestDTO.LoginRequest;
 import net.ent.etnc.orbit.dtos.responseDTO.TokenResponse;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
 import net.ent.etnc.orbit.models.entities.Personnel;
+import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.security.jwt.JwtUtils;
 import net.ent.etnc.orbit.security.services.UserDetailsServiceImpl;
+import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.RefreshTokenService;
+import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -52,6 +58,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final UserAssembler userAssembler;
     private final UserDetailsServiceImpl userDetailsService;
+    private final JournalisationService journalisationService;
 
     public AuthController(
             @Value("${app.jwt.refresh-expiration-ms}") long refreshExpirationMs,
@@ -60,7 +67,8 @@ public class AuthController {
             JwtUtils jwtUtils,
             RefreshTokenService refreshTokenService,
             UserAssembler userAssembler,
-            UserDetailsServiceImpl userDetailsService) {
+            UserDetailsServiceImpl userDetailsService,
+            JournalisationService journalisationService) {
         this.refreshExpirationMs = refreshExpirationMs;
         this.jwtExpirationMs = jwtExpirationMs;
         this.authenticationManager = authenticationManager;
@@ -68,6 +76,7 @@ public class AuthController {
         this.refreshTokenService = refreshTokenService;
         this.userAssembler = userAssembler;
         this.userDetailsService = userDetailsService;
+        this.journalisationService = journalisationService;
     }
 
     @PostMapping("/login/")
@@ -75,10 +84,18 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response) {
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        } catch (AuthenticationException e) {
+            journalisationService.journaliser(null, TypeAction.ECHEC_CONNEXION,
+                    "Échec de connexion pour l'identifiant « " + request.getUsername() + " » : " + motif(e));
+            throw e; // toujours traité par le GlobalExceptionHandler
+        }
 
         Personnel user = (Personnel) authentication.getPrincipal();
+        journalisationService.journaliser(user.getId(), TypeAction.CONNEXION, "Connexion de " + Libelles.personne(user));
         String accessToken = jwtUtils.generateJwtToken(user);
         String rawRefreshToken = refreshTokenService.createRefreshToken(user.getUsername());
 
@@ -115,7 +132,14 @@ public class AuthController {
             refreshTokenService.revokeToken(rawToken);
         }
         clearRefreshCookie(response);
+        journalisationService.journaliser(TypeAction.DECONNEXION, "Déconnexion");
         return ResponseEntity.noContent().build();
+    }
+
+    private String motif(AuthenticationException e) {
+        if (e instanceof DisabledException) return "compte désactivé";
+        if (e instanceof LockedException) return "compte verrouillé";
+        return "identifiant ou mot de passe incorrect";
     }
 
     private void addRefreshCookie(HttpServletResponse response, String rawToken) {
