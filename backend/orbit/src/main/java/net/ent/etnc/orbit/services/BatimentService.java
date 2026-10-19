@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 public interface BatimentService extends Service<Batiment, Long> {
+    /** Crée le bâtiment avec sa salle de stockage (« 199 » au rez-de-chaussée si numéro ou étage vide). */
+    Batiment create(Batiment batiment, String numSalleStockage, String etageStockage) throws ServiceException;
     void supprimer(Long idBatiment, Long idStockageCible) throws ServiceException;
     Batiment affecterSalle(Long idBatiment, Long idSalle) throws ServiceException;
     void retirerSalle(Long idBatiment, Long idSalle) throws ServiceException;

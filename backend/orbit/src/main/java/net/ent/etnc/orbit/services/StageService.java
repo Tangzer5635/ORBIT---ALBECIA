@@ -17,7 +17,7 @@ public interface StageService extends Service<Stage, Long> {
     Stage modifier(Long id, Stage stage, Long idFormateur) throws ServiceException;
 
     /**
-     * Import CSV (format de init/stages.csv, séparateur « ; ») : nom;type;dateDebut;dateFin;nidFormateur.
+     * Import CSV (format de init/stages.csv, séparateur « ; ») : nom;type;dateDebut;dateFin;nidCDSF.
      * Ligne par ligne : un stage existant (même nom) est mis à jour, les autres sont créés,
      * une ligne invalide est ignorée et notée dans le bilan.
      */

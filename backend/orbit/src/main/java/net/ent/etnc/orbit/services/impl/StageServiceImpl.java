@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class StageServiceImpl extends AbstractService<Stage, StageRepository> implements StageService {
 
     /** Colonnes obligatoires de l'import (les autres, comme nbStagiaires, sont ignorées). */
-    private static final List<String> COLONNES = List.of("nom", "type", "dateDebut", "dateFin", "nidFormateur");
+    private static final List<String> COLONNES = List.of("nom", "type", "dateDebut", "dateFin", "nidCDSF");
     private static final DateTimeFormatter DATE_FR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final PersonnelService personnelService;
@@ -145,10 +145,11 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
         if (fin.isBefore(debut))
             throw new ServiceException("la date de fin est avant la date de début");
 
-        String nid = valeur(v, col, "nidFormateur");
+        // NID du CDSF (Chef de Section Formation) : le formateur qui gère le stage
+        String nid = valeur(v, col, "nidCDSF");
         Personnel formateur = personnelService.findByNid(nid)
                 .filter(p -> p.getRole() == Role.FORMATEUR)
-                .orElseThrow(() -> new ServiceException("aucun formateur avec le NID « " + nid + " »"));
+                .orElseThrow(() -> new ServiceException("aucun formateur (CDSF) avec le NID « " + nid + " »"));
 
         Optional<Stage> existant = repository.findByNom(nom);
         if (existant.isPresent()) {

@@ -81,8 +81,10 @@ export default function PostePage() {
         setErreurSignalement("");
         try {
             await signalerDefaillance(materielSignale, description);
-            const mes = await getMesDefaillances();
+            // le poste aussi : son état (et la couleur du plan) change avec la défaillance
+            const [mes, posteAJour] = await Promise.all([getMesDefaillances(), getMyPoste()]);
             setDefaillances(mes);
+            setPoste(posteAJour);
             setSignalementOuvert(false);
         } catch (e) {
             setErreurSignalement(e instanceof Error ? e.message : "Impossible de signaler cette défaillance.");

@@ -48,21 +48,25 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
         this.journalisationService = journalisationService;
     }
 
-    /**
-     * Crée le bâtiment et, dans la même transaction, sa salle de stockage :
-     * si l'une des deux créations échoue, rien n'est enregistré.
-     */
     @Override
     @Transactional
     public Batiment create(Batiment batiment) {
+        return create(batiment, null, null);
+    }
+
+    @Override
+    @Transactional
+    public Batiment create(Batiment batiment, String numSalleStockage, String etageStockage) {
+        String num = numSalleStockage == null || numSalleStockage.isBlank() ? NUM_SALLE_STOCKAGE : numSalleStockage.trim();
+        String etage = etageStockage == null || etageStockage.isBlank() ? ETAGE_SALLE_STOCKAGE : etageStockage.trim();
         Batiment cree = super.create(batiment);
         Salle stockage = new Salle();
-        stockage.setNumSalle(NUM_SALLE_STOCKAGE);
-        stockage.setEtage(ETAGE_SALLE_STOCKAGE);
+        stockage.setNumSalle(num);
+        stockage.setEtage(etage);
         stockage.setType(TypeSalle.SalleStockage);
         cree.addSalle(salleService.create(stockage));
         journalisationService.journaliser(TypeAction.CREATION,
-                "Bâtiment " + batiment.getNumBatiment() + " créé (avec sa salle de stockage " + NUM_SALLE_STOCKAGE + ")");
+                "Bâtiment " + batiment.getNumBatiment() + " créé (avec sa salle de stockage " + num + ")");
         return cree;
     }
 

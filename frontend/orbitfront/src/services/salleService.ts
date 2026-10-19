@@ -185,6 +185,27 @@ export function degelerSalle(id: number): Promise<Salle> {
     return requete(`${URL}/${id}/degeler/`, {method: "PATCH"});
 }
 
+// Salle de stockage vide créée dans un bâtiment
+export function creerSalleStockage(idBatiment: number, numSalle: string, etage: string): Promise<Salle> {
+    return requete(URL, {method: "POST", body: JSON.stringify({idBatiment, numSalle, etage, type: "SalleStockage"})});
+}
+
+// Salle de cours sans personne dedans -> salle de stockage (ses postes deviennent du stock)
+export function convertirEnStockage(id: number): Promise<Salle> {
+    return requete(`${URL}/${id}/convertir-stockage/`, {method: "PATCH"});
+}
+
+// Salle de stockage -> salle de cours : VP et TBI restent, le reste part dans stockageCibleId
+export function convertirEnSalleDeCours(id: number, stockageCibleId?: number): Promise<Salle> {
+    const params = stockageCibleId !== undefined ? `?stockageCibleId=${stockageCibleId}` : "";
+    return requete(`${URL}/${id}/convertir-cours/${params}`, {method: "PATCH"});
+}
+
+// Numéro et étage d'une salle de stockage
+export function modifierStockage(id: number, numSalle: string, etage: string): Promise<Salle> {
+    return requete(`${URL}/${id}/stockage/`, {method: "PATCH", body: JSON.stringify({numSalle, etage})});
+}
+
 // « Déplacer la salle » : tout son contenu part dans la salle cible (renvoie la salle cible)
 export function deplacerSalle(id: number, salleCibleId: number): Promise<Salle> {
     return requete(`${URL}/${id}/deplacer/?salleCibleId=${salleCibleId}`, {method: "PATCH"});

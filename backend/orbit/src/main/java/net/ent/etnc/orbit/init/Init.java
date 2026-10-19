@@ -229,7 +229,7 @@ public class Init implements CommandLineRunner {
 
     /**
      * Crée les stages du CSV puis y ajoute des stagiaires. Colonnes :
-     * nom;type;dateDebut;dateFin;nidFormateur;nbStagiaires (nbStagiaires ne sert qu'au jeu de données).
+     * nom;type;dateDebut;dateFin;nidCDSF;nbStagiaires (nbStagiaires ne sert qu'au jeu de données).
      */
     private List<Stage> creerStages(List<Personnel> formateurs, List<Personnel> stagiairesFixes,
                                     List<Personnel> stagiairesGeneres) throws IOException, ServiceException {

@@ -369,10 +369,6 @@ export default function UtilisateurPage() {
                                 <label htmlFor="uNom">Nom</label>
                                 <input id="uNom" value={nom} onChange={champ(setNom)}/>
                             </div>
-                            <div>
-                                <label htmlFor="uLogin">Identifiant</label>
-                                <input id="uLogin" value={login} onChange={champ(setLogin)} autoComplete="off"/>
-                            </div>
                             {!aModifier && (
                                 <div>
                                     <label htmlFor="uNid">NID</label>

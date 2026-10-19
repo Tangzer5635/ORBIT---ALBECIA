@@ -2,7 +2,7 @@ import BatimentCard from "../components/Batiment/BatimentCard.tsx";
 import {useState} from "react";
 import {ajouterBatiment, BatimentError, supprimerBatiment} from "../services/batimentService.ts";
 import {useBatiments} from "../context/BatimentsContext.tsx";
-import {ANNEAU_VIDE, batimentsParDisponibilite} from "../utils/postes.ts";
+import {ANNEAU_VIDE, batimentsParDisponibilite, ETAGES} from "../utils/postes.ts";
 import Legende from "../components/Utils/Legende.tsx";
 import Popup from "../components/Popup/Popup.tsx";
 import type {Batiment} from "../types/types.ts";
@@ -16,6 +16,8 @@ export function BatimentsPage() {
 
     const [popup, setPopup] = useState<PopupState>(null);
     const [numBatiment, setNumBatiment] = useState("");
+    const [numStockage, setNumStockage] = useState("199");
+    const [etageStockage, setEtageStockage] = useState("0");
     const [stockageCible, setStockageCible] = useState<number>();
     const [erreur, setErreur] = useState("");
     const [envoi, setEnvoi] = useState(false);
@@ -23,6 +25,8 @@ export function BatimentsPage() {
     function fermerPopup() {
         setPopup(null);
         setNumBatiment("");
+        setNumStockage("199");
+        setEtageStockage("0");
         setStockageCible(undefined);
         setErreur("");
     }
@@ -39,10 +43,18 @@ export function BatimentsPage() {
             setErreur("Le numéro du bâtiment est obligatoire.");
             return;
         }
+        if (numStockage.trim() === "") {
+            setErreur("Le numéro de la salle de stockage est obligatoire.");
+            return;
+        }
 
         setEnvoi(true);
         try {
-            const nouveau = await ajouterBatiment({numBatiment: numBatiment.trim()});
+            const nouveau = await ajouterBatiment({
+                numBatiment: numBatiment.trim(),
+                numSalleStockage: numStockage.trim(),
+                etageStockage,
+            });
             setBatiments((liste) => [...liste, {...nouveau, anneau: ANNEAU_VIDE}]);
             fermerPopup();
         } catch (err) {
@@ -148,6 +160,20 @@ export function BatimentsPage() {
                             }}
                             autoFocus
                         />
+                        <label htmlFor="numStockage">Salle de stockage</label>
+                        <input
+                            id="numStockage"
+                            maxLength={10}
+                            value={numStockage}
+                            onChange={(e) => {
+                                setNumStockage(e.target.value);
+                                setErreur("");
+                            }}
+                        />
+                        <label htmlFor="etageStockage">Étage de la salle de stockage</label>
+                        <select id="etageStockage" value={etageStockage} onChange={(e) => setEtageStockage(e.target.value)}>
+                            {ETAGES.map((nom, i) => <option key={nom} value={String(i)}>{nom}</option>)}
+                        </select>
                     </>
                 )}
 

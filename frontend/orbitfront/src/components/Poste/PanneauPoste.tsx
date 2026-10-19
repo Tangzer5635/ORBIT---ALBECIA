@@ -17,12 +17,13 @@ type Props = {
     onAffecterStagiaire?: () => void; // absent si la salle est gelée
     onRetirerStagiaire: () => void;
     onAffecterMateriel: () => void;
+    onPlaquerMaster?: () => void; // absent si la salle est gelée ou pour qui ne gère pas la salle
     onChange: () => void; // un matériel a bougé : la page se recharge
 };
 
 export default function PanneauPoste({
                                          poste, salle, peutGerer, onFermer, onAffecterStagiaire, onRetirerStagiaire,
-                                         onAffecterMateriel, onChange
+                                         onAffecterMateriel, onPlaquerMaster, onChange
                                      }: Props) {
     const [materiels, setMateriels] = useState<Materiel[] | null>(null);
     const [version, setVersion] = useState(0); // +1 après un signalement : recharge le matériel et ses défaillances
@@ -102,6 +103,9 @@ export default function PanneauPoste({
                     )}
                     {peutGerer && (
                         <button type="button" className="btn" onClick={onAffecterMateriel}>Affecter un matériel</button>
+                    )}
+                    {peutGerer && onPlaquerMaster && (
+                        <button type="button" className="btn" onClick={onPlaquerMaster}>Plaquer un master sur ce poste</button>
                     )}
                 </div>
             )}
