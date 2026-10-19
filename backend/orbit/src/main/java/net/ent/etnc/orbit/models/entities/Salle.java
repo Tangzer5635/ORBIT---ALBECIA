@@ -13,7 +13,11 @@ import net.ent.etnc.orbit.models.enums.TypeSalle;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 @Table(name = "salle",
@@ -46,14 +50,17 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "type",length = 20, nullable = false)
     private TypeSalle type;
 
-    @Valid
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "salle_personnel",
-            joinColumns = @JoinColumn(name = "salle_id",
-                    foreignKey = @ForeignKey(name = "fk_salle_personnel_salle")),
-            inverseJoinColumns = @JoinColumn(name = "personnel_id",
-                    foreignKey = @ForeignKey(name = "fk_salle_personnel_personnel")))
-    private List<Personnel> personnels =  new ArrayList<>();
+    /**
+     * Formateurs attribués à la salle, avec leur dernier jour d'accès (inclus).
+     * Valeur null : attribution faite avant la date limite, sans fin.
+     */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "salle_personnel",
+            joinColumns = @JoinColumn(name = "salle_id"),
+            foreignKey = @ForeignKey(name = "fk_salle_personnel_salle"))
+    @MapKeyJoinColumn(name = "personnel_id", foreignKey = @ForeignKey(name = "fk_salle_personnel_personnel"))
+    @Column(name = "jusqu")
+    private Map<Personnel, LocalDate> personnels = new HashMap<>();
 
     @Valid
     @OneToMany(fetch = FetchType.LAZY)
@@ -114,16 +121,47 @@ public class Salle extends AbstractPersistableWithIdSetter<Long> {
         this.numSalle = numSalle == null ? null : numSalle.trim();
     }
 
-    public List<Personnel> getPersonnels() {
-        return Collections.unmodifiableList(personnels);
+    /** Formateurs attribués et leur date limite d'accès, accès expiré compris. */
+    public Map<Personnel, LocalDate> getAcces() {
+        return Collections.unmodifiableMap(personnels);
     }
 
+    /** Tous les formateurs attribués, accès expiré compris. */
+    public List<Personnel> getPersonnels() {
+        return List.copyOf(personnels.keySet());
+    }
+
+    /** Formateurs dont l'accès est en cours. */
+    public List<Personnel> getPersonnelsActifs() {
+        return personnels.entrySet().stream()
+                .filter(e -> accesActif(e.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    /** Le formateur attribué à la salle avec cet id, s'il l'est (accès expiré compris). */
+    public Optional<Personnel> personnel(Long idPersonnel) {
+        return personnels.keySet().stream().filter(p -> Objects.equals(p.getId(), idPersonnel)).findFirst();
+    }
+
+    /** Attribution sans date limite (données de démonstration, tests). */
     public void addPersonnel(Personnel personnel) {
-        personnels.add(personnel);
+        addPersonnel(personnel, null);
+    }
+
+    /** Attribue la salle jusqu'à cette date ; déjà attribué : la date est remplacée. */
+    public void addPersonnel(Personnel personnel, LocalDate jusqu) {
+        personnels.put(personnel, jusqu);
     }
 
     public void removePersonnel(Personnel personnel) {
-        personnels.remove(personnel);
+        personnels.keySet().removeIf(p -> p == personnel
+                || (personnel.getId() != null && personnel.getId().equals(p.getId())));
+    }
+
+    /** Accès en cours : pas de date limite, ou date limite pas encore dépassée (le jour même compte). */
+    public static boolean accesActif(LocalDate jusqu) {
+        return jusqu == null || !jusqu.isBefore(LocalDate.now());
     }
 
     public List<Poste> getPostes() {

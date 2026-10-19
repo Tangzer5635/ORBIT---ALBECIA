@@ -8,12 +8,14 @@ type Props = {
     onRetirerStage?: () => void;
     onAffecterFormateur?: () => void;
     onRetirerFormateur?: (formateur: Formateur) => void;
+    onProlongerFormateur?: (formateur: Formateur) => void;
     onPlaquerMaster?: () => void;
 };
 
 // Panneau de droite quand rien n'est sélectionné sur le plan : stage, gestionnaire, formateurs et master de la salle
 export default function PanneauSalle({
-                                         salle, onAffecterStage, onRetirerStage, onAffecterFormateur, onRetirerFormateur, onPlaquerMaster,
+                                         salle, onAffecterStage, onRetirerStage, onAffecterFormateur, onRetirerFormateur,
+                                         onProlongerFormateur, onPlaquerMaster,
                                      }: Props) {
     const formateurs = salle.formateurs ?? [];
 
@@ -63,6 +65,15 @@ export default function PanneauSalle({
                         {formateurs.map(f => (
                             <li key={f.id}>
                                 {f.prenom} {f.nom}
+                                {f.jusqu && (
+                                    <span className={f.expire ? "error-message small" : "muted small"}>
+                                        {" "}jusqu'au {dateFr(f.jusqu)}{f.expire && " (expiré)"}
+                                    </span>
+                                )}
+                                {onProlongerFormateur && (
+                                    <button type="button" className="muted small lien"
+                                            onClick={() => onProlongerFormateur(f)}>Prolonger</button>
+                                )}
                                 {onRetirerFormateur && (
                                     <button type="button" className="muted small lien"
                                             onClick={() => onRetirerFormateur(f)}>Retirer</button>

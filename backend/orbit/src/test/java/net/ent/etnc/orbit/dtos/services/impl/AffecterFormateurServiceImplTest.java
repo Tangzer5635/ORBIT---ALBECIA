@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AffecterFormateurServiceImplTest {
+
+    private static final LocalDate DANS_UN_MOIS = LocalDate.now().plusMonths(1);
 
     @Mock
     private SalleService salleService;
@@ -58,13 +61,25 @@ class AffecterFormateurServiceImplTest {
     // ---------- affecter ----------
 
     @Test
-    void affecter_doitAjouterLeFormateurALaSalle() {
+    void affecter_doitAjouterLeFormateurALaSalleAvecSaDateLimite() {
         Salle salle = salle(6L, TypeSalle.SalleDeCours);
         Personnel kevin = personne(4L, Role.FORMATEUR);
         when(salleService.findById(6L)).thenReturn(Optional.of(salle));
         when(personnelService.findById(4L)).thenReturn(Optional.of(kevin));
 
-        assertThat(service.affecter(6L, 4L).getPersonnels()).containsExactly(kevin);
+        Salle resultat = service.affecter(6L, 4L, DANS_UN_MOIS);
+
+        assertThat(resultat.getPersonnels()).containsExactly(kevin);
+        assertThat(resultat.getAcces().get(kevin)).isEqualTo(DANS_UN_MOIS);
+    }
+
+    @Test
+    void affecter_doitAccepterLaDateDuJour() {
+        Salle salle = salle(6L, TypeSalle.SalleDeCours);
+        when(salleService.findById(6L)).thenReturn(Optional.of(salle));
+        when(personnelService.findById(4L)).thenReturn(Optional.of(personne(4L, Role.FORMATEUR)));
+
+        assertThat(service.affecter(6L, 4L, LocalDate.now()).getPersonnelsActifs()).hasSize(1);
     }
 
     @Test
@@ -72,24 +87,38 @@ class AffecterFormateurServiceImplTest {
         Salle salle = salle(6L, TypeSalle.SalleDeCours);
         Personnel kevin = personne(4L, Role.FORMATEUR);
         Personnel sophie = personne(5L, Role.FORMATEUR);
-        salle.addPersonnel(kevin);
+        salle.addPersonnel(kevin, DANS_UN_MOIS);
         when(salleService.findById(6L)).thenReturn(Optional.of(salle));
         when(personnelService.findById(5L)).thenReturn(Optional.of(sophie));
 
-        assertThat(service.affecter(6L, 5L).getPersonnels()).containsExactlyInAnyOrder(kevin, sophie);
+        assertThat(service.affecter(6L, 5L, DANS_UN_MOIS).getPersonnels()).containsExactlyInAnyOrder(kevin, sophie);
     }
 
     @Test
     void affecter_doitLeverServiceException_quandDejaAffecte() {
         Salle salle = salle(6L, TypeSalle.SalleDeCours);
         Personnel kevin = personne(4L, Role.FORMATEUR);
-        salle.addPersonnel(kevin);
+        salle.addPersonnel(kevin, DANS_UN_MOIS);
         when(salleService.findById(6L)).thenReturn(Optional.of(salle));
         when(personnelService.findById(4L)).thenReturn(Optional.of(kevin));
 
-        assertThatThrownBy(() -> service.affecter(6L, 4L))
+        assertThatThrownBy(() -> service.affecter(6L, 4L, DANS_UN_MOIS))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("déjà affecté");
+    }
+
+    @Test
+    void affecter_doitLeverServiceException_quandPasDeDate() {
+        assertThatThrownBy(() -> service.affecter(6L, 4L, null))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("obligatoire");
+    }
+
+    @Test
+    void affecter_doitLeverServiceException_quandDatePassee() {
+        assertThatThrownBy(() -> service.affecter(6L, 4L, LocalDate.now().minusDays(1)))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("déjà passée");
     }
 
     @Test
@@ -97,7 +126,7 @@ class AffecterFormateurServiceImplTest {
         when(salleService.findById(6L)).thenReturn(Optional.of(salle(6L, TypeSalle.SalleDeCours)));
         when(personnelService.findById(7L)).thenReturn(Optional.of(personne(7L, Role.STAGIAIRE)));
 
-        assertThatThrownBy(() -> service.affecter(6L, 7L))
+        assertThatThrownBy(() -> service.affecter(6L, 7L, DANS_UN_MOIS))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("n'est pas formateur");
     }
@@ -107,7 +136,7 @@ class AffecterFormateurServiceImplTest {
         when(salleService.findById(9L)).thenReturn(Optional.of(salle(9L, TypeSalle.SalleStockage)));
         when(personnelService.findById(4L)).thenReturn(Optional.of(personne(4L, Role.FORMATEUR)));
 
-        assertThatThrownBy(() -> service.affecter(9L, 4L))
+        assertThatThrownBy(() -> service.affecter(9L, 4L, DANS_UN_MOIS))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("salle de cours");
     }
@@ -116,9 +145,34 @@ class AffecterFormateurServiceImplTest {
     void affecter_doitLeverServiceException_quandSalleIntrouvable() {
         when(salleService.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.affecter(99L, 4L))
+        assertThatThrownBy(() -> service.affecter(99L, 4L, DANS_UN_MOIS))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("introuvable");
+    }
+
+    // ---------- prolonger ----------
+
+    @Test
+    void prolonger_doitReactiverUnAccesExpire() {
+        Salle salle = salle(6L, TypeSalle.SalleDeCours);
+        Personnel kevin = personne(4L, Role.FORMATEUR);
+        salle.addPersonnel(kevin, LocalDate.now().minusDays(3));
+        when(salleService.findById(6L)).thenReturn(Optional.of(salle));
+        assertThat(salle.getPersonnelsActifs()).isEmpty();
+
+        Salle resultat = service.prolonger(6L, 4L, DANS_UN_MOIS);
+
+        assertThat(resultat.getPersonnelsActifs()).containsExactly(kevin);
+        assertThat(resultat.getAcces().get(kevin)).isEqualTo(DANS_UN_MOIS);
+    }
+
+    @Test
+    void prolonger_doitLeverServiceException_quandPasAffecte() {
+        when(salleService.findById(6L)).thenReturn(Optional.of(salle(6L, TypeSalle.SalleDeCours)));
+
+        assertThatThrownBy(() -> service.prolonger(6L, 4L, DANS_UN_MOIS))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageContaining("n'est pas affecté");
     }
 
     // ---------- retirer ----------
@@ -128,8 +182,8 @@ class AffecterFormateurServiceImplTest {
         Salle salle = salle(6L, TypeSalle.SalleDeCours);
         Personnel kevin = personne(4L, Role.FORMATEUR);
         Personnel sophie = personne(5L, Role.FORMATEUR);
-        salle.addPersonnel(kevin);
-        salle.addPersonnel(sophie);
+        salle.addPersonnel(kevin, DANS_UN_MOIS);
+        salle.addPersonnel(sophie, DANS_UN_MOIS);
         when(salleService.findById(6L)).thenReturn(Optional.of(salle));
 
         assertThat(service.retirer(6L, 4L).getPersonnels()).containsExactly(sophie);
