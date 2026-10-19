@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class AffecterFormateurServiceImpl implements AffecterFormateurService {
@@ -33,12 +35,13 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
         this.journalisationService = journalisationService;
     }
 
-    /** Un formateur peut avoir plusieurs salles, et une salle plusieurs formateurs. */
+    /**
+     * Un formateur peut avoir plusieurs salles, et une salle plusieurs formateurs.
+     */
     @Override
     @Transactional
-    public Salle affecter(Long idSalle, Long idFormateur, LocalDate jusqu) {
+    public Salle affecter(Long idSalle, Long idFormateur, LocalDate jusqu) throws ServiceException {
         verifierDate(jusqu);
-    public Salle affecter(Long idSalle, Long idFormateur) throws ServiceException {
         Salle salle = trouverSalle(idSalle);
         Personnel formateur = personnelService.findById(idFormateur)
                 .orElseThrow(() -> new ServiceException("Personnel " + idFormateur + " introuvable"));
@@ -84,7 +87,9 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
         return salle;
     }
 
-    /** Date limite obligatoire, aujourd'hui au plus tôt (l'accès dure jusqu'au soir de cette date). */
+    /**
+     * Date limite obligatoire, aujourd'hui au plus tôt (l'accès dure jusqu'au soir de cette date).
+     */
     private static void verifierDate(LocalDate jusqu) {
         if (jusqu == null)
             throw new ServiceException("La date limite d'accès est obligatoire");
@@ -92,10 +97,6 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
             throw new ServiceException("La date limite d'accès est déjà passée");
     }
 
-    private Salle trouverSalle(Long idSalle) {
-        return salleService.findById(idSalle)
-                .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-    }
     private Salle trouverSalle(Long idSalle) throws ServiceException {
         return salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));

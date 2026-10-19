@@ -160,7 +160,6 @@ export default function UtilisateurPage() {
     function verifier(creation: boolean): string {
         if (prenom.trim() === "" || prenom.trim().length > 30) return "Le prénom est obligatoire (30 caractères maximum).";
         if (nom.trim() === "" || nom.trim().length > 50) return "Le nom est obligatoire (50 caractères maximum).";
-        if (login.trim().length < 3 || login.trim().length > 50) return "L'identifiant doit faire entre 3 et 50 caractères.";
         if (creation && !/^[0-9]{10}$/.test(nid.trim())) return "Le NID doit contenir exactement 10 chiffres.";
         if (creation && motDePasse === "") return "Le mot de passe provisoire est obligatoire.";
         return "";
@@ -175,13 +174,13 @@ export default function UtilisateurPage() {
         }
 
         const dto: UtilisateurRequest = {
-            ...(aModifier ? {} : {nid: nid.trim()}), // en modification, le back garde le NID existant
+            ...(aModifier ? {} : { nid: nid.trim() }),
             nom: nom.trim(),
             prenom: prenom.trim(),
-            login: login.trim(),
+            ...(aModifier ? { login: aModifier.login } : {}),
             role,
             active: actif,
-            ...(motDePasse ? {motDePasse} : {}), // vide = mot de passe inchangé
+            ...(motDePasse ? { motDePasse } : {}),
         };
 
         setEnvoi(true);

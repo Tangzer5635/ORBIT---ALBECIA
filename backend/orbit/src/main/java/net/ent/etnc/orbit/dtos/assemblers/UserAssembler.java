@@ -27,7 +27,6 @@ public class UserAssembler {
         user.setNid(userDto.getNid());
         user.setNom(userDto.getNom());
         user.setPrenom(userDto.getPrenom());
-        user.setLogin(userDto.getLogin());
         user.setMotDePasse(userDto.getMotDePasse());
         user.setRole(userDto.getRole());
         user.setActive(userDto.getActive() == null || userDto.getActive());

@@ -51,7 +51,6 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
     @Override
     @Transactional
     public Batiment create(Batiment batiment) throws ServiceException {
-    public Batiment create(Batiment batiment) {
         return create(batiment, null, null);
     }
 
