@@ -144,6 +144,9 @@ export interface Salle {
     anneau?: ComptesAnneau;
     stageId?: number | null; // stage accueilli (salle de cours)
     stageNom?: string | null;
+    masterId?: number | null; // master plaqué sur la salle
+    masterNom?: string | null; // "Dev (1.2)"
+    creePar?: string | null; // "Prénom Nom" du gestionnaire qui a créé la salle
     // détail du stage et formateurs attribués (GET /salles/{id}/ seulement)
     stageType?: TypeFormation | null;
     stageDateDebut?: string | null; // "2026-08-07"
@@ -300,6 +303,27 @@ export interface ProcessusRequest {
 }
 
 //==========================================
+//      MASTERS
+//==========================================
+
+// MasterDto (lecture)
+export interface Master {
+    id: number;
+    nom: string;
+    versionMaster: string;
+    dateCreation: string; // "2026-10-18T15:20:00"
+    processusIds: number[];
+    processus: Processus[];
+}
+
+// MasterDto (création, modification) : la liste complète des processus est renvoyée à chaque fois
+export interface MasterRequest {
+    nom: string;
+    versionMaster: string;
+    processusIds: number[];
+}
+
+//==========================================
 //      STAGES
 //==========================================
 
@@ -381,6 +405,7 @@ export interface Journalisation {
     auteurId?: number; // absent si l'auteur est inconnu (échec de connexion)
     action: TypeAction;
     detail: string;
+}
 //===================================
 //      CALENDRIER
 //===================================

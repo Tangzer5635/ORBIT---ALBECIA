@@ -36,6 +36,7 @@ import AffecterStagePopup from "../components/Popup/Stage/AffecterStagePopup.tsx
 import AffecterFormateurPopup from "../components/Popup/Salle/AffecterFormateurPopup.tsx";
 import ModifierSallePopup from "../components/Popup/Salle/ModifierSallePopup.tsx";
 import GelerSallePopup from "../components/Popup/Salle/GelerSallePopup.tsx";
+import DeplacerSallePopup from "../components/Popup/Salle/DeplacerSallePopup.tsx";
 import Popup from "../components/Popup/Popup.tsx";
 import {retirerStagiaireDuPoste} from "../services/posteService.ts";
 import {retirerStageDeSalle} from "../services/stageService.ts";
@@ -59,7 +60,7 @@ function parTables(postes: Poste[]): Poste[][] {
 }
 
 type PopupOuverte = "stagiaire" | "retirerStagiaire" | "materiel" | "stage" | "retirerStage" | "formateur"
-    | "modifier" | "geler" | "supprimer" | null;
+    | "modifier" | "geler" | "deplacer" | "supprimer" | null;
 
 // key = salleId : changer de salle repart d'un état propre (filtre, sélection, popups)
 export default function SalleDetailPage() {
@@ -232,8 +233,8 @@ function SalleDetail({salleId}: { salleId: string }) {
             {peutGerer && salleDeCours && (
                 <div className="hero-row">
                     <button type="button" className="btn" onClick={() => setPopup("modifier")}>Modifier la salle</button>
-                    {/* export : plus tard */}
-                    <button type="button" className="btn" disabled title="Bientôt disponible">Exporter la salle</button>
+                    {!salle.suspendu &&
+                        <button type="button" className="btn" onClick={() => setPopup("deplacer")}>Déplacer la salle</button>}
                     {!salle.suspendu &&
                         <button type="button" className="btn" onClick={() => setPopup("geler")}>Geler la salle</button>}
                     <button type="button" className="btn danger" onClick={() => setPopup("supprimer")}>Supprimer la salle</button>
@@ -376,6 +377,10 @@ function SalleDetail({salleId}: { salleId: string }) {
                     }}/>
             )}
             {popup === "geler" && <GelerSallePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {popup === "deplacer" && (
+                <DeplacerSallePopup salle={salle} postes={postes} onClose={fermerPopup}
+                                    onFait={idCible => navigate(`/salles/${idCible}`)}/>
+            )}
             {popup === "supprimer" && (
                 <Popup
                     open
