@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.controllers;
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.dtos.requestDTO.MaterielRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.calendrier.CalendrierGarantiesDto;
 import net.ent.etnc.orbit.dtos.responseDTO.commons.PageResponse;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
@@ -22,6 +23,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +83,12 @@ public class MaterielController {
         return materielService.findPourUtilisateur(id, user)
                 .map(m -> ResponseEntity.ok(dto(m)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/garanties/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<CalendrierGarantiesDto> calendrierGaranties(@RequestParam Integer annee) {
+        return ResponseEntity.ok(materielService.calendrierGaranties(annee));
     }
 
     @PostMapping

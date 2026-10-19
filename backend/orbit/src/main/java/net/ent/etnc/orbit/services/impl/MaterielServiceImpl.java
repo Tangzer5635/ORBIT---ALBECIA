@@ -1,5 +1,7 @@
 package net.ent.etnc.orbit.services.impl;
 
+import net.ent.etnc.orbit.dtos.responseDTO.calendrier.CalendrierGarantiesDto;
+import net.ent.etnc.orbit.dtos.responseDTO.calendrier.MoisGarantieDto;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Processus;
@@ -25,7 +27,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepository> implements MaterielService {
@@ -163,6 +171,28 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         boolean enStock = salleService.estEnStock(materiel.getId());
         boolean defaillanceOuverte = defaillanceService.aUneDefaillanceOuverte(materiel.getId());
         return materiel.calculerEtat(enStock, defaillanceOuverte);
+    }
+
+    @Override
+    @Transactional
+    public CalendrierGarantiesDto calendrierGaranties(int annee) {
+        LocalDate debut = LocalDate.of(annee, 1, 1);   // 1er janvier
+        LocalDate fin = debut.plusYears(1);            // 1er janvier suivant exclu
+
+        // nombre de fins de garantie par mois
+        long[] parMois = new long[12];
+        for (LocalDate date : repository.datesFinGarantie(debut, fin)) {
+            parMois[date.getMonthValue() - 1]++;
+        }
+
+        List<MoisGarantieDto> mois = new ArrayList<>();
+        for (int numero = 1; numero <= 12; numero++) {
+            mois.add(new MoisGarantieDto(YearMonth.of(annee, numero).toString(), parMois[numero - 1]));
+        }
+
+        // ce qui est hors garantie à ce jour
+        long expirees = repository.countByArchiveFalseAndDateFinGarantieBefore(LocalDate.now());
+        return new CalendrierGarantiesDto(annee, expirees, mois);
     }
 
     private Materiel trouver(Long id) {
