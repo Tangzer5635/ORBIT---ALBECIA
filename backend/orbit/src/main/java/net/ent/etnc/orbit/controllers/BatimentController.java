@@ -1,5 +1,6 @@
 package net.ent.etnc.orbit.controllers;
 
+import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.BatimentAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.BatimentRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BatimentCarteDto;
@@ -45,11 +46,13 @@ public class BatimentController {
 
     @PostMapping("/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<BatimentResponseDto> post(@RequestBody BatimentRequestDto batimentDto) {
+    public ResponseEntity<BatimentResponseDto> post(@Valid @RequestBody BatimentRequestDto batimentDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 batimentAssembler.toDto(
                         batimentService.create(
-                                batimentAssembler.toEntity(batimentDto))));
+                                batimentAssembler.toEntity(batimentDto),
+                                batimentDto.getNumSalleStockage(),
+                                batimentDto.getEtageStockage())));
     }
 
     @DeleteMapping("/{id}/")

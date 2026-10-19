@@ -120,6 +120,8 @@ export interface Batiment {
 // BatimentRequestDto
 export interface BatimentRequest {
     numBatiment: string;
+    numSalleStockage?: string; // "199" côté back si vide
+    etageStockage?: string;    // "0" côté back si vide
 }
 //==========================================
 //      SALLES

@@ -1,5 +1,5 @@
 import {Link, useNavigate, useParams, useSearchParams} from "react-router-dom";
-import {degelerSalle, getPostesBySalle, getSalleById, supprimerSalle} from "../services/salleService.ts";
+import {convertirEnStockage, degelerSalle, getPostesBySalle, getSalleById, supprimerSalle} from "../services/salleService.ts";
 import {getMaterielById} from "../services/materielService.ts";
 import {getUtilisateur} from "../services/authService.ts";
 import {
@@ -61,7 +61,7 @@ function parTables(postes: Poste[]): Poste[][] {
 }
 
 type PopupOuverte = "stagiaire" | "retirerStagiaire" | "materiel" | "stage" | "retirerStage" | "formateur"
-    | "modifier" | "geler" | "deplacer" | "supprimer" | "master" | "masterPoste" | null;
+    | "modifier" | "geler" | "deplacer" | "supprimer" | "master" | "masterPoste" | "convertir" | null;
 
 // key = salleId : changer de salle repart d'un état propre (filtre, sélection, popups)
 export default function SalleDetailPage() {
@@ -239,6 +239,8 @@ function SalleDetail({salleId}: { salleId: string }) {
                         <button type="button" className="btn" onClick={() => setPopup("deplacer")}>Déplacer la salle</button>}
                     {!salle.suspendu &&
                         <button type="button" className="btn" onClick={() => setPopup("geler")}>Geler la salle</button>}
+                    {!salle.suspendu &&
+                        <button type="button" className="btn" onClick={() => setPopup("convertir")}>Convertir en salle de stockage</button>}
                     <button type="button" className="btn danger" onClick={() => setPopup("supprimer")}>Supprimer la salle</button>
                 </div>
             )}
@@ -396,6 +398,18 @@ function SalleDetail({salleId}: { salleId: string }) {
                     confirmLabel="Supprimer la salle"
                     variant="danger"
                     onConfirm={() => confirmer(() => supprimerSalle(salle.id), () => navigate(-1))}>
+                    {erreurAction && <p className="error-message" role="alert">{erreurAction}</p>}
+                </Popup>
+            )}
+            {popup === "convertir" && (
+                <Popup
+                    open
+                    onClose={fermerPopup}
+                    title={`Convertir la salle ${salle.numSalle} en salle de stockage`}
+                    description={`La salle doit être vide : ni stage, ni stagiaire, ni formateur attribué.${salle.masterNom ? ` Le master ${salle.masterNom} est retiré.` : ""} Ses postes sont supprimés et tout leur matériel devient le stock de la salle.`}
+                    confirmLabel="Convertir"
+                    variant="danger"
+                    onConfirm={() => confirmer(() => convertirEnStockage(salle.id), () => navigate(-1))}>
                     {erreurAction && <p className="error-message" role="alert">{erreurAction}</p>}
                 </Popup>
             )}

@@ -149,6 +149,102 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     }
 
     @Override
+    @Transactional
+    public Salle convertirEnStockage(Long idSalle) {
+        Salle salle = trouver(idSalle);
+        if (salle.getType() != TypeSalle.SalleDeCours)
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est déjà une salle de stockage");
+        if (salle.isSuspendu())
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est gelée : dégelez-la avant de la convertir");
+        if (salle.getStage() != null)
+            throw new ServiceException("La salle " + salle.getNumSalle() + " accueille le "
+                    + Libelles.stage(salle.getStage()) + " : retirez-le avant de la convertir");
+        long occupes = salle.getPostes().stream().filter(p -> p.getOccupant() != null).count();
+        if (occupes > 0)
+            throw new ServiceException(occupes + " stagiaire(s) encore installé(s) dans la salle "
+                    + salle.getNumSalle() + " : retirez-les avant de la convertir");
+        if (!salle.getPersonnels().isEmpty())
+            throw new ServiceException("Retirez les formateurs attribués à la salle " + salle.getNumSalle()
+                    + " avant de la convertir");
+
+        salle.setMaster(null);
+        // le matériel des postes reste dans la salle : il devient son stock
+        int nbPostes = salle.getPostes().size();
+        for (Poste p : List.copyOf(salle.getPostes())) {
+            for (Materiel m : List.copyOf(p.getMateriels())) {
+                p.removeMateriel(m);
+                salle.addMateriel(m);
+            }
+            salle.removePoste(p);
+            posteService.delete(p);
+        }
+        salle.setType(TypeSalle.SalleStockage);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelle(salle)
+                + " convertie en salle de stockage (" + nbPostes + " poste(s) supprimé(s), "
+                + salle.getMateriels().size() + " matériel(s) en stock)");
+        return salle;
+    }
+
+    @Override
+    @Transactional
+    public Salle convertirEnSalleDeCours(Long idSalle, Long idStockageCible) {
+        Salle salle = trouver(idSalle);
+        if (salle.getType() != TypeSalle.SalleStockage)
+            throw new ServiceException("La salle " + salle.getNumSalle() + " est déjà une salle de cours");
+        List<Salle> autres = repository.findSallesDuBatiment(idSalle, TypeSalle.SalleStockage).stream()
+                .filter(r -> !r.getId().equals(idSalle))
+                .toList();
+        if (autres.isEmpty())
+            throw new ServiceException("La salle " + salle.getNumSalle()
+                    + " est la seule salle de stockage du bâtiment : créez-en une autre avant de la convertir");
+
+        // vidéoprojecteurs et tableaux restent dans la salle, le reste part dans l'autre stockage
+        List<Materiel> aDeplacer = salle.getMateriels().stream()
+                .filter(m -> m.isArchive()
+                        || !(VideoProjecteur.TYPE.equals(m.getType()) || TableauInteractif.TYPE.equals(m.getType())))
+                .toList();
+        String vers = "";
+        if (!aDeplacer.isEmpty()) {
+            if (idStockageCible == null)
+                throw new ServiceException("Choisissez la salle de stockage qui reçoit le matériel");
+            Salle cible = autres.stream()
+                    .filter(r -> r.getId().equals(idStockageCible))
+                    .findFirst()
+                    .orElseThrow(() -> new ServiceException("Le matériel doit aller dans une autre salle de stockage du même bâtiment"));
+            for (Materiel m : aDeplacer) {
+                salle.removeMateriel(m);
+                cible.addMateriel(m);
+            }
+            vers = ", " + aDeplacer.size() + " matériel(s) déplacé(s) vers la " + Libelles.salle(cible);
+        }
+        salle.setType(TypeSalle.SalleDeCours);
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle " + libelle(salle)
+                + " convertie en salle de cours" + vers);
+        return salle;
+    }
+
+    @Override
+    @Transactional
+    public Salle modifierStockage(Long idSalle, String numSalle, String etage) {
+        Salle salle = trouver(idSalle);
+        if (salle.getType() != TypeSalle.SalleStockage)
+            throw new ServiceException("Seule une salle de stockage se modifie ainsi");
+        if (numSalle == null || numSalle.isBlank() || etage == null || etage.isBlank())
+            throw new ServiceException("Le numéro et l'étage sont obligatoires");
+        String num = numSalle.trim();
+        Batiment batiment = batimentRepository.findBySalles_Id(idSalle)
+                .orElseThrow(() -> new ServiceException("La salle " + salle.getNumSalle() + " n'est dans aucun bâtiment"));
+        if (batiment.getSalles().stream().anyMatch(s -> !s.getId().equals(idSalle) && s.getNumSalle().equals(num)))
+            throw new ServiceException("Une salle " + num + " existe déjà dans ce bâtiment");
+        String ancien = salle.getNumSalle();
+        salle.setNumSalle(num);
+        salle.setEtage(etage.trim());
+        journalisationService.journaliser(TypeAction.MODIFICATION, "Salle de stockage " + ancien + " du bâtiment "
+                + batiment.getNumBatiment() + " modifiée : salle " + num + ", étage " + salle.getEtage());
+        return salle;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Page<Salle> findAllAvecDetails(Pageable pageable) {
         Page<Salle> page = repository.findAll(pageable);

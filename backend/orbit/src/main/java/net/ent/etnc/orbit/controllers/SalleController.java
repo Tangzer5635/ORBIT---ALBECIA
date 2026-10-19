@@ -2,10 +2,7 @@ package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
-import net.ent.etnc.orbit.dtos.requestDTO.GelRequestDto;
-import net.ent.etnc.orbit.dtos.requestDTO.SalleEquipeeRequestDto;
-import net.ent.etnc.orbit.dtos.requestDTO.SalleModificationRequestDto;
-import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.*;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
@@ -109,6 +106,29 @@ public class SalleController {
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<SalleResponseDto> deplacer(@PathVariable Long id, @RequestParam Long salleCibleId) {
         return ResponseEntity.ok(salleAssembler.toDto(salleService.deplacer(id, salleCibleId)));
+    }
+
+    /** Salle de cours vide (ni stage, ni stagiaire, ni formateur) → salle de stockage. */
+    @PatchMapping("/{id}/convertir-stockage/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> convertirEnStockage(@PathVariable Long id) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.convertirEnStockage(id)));
+    }
+
+    /** Salle de stockage → salle de cours : le matériel autre que VP/TBI part dans stockageCibleId. */
+    @PatchMapping("/{id}/convertir-cours/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> convertirEnSalleDeCours(@PathVariable Long id,
+                                                                    @RequestParam(required = false) Long stockageCibleId) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.convertirEnSalleDeCours(id, stockageCibleId)));
+    }
+
+    /** Numéro et étage d'une salle de stockage. */
+    @PatchMapping("/{id}/stockage/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<SalleResponseDto> modifierStockage(@PathVariable Long id,
+                                                             @Valid @RequestBody StockageModificationRequestDto dto) {
+        return ResponseEntity.ok(salleAssembler.toDto(salleService.modifierStockage(id, dto.getNumSalle(), dto.getEtage())));
     }
 
     @DeleteMapping("/{id}/")

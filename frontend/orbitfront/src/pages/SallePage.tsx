@@ -10,6 +10,8 @@ import StockageCard from "../components/Salle/StockageCard.tsx";
 import type {SalleCarte} from "../types/types.ts";
 import {pluriel, pourcentageUtilisable, totalAnneau} from "../utils/postes.ts";
 import CreerSallePopup from "../components/Popup/Salle/CreerSallePopup.tsx";
+import ModifierStockagePopup from "../components/Popup/Salle/ModifierStockagePopup.tsx";
+import ConvertirStockagePopup from "../components/Popup/Salle/ConvertirStockagePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";
 
 // résultat du dernier chargement, mémorisé avec le bâtiment concerné
@@ -32,10 +34,14 @@ export default function SallePage() {
     const [params] = useSearchParams();
     const { batiments, setBatiments } = useBatiments();
     const [creerOuvert, setCreerOuvert] = useState(false);
+    // salle de stockage dont on change le numéro / qu'on convertit en salle de cours
+    const [aModifier, setAModifier] = useState<SalleCarte | null>(null);
+    const [aConvertir, setAConvertir] = useState<SalleCarte | null>(null);
     const [version, setVersion] = useState(0);
     const idBatiment = Number(params.get("batiment"));
     const batiment = batiments.find((b) => b.id === idBatiment);
     const role = getUtilisateur()?.role;
+    const peutGerer = role === "ADMINISTRATEUR" || role === "GESTIONNAIRE";
 
     const [resultat, setResultat] = useState<Resultat>();
     const [affichage] = useState<string>("dispo");
@@ -53,6 +59,8 @@ export default function SallePage() {
 
     function salleCreee() {
         setCreerOuvert(false);
+        setAModifier(null);
+        setAConvertir(null);
         setVersion((v) => v + 1);
         getBatiments().then(setBatiments).catch(() => {});
     }
@@ -120,12 +128,24 @@ export default function SallePage() {
                 <section className="floor">
                     <h2>Stockage</h2>
                     <div className="rooms">
-                        {stockages.map((s) => <StockageCard key={s.id} salle={s}/>)}
+                        {stockages.map((s) => (
+                            <StockageCard key={s.id} salle={s}
+                                          onModifier={peutGerer ? () => setAModifier(s) : undefined}
+                                          onConvertir={peutGerer ? () => setAConvertir(s) : undefined}/>
+                        ))}
                     </div>
                 </section>
             )}
             {creerOuvert && batiment && (
                 <CreerSallePopup batiment={batiment} onClose={() => setCreerOuvert(false)} onCree={salleCreee}/>
+            )}
+            {aModifier && (
+                <ModifierStockagePopup salle={aModifier} onClose={() => setAModifier(null)} onFait={salleCreee}/>
+            )}
+            {aConvertir && (
+                <ConvertirStockagePopup salle={aConvertir}
+                                        autresStockages={stockages.filter((s) => s.id !== aConvertir.id)}
+                                        onClose={() => setAConvertir(null)} onFait={salleCreee}/>
             )}
         </>
     );

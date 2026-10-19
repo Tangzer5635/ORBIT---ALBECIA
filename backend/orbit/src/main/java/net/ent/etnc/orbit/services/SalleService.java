@@ -37,6 +37,23 @@ public interface SalleService extends Service<Salle, Long> {
     /** Crée une salle dans un bâtiment (vérifie le bâtiment et le numéro en double). */
     Salle create(Long idBatiment, Salle salle) throws ServiceException;
 
+    /**
+     * Une salle de cours devient une salle de stockage. Elle doit être vide de monde : ni stage, ni stagiaire
+     * sur un poste, ni formateur attribué, et ne pas être gelée. Le master est retiré, les postes sont supprimés
+     * et tout leur matériel (avec le matériel de salle) devient le premier stock de la salle.
+     */
+    Salle convertirEnStockage(Long idSalle) throws ServiceException;
+
+    /**
+     * Une salle de stockage devient une salle de cours (sans poste). Ses vidéoprojecteurs et tableaux interactifs
+     * restent dans la salle, le reste de son matériel part dans une autre salle de stockage du même bâtiment.
+     * Refusé si c'est la seule salle de stockage du bâtiment.
+     */
+    Salle convertirEnSalleDeCours(Long idSalle, Long idStockageCible) throws ServiceException;
+
+    /** Change le numéro et l'étage d'une salle de stockage (numéro unique dans le bâtiment). */
+    Salle modifierStockage(Long idSalle, String numSalle, String etage) throws ServiceException;
+
     /** Page de salles avec matériels et postes chargés en 2 requêtes : pas de N+1 à l'assemblage du DTO. */
     Page<Salle> findAllAvecDetails(Pageable pageable);
 
