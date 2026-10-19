@@ -1,10 +1,10 @@
 package net.ent.etnc.orbit.services.commons;
 
-import jakarta.validation.groups.Default;
 import net.ent.etnc.orbit.models.commons.AbstractPersistableWithIdSetter;
 import net.ent.etnc.orbit.repositories.commons.BaseRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -69,6 +69,12 @@ public class AbstractService<T extends AbstractPersistableWithIdSetter<Long>, R 
     @Transactional(readOnly = true)
     public Page<T> findAll(Pageable pageable) throws ServiceException {
         return repository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<T> findAll(Specification<T> spec, Pageable pageable) throws ServiceException {
+        return repository.findAll(spec, pageable);
     }
 
     @Override

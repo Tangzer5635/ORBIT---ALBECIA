@@ -2,6 +2,7 @@
 target/
 *.class
 *.log
+logs/
 # Node / React
 node_modules/
 dist/
@@ -15,3 +16,6 @@ Thumbs.db
 # Secrets
 .env
 .env.local
+
+*.zip
+Test Results*.html

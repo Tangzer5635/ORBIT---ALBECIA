@@ -1,111 +1,2881 @@
+/* =========================================================
+   Styles d'ORBIT — tout dans un seul fichier (chargé dans main.tsx)
+   Couleurs reprises de la maquette : thème sombre par défaut, thème clair avec data-theme="light".
+   Sommaire : 1. Base  2. Navbar  3. Barre des bâtiments  4. Connexion  5. Page bâtiments  6. Salles  7. Popup  8. Utilisateurs  9. Détail d'une salle
+   ========================================================= */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap");
+
+/* =========================================================
+   1. BASE
+   ========================================================= */
+
+/* ---- Thème sombre ---- */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    --bg: #100e24;
+    --bg2: #1b1840;
+    --card: #1c1a3a;
+    --card2: #25224b;
+    --ink: #f1efff;
+    --muted: #a19dc4;
+    --line: #312d5e;
+    --accent: #8f74ff;
+    --accent-ink: #120f2c;
+    --accent-soft: #2c2560;
+    --error: #fb7185;
+    --success: #34d399;
+    /* couleurs d'état du matériel (anneau de disponibilité) */
+    --use: #34d399;
+    --use-bg: #1f5a4b;
+    --chg: #fbbf24;
+    --chg-bg: #3d3216;
+    --inc: #60a5fa;
+    --def: #fb7185;
+    --def-bg: #46203a;
+    /* hachure "disponible" (postes, tuiles, légende) */
+    --hachure: repeating-linear-gradient(45deg, color-mix(in srgb, var(--use) 45%, transparent) 0 1.5px, color-mix(in srgb, var(--use-bg) 70%, var(--bg)) 1.5px 9px);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+    --radius-card: 30px;
+    --radius-field: 14px;
+    --page-width: 1240px;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    --logo-filter: invert(1) hue-rotate(180deg);
+    --logo-blend: screen;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+    color-scheme: dark;
+    font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+:root[data-theme="light"] {
+    --bg: #f2f1fa;
+    --bg2: #e7e4f7;
+    --card: #ffffff;
+    --card2: #f5f4fc;
+    --ink: #1a1733;
+    --muted: #6b6789;
+    --line: #e2dff2;
+    --accent: #6c4cf5;
+    --accent-ink: #ffffff;
+    --accent-soft: #ece7ff;
+    --error: #e5484d;
+    --success: #12a66a;
+    --use: #12a66a;
+    --use-bg: #dff6ec;
+    --chg: #e5a800;
+    --chg-bg: #fff3cc;
+    --inc: #3b82c4;
+    --def: #e5484d;
+    --def-bg: #fde4e5;
+    --hachure: repeating-linear-gradient(45deg, color-mix(in srgb, var(--use) 45%, transparent) 0 1.5px, var(--use-bg) 1.5px 9px);
+    --shadow: 0 6px 22px rgba(40, 30, 110, 0.08);
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+    --logo-filter: none;
+    --logo-blend: multiply;
+
+    color-scheme: light;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 body {
-  margin: 0;
+    margin: 0;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.45;
+    background: radial-gradient(1100px 600px at 10% -10%, var(--bg2), transparent 60%),
+    var(--bg);
+    background-attachment: fixed;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
 }
 
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+h2,
+h3 {
+    letter-spacing: -0.01em;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+/* Zone de contenu sous la Navbar (Layout.tsx) */
+.page {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: 22px 24px 60px;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
+
+@media (max-width: 720px) {
+    .page {
+        padding: 16px 14px 50px;
+    }
+}
+
+/* Animations réduites si l'utilisateur le demande */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* =========================================================
+   2. NAVBAR (barre du haut de la maquette)
+   ========================================================= */
+
+/* Barre collée en haut de l'écran pendant le défilement */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 14px rgba(40, 30, 110, 0.06);
+}
+
+/* Contenu centré, même largeur que les pages */
+.navbar-inner {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 24px;
+}
+
+/* Nom de l'appli */
+.navbar-brand {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.navbar-logo {
+    height: 40px;
+    width: 40px;
+    filter: var(--logo-filter);
+    mix-blend-mode: var(--logo-blend);
+}
+
+/* Liens : sur une 2e ligne, comme la maquette */
+.navbar-links {
+    order: 3;
+    flex-basis: 100%;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.navbar-links::-webkit-scrollbar {
+    display: none;
+}
+
+.navbar-links a {
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.navbar-links a:hover {
+    color: var(--ink);
+    background: var(--card2);
+}
+
+/* Page courante : NavLink ajoute la classe "active" tout seul */
+.navbar-links a.active {
+    background: var(--ink);
+    color: var(--card);
+}
+
+/* Bulle du nombre de défaillances à traiter (maquette) */
+.nav-bulle {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--def);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    vertical-align: 1px;
+}
+
+/* Bloc utilisateur à droite */
+.navbar-user {
+    flex: none;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.navbar-who {
+    text-align: right;
+    line-height: 1.2;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Rôle sous le nom : "GESTIONNAIRE" s'affiche "Gestionnaire" */
+.navbar-role {
+    display: block;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 400;
+    text-transform: lowercase;
+}
+
+.navbar-role::first-letter {
+    text-transform: uppercase;
+}
+
+/* Bouton Déconnexion */
+.navbar-logout {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.navbar-logout:hover {
+    background: var(--accent-soft);
+}
+
+/* Bouton mode clair / sombre */
+.theme-button {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card2);
+    color: var(--ink);
+    transition: background 0.15s;
+}
+
+.theme-button:hover {
+    background: var(--accent-soft);
+}
+
+.theme-button svg {
+    width: 19px;
+    height: 19px;
+}
+
+/* Tablette / mobile */
+@media (max-width: 900px) {
+    .navbar-inner {
+        padding: 10px 14px;
+        gap: 10px 14px;
+    }
+}
+
+/* Mobile : on cache le nom pour garder de la place */
+@media (max-width: 520px) {
+    .navbar-who {
+        display: none;
+    }
+}
+
+/* =========================================================
+   3. BARRE DES BÂTIMENTS (.sub / .pills de la maquette)
+   ========================================================= */
+.batimentBar {
+    position: relative; /* repère du menu déroulant */
+    z-index: 20;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 14px rgba(40, 30, 110, 0.06);
+}
+
+/* Contenu centré, même largeur que la navbar */
+.batimentBar-inner {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+}
+
+/* Liste des pastilles : autant que la largeur le permet, le reste défile */
+.batimentBar-liste {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scroll-behavior: smooth; /* glissement au clic sur une flèche */
+    scrollbar-width: none;
+    cursor: grab;
+}
+
+/* Pendant le glisser à la souris : pas d'animation, curseur "main fermée" */
+.batimentBar-liste.drag {
+    cursor: grabbing;
+    scroll-behavior: auto;
+    user-select: none;
+}
+
+.batimentBar-liste::-webkit-scrollbar {
+    display: none;
+}
+
+/* Pastille d'un bâtiment */
+.batiment {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    padding: 7px 13px;
+    background: var(--card2);
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.batiment svg {
+    width: 17px;
+    height: 17px;
+    flex: none;
+}
+
+.batiment:hover {
+    background: var(--accent-soft);
+}
+
+/* Bâtiment sélectionné */
+.batiment.active {
+    background: var(--ink);
+    color: var(--card);
+}
+
+.batiment .pp {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--c);
+}
+
+.batiment.active .pp {
+    color: inherit;
+    opacity: 0.8;
+}
+
+/* Flèches gauche / droite */
+.batimentBar-fleche {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card2);
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.batimentBar-fleche svg {
+    width: 19px;
+    height: 19px;
+}
+
+.batimentBar-fleche:hover:not(:disabled) {
+    background: var(--accent-soft);
+}
+
+.batimentBar-fleche:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+@media (max-width: 900px) {
+    .batimentBar-inner {
+        padding: 8px 14px;
+    }
+}
+
+/* =========================================================
+   4. PAGE DE CONNEXION
+   ========================================================= */
+
+/* Page : carte centrée */
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+}
+
+/* Carte */
+.login-card {
+    width: min(460px, 100%);
+    background: var(--card);
+    border-radius: var(--radius-card);
+    padding: 32px 30px 30px;
+    box-shadow: var(--shadow);
+}
+
+/* Titre + sous-titre */
+.login-title {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.login-subtitle {
+    margin: 2px 0 22px;
+    color: var(--muted);
+}
+
+/* Formulaire */
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-form label {
+    font-weight: 600;
+    margin: 12px 0 6px;
+}
+
+.login-form label:first-child {
+    margin-top: 0;
+}
+
+.login-form input {
+    width: 100%;
+    border: 2px solid transparent;
+    background: var(--card2);
+    border-radius: var(--radius-field);
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.login-form input:focus {
+    border-color: var(--accent);
+    background: var(--card);
+}
+
+/* Champ en erreur (si on ajoute aria-invalid sur l'input) */
+.login-form input[aria-invalid="true"] {
+    border-color: var(--error);
+}
+
+/* Message d'erreur */
+.error-message {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--error);
+}
+
+/* Bouton */
+.login-button {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+    transition: filter 0.15s, transform 0.05s;
+}
+
+.login-button:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.login-button:active:not(:disabled) {
+    transform: scale(0.99);
+}
+
+.login-button:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+/* Petit écran */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 26px 20px 22px;
+        border-radius: 24px;
+    }
+
+    .login-title {
+        font-size: 28px;
+    }
+}
+
+/* =========================================================
+   5. PAGE BÂTIMENTS
+   ========================================================= */
+.muted {
+    color: var(--muted);
+}
+
+.small {
+    font-size: 13.5px;
+}
+
+/* Boutons en pastille */
+.btn {
+    display: inline-block;
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 16px;
+    background: var(--bg);
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: filter 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+    filter: brightness(1.2);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+.btn.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.btn.primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.btn.sm {
+    padding: 5px 12px;
+    font-size: 13.5px;
+}
+
+.btn.danger {
+    color: var(--def);
+}
+
+/* Titre de page + résumé à droite */
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+    margin-bottom: 14px;
+}
+
+.page-head h1 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.bat-note {
+    margin: 14px 0 16px;
+    font-size: 14px;
+}
+
+/* Formulaire de création */
+.bat-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
+.bat-form label {
+    font-weight: 600;
+}
+
+.bat-form input {
+    border: 2px solid transparent;
+    background: var(--card2);
+    border-radius: var(--radius-field);
+    padding: 8px 14px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.bat-form input:focus {
+    border-color: var(--accent);
+    background: var(--card);
+}
+
+.bat-form-erreur {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.bat-grid {
+    padding-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+/* Carte d'un bâtiment */
+.bat-card {
+    background: var(--card);
+    border-radius: var(--radius-card);
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+
+.bat-card-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.bat-card-head h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.bat-card-head h2 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.bat-card-head p {
+    margin: 2px 0 0;
+    font-size: 14px;
+}
+
+/* Informations : libellé / valeur */
+.bat-infos {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 16px;
+    margin: 0 0 14px;
+    padding: 0 6px;
+    font-size: 14px;
+}
+
+.bat-infos dt {
+    color: var(--muted);
+}
+
+.bat-infos dd {
+    margin: 0;
+    font-weight: 500;
+}
+
+.bat-label {
+    margin: 0 0 8px 6px;
+    font-size: 14px;
+}
+
+.bat-vide {
+    margin: 0 6px 14px;
+    font-size: 14px;
+}
+
+/* Salle de stockage */
+.bat-stock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: var(--card2);
+}
+
+.bat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.bat-card-actions {
+    margin-top: 4px;
+}
+
+/* Anneau de disponibilité */
+.ring {
+    position: relative;
+    flex: none;
+    width: 84px;
+    height: 84px;
+    display: grid;
+    place-items: center;
+}
+
+.ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.ring div {
+    position: relative;
+    text-align: center;
+    line-height: 1.1;
+}
+
+.ring b {
     font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.03em;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+/* =========================================================
+   6. PAGE SALLES (par disponibilité / par étage)
+   ========================================================= */
+
+/* Choix de l'affichage : "Par étage" / "Par disponibilité" */
+.seg {
+    display: flex;
+    gap: 6px;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.seg button {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 14px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
+}
+
+.seg button:hover {
+    background: var(--accent-soft);
+}
+
+.seg button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--card);
+}
+
+/* En-tête du bâtiment : grand anneau + résumé + légende + actions */
+.hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 22px;
+    align-items: center;
+    margin-bottom: 18px;
+    padding: 20px 24px;
+    border-radius: 28px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.hero h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.hero p {
+    margin: 2px 0 12px;
+    color: var(--muted);
+}
+
+.hero-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.hero-row .btn:not(.primary) {
+    background: var(--card2);
+}
+
+/* Grand anneau de l'en-tête */
+.ring.grand {
+    width: 124px;
+    height: 124px;
+}
+
+.ring.grand b {
+    display: block;
+    font-size: 30px;
+}
+
+.ring span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* Titre "Salles" + choix de l'affichage */
+.sh {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin: 6px 0 10px;
+}
+
+.sh h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+/* Légende des couleurs de l'anneau */
+.rleg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+}
+
+.rleg li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rleg b {
+    font-weight: 700;
+}
+
+.rleg.compact {
+    margin: 0 4px 14px;
+}
+
+.rleg-note {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+/* Carré de couleur de la légende */
+.sw {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--c);
+}
+
+.sw.dispo {
+    background: var(--hachure);
+    box-shadow: inset 0 0 0 1.5px var(--use);
+}
+
+@media (max-width: 720px) {
+    .hero {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+}
+
+/* Couleur de chaque état (légende et pastilles des cartes) */
+.use {
+    --c: var(--use);
+}
+
+.chg {
+    --c: var(--chg);
+}
+
+.inc {
+    --c: var(--inc);
+}
+
+.def {
+    --c: var(--def);
+}
+
+.dispo {
+    --c: var(--muted);
+}
+
+
+/* Un étage (ou la réserve) : libellé à gauche, salles à droite */
+.floor {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+}
+
+.rooms + .floor {
+    margin-top: 20px;
+}
+
+.floor > h2 {
+    margin: 6px 0 0;
+    font-size: 17px;
+    color: var(--muted);
+}
+
+/* Grille de salles */
+.rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+}
+
+/* Carte d'une salle : anneau + infos */
+.room {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 18px;
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.room h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* Carte d'une salle : titre sans style de lien, toute la carte est cliquable (maquette) */
+.room {
+    position: relative;
+}
+
+.room h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* le lien s'étend sur toute la carte */
+.room h3 a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.room:has(h3 a:hover) {
+    background: var(--card2);
+}
+
+/* au clavier, le contour de focus entoure toute la carte */
+.room h3 a:focus-visible {
+    outline: none;
+}
+
+.room:has(h3 a:focus-visible) {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.room p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Alertes de la salle, avec une pastille de couleur */
+.room-flags {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.room-flags li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.room-flags li::before {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c, var(--muted));
+}
+
+/* Réserve : carte en pointillés, sans anneau */
+.room.stock {
+    grid-template-columns: 1fr;
+    background: var(--card2);
+    border: 2px dashed var(--line);
+    box-shadow: none;
+}
+
+.room.stock .room-flags li::before {
+    background: none;
+    border: 2px solid var(--muted);
+}
+
+@media (max-width: 720px) {
+    .floor {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* =========================================================
+   7. POPUP (création / modification / suppression)
+   ========================================================= */
+
+/* Fond sombre flouté, popup collée en bas */
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.popup {
+    width: min(620px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--card);
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    padding: 12px 22px 22px;
+    box-shadow: var(--shadow);
+}
+
+/* Petite barre en haut */
+.popup-handle {
+    width: 44px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0.6;
+}
+
+.popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.popup-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+/* Bouton × */
+.popup-close {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card2);
+    font-size: 18px;
+    transition: background 0.15s;
+}
+
+.popup-close:hover {
+    background: var(--accent-soft);
+}
+
+.popup-desc {
+    margin: 6px 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Champs du formulaire */
+.popup-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.popup-body label {
+    font-weight: 600;
+    margin: 12px 0 6px;
+}
+
+.popup-body label:first-child {
+    margin-top: 0;
+}
+
+.popup-body input,
+.popup-body select,
+.popup-body textarea {
+    width: 100%;
+    border: 2px solid transparent;
+    background: var(--card2);
+    border-radius: var(--radius-field);
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.popup-body input:focus,
+.popup-body select:focus,
+.popup-body textarea:focus {
+    border-color: var(--accent);
+    background: var(--card);
+}
+
+/* Boutons Annuler / Action */
+.popup-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.popup-footer .btn {
+    background: var(--card2);
+}
+
+.popup-footer .btn.primary {
+    background: var(--accent);
+}
+
+/* Dans la popup, le bouton danger est rempli en rouge */
+.popup-footer .btn.danger {
+    background: var(--def);
+    color: var(--accent-ink);
+}
+
+/* Étapes de la popup */
+.popup-etapes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.popup-etapes li {
+    padding-top: 8px;
+    border-top: 4px solid var(--line);
+}
+
+.popup-etapes li.faite {
+    border-color: var(--accent);
+    color: var(--ink);
+}
+
+/* Compteur − / + */
+.compteur {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 8px 8px 14px;
+    border-radius: var(--radius-field);
+    background: var(--card2);
+}
+
+.compteur span {
+    flex: 1;
+}
+
+.compteur b {
+    min-width: 20px;
+    text-align: center;
+}
+
+.compteur button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card);
+}
+
+.compteur button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.popup-recap {
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
+
+/* =========================================================
+   8. PAGE UTILISATEURS
+   ========================================================= */
+
+/* Compteurs par rôle (au-dessus du bouton "Créer un utilisateur") */
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    min-width: 108px;
+    padding: 8px 14px;
+    border-radius: 16px;
+    background: var(--hachure);
+}
+
+.stat b {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.stat span {
+    font-size: 13px;
+}
+
+/* Barre de recherche */
+.search {
+    width: 100%;
+    margin: 18px 0 12px;
+    padding: 12px 16px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.search:focus {
+    border-color: var(--accent);
+}
+
+/* Filtres : une ligne par groupe (rôle, état du compte) */
+.filters {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.filters .seg {
+    flex-wrap: wrap;
+}
+
+/* Liste des utilisateurs : une ligne par compte, liseré de couleur à gauche
+   (gris = normal, rouge = verrouillé, via les classes .dispo / .def) */
+.list {
+    display: grid;
+    gap: 10px;
+}
+
+.li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2px 12px;
+    padding: 12px 16px;
+    border-left: 6px solid var(--c);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.li strong {
+    font-size: 15px;
+}
+
+.li > span {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.li > span b {
+    color: var(--ink);
+}
+
+.li-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.li-actions .btn {
+    background: var(--card2);
+}
+
+/* Pagination sous la liste */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.pagination .btn {
+    background: var(--card2);
+}
+
+.pagination .btn:disabled {
+    cursor: default;
+}
+
+/* Popup d'ajout / modification : champs sur deux colonnes */
+.user-grille {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+}
+
+.user-grille > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-grille label {
+    margin: 0 0 6px;
+}
+
+.user-grille select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Case "Compte actif" (les champs de .popup-body ne s'appliquent pas à la case) */
+.popup-body .user-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 16px 0 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.popup-body .user-check input {
+    width: auto;
+    margin-top: 4px;
+    accent-color: var(--accent);
+}
+
+@media (max-width: 720px) {
+    .li {
+        grid-template-columns: 1fr;
+    }
+
+    .user-grille {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   9. DÉTAIL D'UNE SALLE : tuiles d'état + plan de la salle
+   ========================================================= */
+
+/* Tuiles de l'en-tête (cliquables pour filtrer le plan) */
+.tuiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tuile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 120px;
+    padding: 8px 14px;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--c) 22%, var(--bg));
+    text-align: left;
+}
+
+.tuile b {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.tuile span {
+    font-size: 13px;
+}
+
+.tuile[aria-pressed="true"] {
+    border-color: var(--ink);
+}
+
+/* Disponible : hachure verte bordée de vert (tuile et poste) */
+.tuile.dispo {
+    background: var(--hachure);
+}
+.plan-poste.dispo {
+    background: var(--hachure);
+    border: 2px solid var(--use);
+}
+
+/* Plan : la salle vue de dessus */
+.plan {
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.plan-salle {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 18px;
+    border: 2px solid var(--line);
+    border-radius: 22px;
+}
+
+.plan-haut {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.plan-materiels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Une rangée = 2 tables, une table = 2 postes */
+.plan-rangee {
+    display: flex;
+    justify-content: space-around;
+    gap: 24px;
+}
+
+.plan-table {
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--card2);
+}
+
+/* Matériel de salle et poste : fond sombre + barre de couleur de l'état en haut */
+.plan-mat,
+.plan-poste {
+    display: flex;
+    flex-direction: column;
+    border-top: 4px solid var(--c);
+    border-radius: 10px;
+    background: var(--card);
+}
+
+.plan-mat {
+    min-width: 76px;
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+.plan-poste {
+    justify-content: space-between;
+    width: 62px;
+    height: 62px;
+    padding: 6px 8px;
+}
+
+.plan-poste.formateur {
+    width: 130px;
+    height: auto;
+    min-height: 62px;
+}
+
+.plan-mat span,
+.plan-poste span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.plan-poste b {
+    align-self: flex-end;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* Défectueux et à changer : tout le poste prend la couleur */
+.plan-mat.def,
+.plan-poste.def {
+    background: var(--def-bg);
+}
+
+.plan-poste.chg {
+    background: var(--chg-bg);
+}
+
+.estompe {
+    opacity: 0.25;
+}
+
+.plan-legende {
+    justify-content: center;
+    margin-top: 16px;
+}
+
+button.plan-poste {
+    border: 0;
+    border-top: 4px solid var(--c);
+    text-align: left;
+}
+
+.plan-poste.select {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.plan-corps.ouvert {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 18px;
+    align-items: start;
+}
+
+.poste-panneau {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border-radius: 18px;
+    background: var(--card2);
+}
+
+.poste-panneau .lien {
+    align-self: flex-start;
+    border: 0;
+    background: none;
+    padding: 0;
+}
+
+.poste-entete {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.poste-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+@media (max-width: 900px) {
+    .plan-corps.ouvert {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Popup « Gérer les stagiaires » : liste scrollable avec cases à cocher */
+.stagiaires-liste {
+    display: grid;
+    gap: 8px;
+    max-height: 320px;
+    margin-top: 12px;
+    overflow-y: auto;
+}
+
+.popup-body label.stagiaire-ligne {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--card2);
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.popup-body .stagiaire-ligne input {
+    width: auto;
+    accent-color: var(--accent);
+}
+
+.stagiaire-ligne span {
+    display: flex;
+    flex-direction: column;
+}
+
+.stagiaire-ligne small {
+    color: var(--muted);
+}
+
+/* =========================================================
+   10. DÉTAIL D'UNE SALLE : panneau de droite (vue de la salle, poste, matériel)
+   ========================================================= */
+
+/* Le panneau est toujours affiché à droite du plan */
+.plan-corps.ouvert {
+    grid-template-columns: minmax(0, 1fr) 330px;
+}
+
+/* Poste : le nom du stagiaire est coupé s'il est trop long (nom complet au survol) */
+.plan-poste {
+    width: 76px;
+}
+
+.plan-poste span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Matériel de salle cliquable (VP, TBI…) */
+button.plan-mat {
+    border: 0;
+    border-top: 4px solid var(--c);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.plan-mat.chg {
+    background: var(--chg-bg);
+}
+
+.plan-mat.select {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.poste-panneau h2,
+.poste-panneau h3,
+.poste-panneau p {
+    margin: 0;
+}
+
+.poste-panneau h3 {
+    font-size: 15px;
+}
+
+/* Couleur par défaut (sans état) ; :where() = aucune priorité, les classes .def, .chg… l'emportent */
+:where(.panneau-entete, .carte-mat) {
+    --c: var(--muted);
+}
+
+/* En-tête du panneau d'un poste disponible : vert hachuré comme le poste sur le plan */
+.panneau-entete.dispo {
+    --c: var(--use); /* point de la pastille « Disponible » en vert */
+    background: var(--hachure);
+    box-shadow: inset 0 0 0 2px var(--use);
+}
+
+/* En-tête coloré selon l'état du poste ou du matériel */
+.panneau-entete {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--c) 22%, var(--card));
+}
+
+/* Section du panneau (Stage, Formateurs, Occupant, Matériel…) */
+.panneau-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.panneau-section > .carte-mat {
+    align-self: stretch;
+}
+
+.panneau-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.panneau-liste li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.panneau-liste .lien {
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Pastille : point de la couleur de l'état + libellé */
+.pastille {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pastille::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c);
+}
+
+/* Fiche d'un matériel (poste ou salle) */
+.carte-mat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 4px solid var(--c);
+    border-radius: 16px;
+    background: var(--card);
+}
+
+.carte-mat header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.carte-mat dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13.5px;
+}
+
+.carte-mat dt {
+    color: var(--muted);
+}
+
+.carte-mat dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.carte-mat .mono {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.carte-defaillance {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--def-bg);
+}
+
+.carte-defaillance div {
+    display: flex;
+    flex-direction: column;
+}
+
+.carte-defaillance span {
+    color: var(--muted);
+}
+
+.carte-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* =========================================================
+   11. SALLE GELÉE, IMPORT DES STAGES, MON POSTE
+   ========================================================= */
+
+/* Bandeau « Salle gelée » sous l'en-tête de la salle */
+.note-gel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--inc) 18%, var(--card));
+    font-size: 14px;
+}
+
+.note-gel p {
+    margin: 0;
+}
+
+/* Avertissement (stage d'une salle gelée, matériel manquant après une modification) */
+.note-chg {
+    margin: 10px 0 12px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: var(--chg-bg);
+    font-size: 14px;
+}
+
+.note-chg .lien {
+    margin-left: 8px;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Carte d'une salle gelée */
+.room.gel {
+    opacity: 0.85;
+}
+
+.gelb {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--inc) 18%, var(--card));
+    color: var(--inc);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Choix rapide (motif du gel) */
+.popup-lbl {
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+.quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.chip {
+    border: 0;
+    border-radius: 999px;
+    padding: 5px 12px;
+    background: var(--card2);
+    color: var(--ink);
+    font-size: 13.5px;
+    cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+}
+
+/* Import CSV des stages */
+.import-aide {
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
+
+.popup-body .btn.sm {
+    align-self: flex-start;
+}
+
+.popup-body input[type="file"] {
+    padding: 8px;
+}
+
+.import-bilan {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--card2);
+    font-size: 14px;
+}
+
+.import-bilan p {
+    margin: 0 0 4px;
+}
+
+.import-erreurs {
+    max-height: 160px;
+    margin: 4px 0 0;
+    padding-left: 18px;
+    overflow-y: auto;
+    color: var(--muted);
+}
+
+/* Mon poste : bandeau coloré selon l'état, avec le numéro du poste dans un rond plein */
+.hero-poste {
+    --c: var(--use);
+    background: color-mix(in srgb, var(--c) 16%, var(--card));
+}
+
+.hero-poste.def { --c: var(--def); }
+.hero-poste.chg { --c: var(--chg); }
+.hero-poste.inc { --c: var(--inc); }
+
+.rond-poste {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: var(--c);
+    color: var(--accent-ink);
+}
+
+.rond-poste b {
+    display: block;
+    font-size: 30px;
+}
+
+.rond-poste span {
+    color: inherit;
+    opacity: 0.8;
+}
+
+/* Deux colonnes : matériel à gauche, plan et défaillances à droite */
+.room-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 18px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .room-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.poste-materiels {
+    display: grid;
+    gap: 12px;
+}
+
+.card-s {
+    margin-bottom: 14px;
+    padding: 16px 18px;
+    border-radius: 22px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+}
+
+.card-s p {
+    margin: 10px 0 0;
+}
+
+/* Mini-plan : un rond par poste stagiaire, le mien entouré */
+.mplan-salle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 10px;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+}
+
+.mplan-formateur {
+    padding: 2px 10px;
+    border-radius: 8px;
+    background: var(--card2);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.mplan {
+    display: grid;
+    grid-template-columns: 14px 14px 6px 14px 14px; /* 2 tables de 2 postes, une allée au milieu */
+    gap: 6px 5px;
+}
+
+.mplan i {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c, var(--muted));
+}
+
+.mplan i.dispo {
+    background: repeating-linear-gradient(45deg, var(--use) 0 3px, var(--use-bg) 3px 7px);
+}
+
+/* 3e poste de chaque rangée : après l'allée */
+.mplan i:nth-child(4n + 3) {
+    grid-column: 4;
+}
+
+.mplan i.me {
+    box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent);
+}
+
+/* Aucun poste */
+.empty {
+    max-width: 560px;
+    padding: 28px;
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.empty h2 {
+    margin: 0 0 6px;
+}
+
+/* Ligne du matériel cliquable (ouvre la fiche) */
+.li-cliquable {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.li-cliquable:hover,
+.li-cliquable:focus-visible {
+    background: var(--card2);
+}
+
+/* Fiche d'un matériel (popup au clic sur la liste) */
+.popup-sous-titre {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.materiel-detail .popup-body {
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-section h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.detail-dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 13.5px;
+}
+
+.detail-dl dt {
+    color: var(--muted);
+}
+
+.detail-dl dd {
+    margin: 0;
+}
+
+.materiel-detail > .carte-actions {
+    margin-top: 16px;
+}
+/* =========================================================
+   GESTION DES DÉFAILLANCES
+   ========================================================= */
+.li[aria-label], .list > button.li {
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    text-align: left;
+    transition: transform .12s, box-shadow .12s;
+}
+.list > button.li:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+}
+.list > button.li:focus-visible {
+    outline-offset: 3px;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-sec {
+    margin-bottom: 18px;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-sec h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-kv {
+    display: grid;
+    grid-template-columns: minmax(105px, auto) minmax(0, 1fr);
+    gap: 7px 14px;
+    margin: 0;
+    font-size: 14px;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-kv dt {
+    color: var(--muted);
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-kv dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-pbs {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-pbs li {
+    border-radius: 12px;
+    padding: 9px 12px;
+    background: var(--def-bg);
+    font-size: 14px;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-pbs li.done {
+    background: var(--card2);
+    opacity: .8;
+}
+:is(.defaillance-fiche, .fiche-garantie) .f-pbs small {
+    color: var(--muted);
+}
+
+/* Recherche et filtres de la page Défaillances — même langage visuel que Matériel */
+.defaillance-search {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 18px 0 12px;
+}
+
+.defaillance-filtres {
+    display: grid;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.defaillance-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.defaillance-types button {
+    white-space: nowrap;
+}
+
+.defaillance-dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+}
+
+.defaillance-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.defaillance-date input {
+    width: 142px;
+    min-width: 0;
+    padding: 5px 2px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    color-scheme: dark;
+}
+
+.defaillance-date input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.defaillance-reset {
+    min-height: 34px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .defaillance-search {
+        margin-top: 14px;
+    }
+    .defaillance-dates {
+        align-items: stretch;
+    }
+    .defaillance-date {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+    .defaillance-date input {
+        width: min(58%, 180px);
+    }
+    .defaillance-reset {
+        width: 100%;
+    }
+}
+
+
+/* ---------- Journal ---------- */
+.card-s h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+}
+
+.popup-body textarea.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre;
+    resize: vertical;
+}
+
+.popup-body .journal-copier {
+    align-self: flex-start;
+    margin-top: 10px;
+}
+
+/* ---------- Masters et processus ---------- */
+.mcard {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 18px;
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.mcard-tete {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.mcard h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+}
+
+.mcard > p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* pastille d'état (déployé, liste blanche / noire) */
+.f-st {
+    flex: none;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--c);
+    background: color-mix(in srgb, var(--c) 16%, transparent);
+    white-space: nowrap;
+}
+
+.mrooms,
+.chipl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chipl li {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--card2);
+    font-size: 13px;
+}
+
+.mono {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.f-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.tbl th {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.tbl td {
+    padding: 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+}
+
+.tbl tr:last-child td {
+    border-bottom: 0;
+}
+
+.tbl .n {
+    text-align: right;
+}
+
+/* cases à cocher des processus d'un master */
+.pchks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.popup-body .pchk {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.popup-body .pchk input {
+    width: auto;
+    padding: 0;
+}
+
+.popup-body .pchk.no {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+/* =========================================================
+   12. CALENDRIER DES GARANTIES
+   ========================================================= */
+.sh h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+}
+
+/* Choix de l'année : ‹ 2027 › */
+.yr {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.yr b {
+    min-width: 4ch;
+    font-size: 18px;
+    text-align: center;
+}
+
+.yr button {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--card2);
+    font-size: 18px;
+    line-height: 1;
+}
+
+.yr button:hover {
+    background: var(--accent-soft);
+}
+
+/* Légende + matériels hors garantie */
+.cal-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.heatleg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.heatleg i {
+    display: inline-block;
+    width: 22px;
+    height: 14px;
+    border-radius: 5px;
+}
+
+.heatleg i:nth-of-type(1) { background: color-mix(in srgb, var(--accent) 14%, var(--card)); }
+.heatleg i:nth-of-type(2) { background: color-mix(in srgb, var(--accent) 32%, var(--card)); }
+.heatleg i:nth-of-type(3) { background: color-mix(in srgb, var(--accent) 58%, var(--card)); }
+.heatleg i:nth-of-type(4) { background: var(--accent); }
+
+.cal-hors {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+/* Grille des 12 mois */
+.months {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.month {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 96px;
+    padding: 14px 16px 16px;
+    border-radius: 22px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.month .month-nom {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.month .month-nom small {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.month.past {
+    background: var(--card2);
+    box-shadow: none;
+}
+
+.month.now {
+    box-shadow: var(--shadow), inset 0 0 0 2px var(--accent);
+}
+
+/* Nombre de fins de garantie du mois */
+.ml {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+}
+
+.ml b {
+    min-width: 2.1ch;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+
+.ml.zero {
+    opacity: 0.38;
+}
+
+/* Intensité : h0 = aucune fin de garantie … h4 = mois le plus chargé */
+.month.h0 {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--line);
+    opacity: 0.6;
+}
+
+.month.h0 .ml b {
+    color: var(--muted);
+}
+
+.month.h1 { background: color-mix(in srgb, var(--accent) 14%, var(--card)); }
+.month.h2 { background: color-mix(in srgb, var(--accent) 32%, var(--card)); }
+.month.h3 { background: color-mix(in srgb, var(--accent) 58%, var(--card)); color: #fff; }
+.month.h4 { background: var(--accent); color: #fff; }
+
+.month.h3 .ml b,
+.month.h4 .ml b,
+.month.h3 .month-nom small,
+.month.h4 .month-nom small {
+    color: #fff;
+}
+
+.month.h3 .ml.zero,
+.month.h4 .ml.zero {
+    opacity: 1;
+}
+
+.month.past.h1,
+.month.past.h2,
+.month.past.h3,
+.month.past.h4 {
+    opacity: 0.8;
+}
+
+.cal-note {
+    margin: 12px 4px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+}
+
+@media (max-width: 900px) {
+    .months {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .months {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* =========================================================
+   13. MENU DÉROULANT DES BÂTIMENTS (BatimentBar)
+   ========================================================= */
+
+/* Flèche du bouton : pivote quand le menu est ouvert */
+.batiment .batimentBar-chevron {
+    width: 15px;
+    height: 15px;
+    margin-left: -2px;
+    transition: transform 0.15s;
+}
+
+.batimentBar-chevron.ouvert {
+    transform: rotate(180deg);
+}
+
+/* Panneau collé sous la barre, par-dessus la page (repère : .batimentBar en position relative) */
+.batimentBar-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+/* Pastilles les unes à côté des autres, même largeur que la barre ; défile s'il y a trop de bâtiments */
+.batimentBar-grille {
+    max-width: var(--page-width);
+    max-height: min(60vh, 420px);
+    margin: 0 auto;
+    padding: 10px 24px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    .batimentBar-grille {
+        padding: 8px 14px 12px;
+    }
+}
+
+/* =========================================================
+   14. FICHE DÉFAILLANCE : en-tête coloré
+   ========================================================= */
+
+/* Popup sans titre : on cache le h2 vide, la croix remonte à droite de l'en-tête coloré */
+.popup-header h2:empty {
+    display: none;
+}
+
+.popup-header:has(h2:empty) {
+    justify-content: flex-end;
+    margin-bottom: -36px; /* hauteur de la croix */
+}
+
+/* Bloc rouge (signalée) ou vert (résolue) */
+:is(.defaillance-fiche, .fiche-garantie) .f-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 48px 18px 0; /* place pour la croix à droite */
+    padding: 16px 18px;
+    border-radius: 20px;
+}
+
+:is(.defaillance-fiche, .fiche-garantie) .f-head.def {
+    background: var(--def-bg);
+}
+
+:is(.defaillance-fiche, .fiche-garantie) .f-head.use {
+    background: var(--use-bg);
+}
+
+:is(.defaillance-fiche, .fiche-garantie) .f-head h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+:is(.defaillance-fiche, .fiche-garantie) .f-head p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+:is(.defaillance-fiche, .fiche-garantie) .f-head .pastille {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* Zone « Ce qui a été fait » : redimensionnable en hauteur seulement */
+.defaillance-fiche textarea {
+    width: 100%;
+    max-width: 100%;
+    max-height: 250px;
+    resize: vertical;
+}
+
+/* =========================================================
+   15. CALENDRIER : liste d'un mois + fiche garantie
+   ========================================================= */
+
+/* Mois cliquable (bouton) */
+.months li {
+    display: flex;
+}
+
+.month {
+    width: 100%;
+    border: 0;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.month .month-nom {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.month:disabled {
+    cursor: default;
+}
+
+.month:not(:disabled):hover {
+    filter: brightness(1.08);
+}
+
+/* mois choisi */
+.month[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+/* « X matériels déjà hors garantie » : bouton qui ouvre la liste */
+button.cal-hors {
+    border: 0;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+button.cal-hors:hover {
+    background: var(--accent-soft);
+}
+
+button.cal-hors[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--card);
+}
+
+/* Liste des matériels du mois choisi */
+.cal-detail {
+    margin-top: 22px;
+}
+
+.cal-detail .li {
+    width: 100%;
+    color: inherit;
+    cursor: pointer;
+}
+
+/* Fiche garantie : en-tête coloré + croix à droite */
+.fiche-garantie .f-tete {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.fiche-garantie .f-head {
+    flex: 1;
+    margin: 0 0 18px;
+}
+
+:is(.defaillance-fiche, .fiche-garantie) .f-head.chg {
+    background: var(--chg-bg);
+}
+
+.fiche-garantie .f-sec > p {
+    margin: 0;
+}
+
+.f-warn {
+    color: var(--chg);
+}
+
+/* Barre : part de la garantie déjà écoulée */
+.gbar {
+    height: 8px;
+    margin: 12px 0 8px;
+    border-radius: 999px;
+    background: var(--card2);
+    overflow: hidden;
+}
+
+.gbar i {
+    display: block;
+    height: 100%;
+    background: var(--c);
+}
+
+.fiche-garantie .f-pbs li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.fiche-garantie .f-pbs .btn {
+    background: var(--card);
+}
+
+/* Boutons du bas : Voir le poste / Modifier la garantie */
+.fiche-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.fiche-foot .btn {
+    flex: 1;
+    padding: 13px;
+    text-align: center;
+}
+
+.fiche-foot .btn:not(.primary) {
+    background: var(--card2);
 }

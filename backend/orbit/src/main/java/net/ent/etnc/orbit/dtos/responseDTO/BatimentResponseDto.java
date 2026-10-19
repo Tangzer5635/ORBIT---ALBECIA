@@ -1,0 +1,31 @@
+package net.ent.etnc.orbit.dtos.responseDTO;
+
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class BatimentResponseDto {
+
+    private Long id;
+    private String numBatiment;
+    private List<Long> sallesId;
+    private List<StockageDto> stockages;
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StockageDto {
+        private Long id;
+        private String numSalle;
+        private long nbMateriels;
+    }
+
+
+}

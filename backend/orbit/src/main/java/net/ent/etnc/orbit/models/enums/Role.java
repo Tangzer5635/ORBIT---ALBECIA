@@ -6,10 +6,23 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Rôles d'ORBIT, alignés sur la hiérarchie d'acteurs du DCU global :
+ * <ul>
+ *   <li>Stagiaire et Acteur Technique (TECHNIQUE) héritent d'Utilisateur ;</li>
+ *   <li>Formateur hérite de Stagiaire et d'Acteur Technique ;</li>
+ *   <li>Gestionnaire hérite d'Acteur Technique ;</li>
+ *   <li>Administrateur hérite de Gestionnaire (et seulement de lui).</li>
+ * </ul>
+ * Les cas que le DCU attribue à la fois au Formateur et à l'Administrateur
+ * (ex. « Gérer les processus ») se sécurisent avec {@code hasAnyRole('FORMATEUR','ADMINISTRATEUR')}.
+ */
 public enum Role {
-    USER("User"),
-    SUPER_USER("Super User", USER),
-    ADMIN("Admin", SUPER_USER);
+    STAGIAIRE("Stagiaire"),
+    TECHNIQUE("Technicien", true),
+    FORMATEUR("Formateur", STAGIAIRE, TECHNIQUE),
+    GESTIONNAIRE("Gestionnaire", TECHNIQUE),
+    ADMINISTRATEUR("Administrateur", GESTIONNAIRE);
 
     @Getter
     private final String libelle;

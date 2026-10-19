@@ -1,6 +1,6 @@
 spring:
   application:
-    name: template_auth_sb
+    name: orbit
   datasource:
     url: jdbc:postgresql://localhost:5432/orbit
     username: postgres
@@ -8,11 +8,12 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+        default_batch_fetch_size: 100
   #      jakarta:
   #        persistence:
   #          validation:
@@ -23,5 +24,7 @@ spring:
 app:
   jwt:
     secret: orbit_albecia_secret_key_is_very_long_and_complex
-    expiration-ms: 3600000
+    expiration-ms: 14400000
     refresh-expiration-ms: 14400000
+server:
+  port: 8080

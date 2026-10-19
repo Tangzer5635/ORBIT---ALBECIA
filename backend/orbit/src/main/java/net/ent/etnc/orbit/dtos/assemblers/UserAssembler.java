@@ -1,36 +1,46 @@
 package net.ent.etnc.orbit.dtos.assemblers;
 
-import net.ent.etnc.orbit.dtos.UserRequestDto;
-import net.ent.etnc.orbit.dtos.UserResponseDto;
-import net.ent.etnc.orbit.models.entities.User;
+import net.ent.etnc.orbit.dtos.requestDTO.UserCreateRequestDto;
+import net.ent.etnc.orbit.dtos.requestDTO.UserUpdateRequestDto;
+import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class UserAssembler {
 
-    public UserResponseDto toDto(User user) {
+    public UserResponseDto toDto(Personnel personnel) {
         return UserResponseDto.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .role(user.getRole())
-                .active(user.isActive())
+                .id(personnel.getId())
+                .login(personnel.getUsername())
+                .role(personnel.getRole())
+                .nom(personnel.getNom())
+                .prenom(personnel.getPrenom())
+                .active(personnel.isActive())
+                .verrouille(personnel.isVerrouille())
+                .stageId(personnel.getStage() != null ? personnel.getStage().getId() : null)
                 .build();
     }
 
-    public List<UserResponseDto> toDtos(List<User> users) {
-        return users.stream()
-                .map(this::toDto)
-                .toList();
-    }
-
-    public User toEntity(UserRequestDto userDto) {
-        User user = new User();
-        user.setUsername(userDto.getUsername());
-        user.setPassword(userDto.getPassword());
+    public Personnel toEntity(UserCreateRequestDto userDto) {
+        Personnel user = new Personnel();
+        user.setNid(userDto.getNid());
+        user.setNom(userDto.getNom());
+        user.setPrenom(userDto.getPrenom());
+        user.setMotDePasse(userDto.getMotDePasse());
         user.setRole(userDto.getRole());
         user.setActive(userDto.getActive() == null || userDto.getActive());
+        return user;
+    }
+
+    /** Rôle et activation ne viennent pas de ce DTO : le service conserve ceux du compte existant. */
+    public Personnel toEntity(UserUpdateRequestDto userDto) {
+        Personnel user = new Personnel();
+        user.setNid(userDto.getNid());
+        user.setNom(userDto.getNom());
+        user.setPrenom(userDto.getPrenom());
+        user.setLogin(userDto.getLogin());
+        user.setMotDePasse(userDto.getMotDePasse());
         return user;
     }
 
