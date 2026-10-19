@@ -2275,3 +2275,134 @@ button.plan-mat {
     align-self: flex-start;
     margin-top: 10px;
 }
+
+/* ---------- Masters et processus ---------- */
+.mcard {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 18px;
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.mcard-tete {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.mcard h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+}
+
+.mcard > p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* pastille d'état (déployé, liste blanche / noire) */
+.f-st {
+    flex: none;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--c);
+    background: color-mix(in srgb, var(--c) 16%, transparent);
+    white-space: nowrap;
+}
+
+.mrooms,
+.chipl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chipl li {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--card2);
+    font-size: 13px;
+}
+
+.mono {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.f-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.tbl th {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.tbl td {
+    padding: 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+}
+
+.tbl tr:last-child td {
+    border-bottom: 0;
+}
+
+.tbl .n {
+    text-align: right;
+}
+
+/* cases à cocher des processus d'un master */
+.pchks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.popup-body .pchk {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--card2);
+    font-size: 13.5px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.popup-body .pchk input {
+    width: auto;
+    padding: 0;
+}
+
+.popup-body .pchk.no {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

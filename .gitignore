@@ -2,6 +2,7 @@
 target/
 *.class
 *.log
+logs/
 # Node / React
 node_modules/
 dist/

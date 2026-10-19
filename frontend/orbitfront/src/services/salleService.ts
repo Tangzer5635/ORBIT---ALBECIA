@@ -49,7 +49,7 @@ export async function creerSalleEquipee(dto: SalleEquipeeRequest): Promise<Salle
 export async function getSalle(): Promise<Salle[]> {
     let response: Response;
     try {
-        response = await apiFetch(`${URL}/`, {headers: authHeaders()});
+        response = await apiFetch(`${URL}/?size=500`, {headers: authHeaders()}); // toutes les salles du parc
     } catch {
         throw new SalleError(0); // serveur injoignable
     }
@@ -183,4 +183,9 @@ export function gelerSalle(id: number, gel: GelRequest): Promise<Salle> {
 
 export function degelerSalle(id: number): Promise<Salle> {
     return requete(`${URL}/${id}/degeler/`, {method: "PATCH"});
+}
+
+// « Déplacer la salle » : tout son contenu part dans la salle cible (renvoie la salle cible)
+export function deplacerSalle(id: number, salleCibleId: number): Promise<Salle> {
+    return requete(`${URL}/${id}/deplacer/?salleCibleId=${salleCibleId}`, {method: "PATCH"});
 }
