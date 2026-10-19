@@ -33,7 +33,7 @@ public class MasterController {
                 .map(masterAssembler::toDto));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/")
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<MasterDto> getById(@PathVariable Long id) {
         return masterService.findById(id)
