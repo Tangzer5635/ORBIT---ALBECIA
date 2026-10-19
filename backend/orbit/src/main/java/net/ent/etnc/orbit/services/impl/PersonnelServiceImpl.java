@@ -57,13 +57,18 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         }
         //TODO mdp initale ?
         entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
-        String login = nettoyer(entity.getPrenom())+"."+nettoyer(entity.getNom());
 
-        //incrémente s'il y a un doublon
-        int i=0;
-        while (repository.existsByLogin(login)){
+        String prenom = nettoyer(entity.getPrenom());
+        String nom = nettoyer(entity.getNom());
+        if (prenom.isEmpty() || nom.isEmpty()) throw new ServiceException("Impossible de générer un login à partir du nom et du prénom");
+
+        String base = prenom + "." + nom;
+        // incrémente s'il y a un doublon : jean.dupont, jean.dupont2, jean.dupont3
+        String login = base;
+        int i = 1;
+        while (repository.existsByLogin(login)) {
             i++;
-            login +=i;
+            login = base + i;
         }
 
         entity.setLogin(login);
