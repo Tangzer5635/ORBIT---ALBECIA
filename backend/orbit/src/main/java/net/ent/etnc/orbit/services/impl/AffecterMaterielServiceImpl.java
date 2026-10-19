@@ -1,11 +1,16 @@
 package net.ent.etnc.orbit.services.impl;
 
+import net.ent.etnc.orbit.dtos.responseDTO.AffectationMaterielDto;
+import net.ent.etnc.orbit.models.entities.Batiment;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
+import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.AffecterMaterielService;
+import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
@@ -27,14 +32,41 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     private final MaterielService materielService;
     private final SalleService salleService;
     private final PosteService posteService;
+    private final BatimentService batimentService;
     private final JournalisationService journalisationService;
 
     public AffecterMaterielServiceImpl(MaterielService materielService, SalleService salleService, PosteService posteService,
-                                       JournalisationService journalisationService) {
+                                       BatimentService batimentService, JournalisationService journalisationService) {
         this.materielService = materielService;
         this.salleService = salleService;
         this.posteService = posteService;
+        this.batimentService = batimentService;
         this.journalisationService = journalisationService;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AffectationMaterielDto affectation(Long idMateriel) {
+        Materiel materiel = trouverMateriel(idMateriel);
+        if (materiel.isArchive()) return AffectationMaterielDto.vide();
+        // salle de cours, salle de stockage, ou salle du poste qui porte le matériel
+        Salle salle = salleService.localiser(idMateriel).orElse(null);
+        if (salle == null) return AffectationMaterielDto.vide();
+
+        Poste poste = posteService.posteDuMateriel(idMateriel).orElse(null);
+        Personnel occupant = poste != null ? poste.getOccupant() : null;
+        Stage stage = salle.getStage();
+        String numBatiment = batimentService.batimentDeLaSalle(salle.getId()).map(Batiment::getNumBatiment).orElse(null);
+
+        return new AffectationMaterielDto(
+                salle.getId(), salle.getNumSalle(), salle.getType(), salle.getEtage(), numBatiment,
+                poste != null ? poste.getId() : null,
+                poste != null ? poste.getNumPoste() : null,
+                occupant != null ? occupant.getPrenom() + " " + occupant.getNom() : null,
+                stage != null ? stage.getNom() : null,
+                stage != null ? stage.getDateDebut() : null,
+                stage != null ? stage.getDateFin() : null,
+                salle.getCreePar());
     }
 
     @Override

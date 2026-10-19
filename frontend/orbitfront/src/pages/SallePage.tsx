@@ -65,7 +65,6 @@ export default function SallePage() {
         return (
             <>
                 <div className="page-head"><h1>Salles</h1></div>
-                <p className="muted">Choisis un bâtiment dans la barre pour voir ses salles.</p>
             </>
         );
     }

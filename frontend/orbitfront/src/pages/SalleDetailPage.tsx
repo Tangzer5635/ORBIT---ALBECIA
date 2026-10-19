@@ -1,4 +1,4 @@
-import {Link, useNavigate, useParams} from "react-router-dom";
+import {Link, useNavigate, useParams, useSearchParams} from "react-router-dom";
 import {degelerSalle, getPostesBySalle, getSalleById, supprimerSalle} from "../services/salleService.ts";
 import {getMaterielById} from "../services/materielService.ts";
 import {getUtilisateur} from "../services/authService.ts";
@@ -37,6 +37,7 @@ import AffecterFormateurPopup from "../components/Popup/Salle/AffecterFormateurP
 import ModifierSallePopup from "../components/Popup/Salle/ModifierSallePopup.tsx";
 import GelerSallePopup from "../components/Popup/Salle/GelerSallePopup.tsx";
 import DeplacerSallePopup from "../components/Popup/Salle/DeplacerSallePopup.tsx";
+import PlaquerMasterSallePopup from "../components/Popup/Master/PlaquerMasterSallePopup.tsx";
 import Popup from "../components/Popup/Popup.tsx";
 import {retirerStagiaireDuPoste} from "../services/posteService.ts";
 import {retirerStageDeSalle} from "../services/stageService.ts";
@@ -60,7 +61,7 @@ function parTables(postes: Poste[]): Poste[][] {
 }
 
 type PopupOuverte = "stagiaire" | "retirerStagiaire" | "materiel" | "stage" | "retirerStage" | "formateur"
-    | "modifier" | "geler" | "deplacer" | "supprimer" | null;
+    | "modifier" | "geler" | "deplacer" | "supprimer" | "master" | "masterPoste" | null;
 
 // key = salleId : changer de salle repart d'un état propre (filtre, sélection, popups)
 export default function SalleDetailPage() {
@@ -77,8 +78,10 @@ function SalleDetail({salleId}: { salleId: string }) {
     const role = getUtilisateur()?.role;
     const peutGerer = role === "ADMINISTRATEUR" || role === "GESTIONNAIRE";
     // élément choisi sur le plan (rien = « Vue de la salle »)
-    const [posteId, setPosteId] = useState<number | null>(null);
-    const [materielId, setMaterielId] = useState<number | null>(null);
+    // ?poste=12 ou ?materiel=34 : arrive sur la salle avec ce poste ou ce matériel déjà sélectionné (fiche garantie)
+    const [params] = useSearchParams();
+    const [posteId, setPosteId] = useState<number | null>(() => Number(params.get("poste")) || null);
+    const [materielId, setMaterielId] = useState<number | null>(() => Number(params.get("materiel")) || null);
     const [popup, setPopup] = useState<PopupOuverte>(null);
     const [erreurStage, setErreurStage] = useState("");
     const [formateurARetirer, setFormateurARetirer] = useState<Formateur | null>(null);
@@ -170,6 +173,7 @@ function SalleDetail({salleId}: { salleId: string }) {
                       onAffecterStagiaire={salle.suspendu ? undefined : () => setPopup("stagiaire")}
                       onRetirerStagiaire={() => setPopup("retirerStagiaire")}
                       onAffecterMateriel={() => setPopup("materiel")}
+                      onPlaquerMaster={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("masterPoste") : undefined}
                       onChange={recharger}/>
     ) : materielSelectionne ? (
         <PanneauMateriel key={materielSelectionne.id} materiel={materielSelectionne} salle={salle}
@@ -179,7 +183,9 @@ function SalleDetail({salleId}: { salleId: string }) {
                       onAffecterStage={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("stage") : undefined}
                       onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
                       onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
-                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}/>
+                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}
+                      onPlaquerMaster={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("master") : undefined}
+        />
     );
 
     return (
@@ -205,10 +211,6 @@ function SalleDetail({salleId}: { salleId: string }) {
                             </button>
                         ))}
                     </div>
-                    <p className="rleg-note">
-                        Le cercle indique la part du matériel utilisable (comme sur la carte de la salle). Les cases
-                        comptent les postes : clique dessus pour filtrer le plan.
-                    </p>
                 </div>
             </section>
 
@@ -375,6 +377,10 @@ function SalleDetail({salleId}: { salleId: string }) {
                             : "");
                         apresAction();
                     }}/>
+            )}
+            {popup === "master" && <PlaquerMasterSallePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
+            {popup === "masterPoste" && posteSelectionne && (
+                <PlaquerMasterSallePopup salle={salle} poste={posteSelectionne} onClose={fermerPopup} onFait={apresAction}/>
             )}
             {popup === "geler" && <GelerSallePopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
             {popup === "deplacer" && (

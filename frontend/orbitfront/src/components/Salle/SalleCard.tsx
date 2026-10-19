@@ -1,12 +1,17 @@
 import Anneau from "../Utils/Anneau.tsx";
-import {LIBELLE_MOTIF_GEL, type SalleCarte} from "../../types/types.ts";
-import {dateFr, libelleEtage, pluriel} from "../../utils/postes.ts";
+import {LIBELLE_MOTIF_GEL, LIBELLE_TYPE_FORMATION, type SalleCarte} from "../../types/types.ts";
+import {dateFr, pluriel} from "../../utils/postes.ts";
 import { Link } from "react-router-dom";
 
 interface SalleCardProps {
     salle: SalleCarte;
 }
 
+// "VU82, Réseaux" ou "Aucun stage"
+function libelleStage(salle: SalleCarte): string {
+    if (!salle.stageNom) return "Aucun stage";
+    return salle.stageType ? `${salle.stageNom}, ${LIBELLE_TYPE_FORMATION[salle.stageType]}` : salle.stageNom;
+}
 
 export default function SalleCard({ salle }: SalleCardProps) {
     const { defectueux, aChanger } = salle.anneau;
@@ -20,10 +25,11 @@ export default function SalleCard({ salle }: SalleCardProps) {
         <article className={`room${salle.suspendu ? " gel" : ""}`}>
             <Anneau id={salle.id} comptes={salle.anneau}/>
             <div>
-                <Link to={`/salles/${salle.id}/`}><h3>Salle {salle.numSalle}</h3></Link>
+                {/* le lien est dans le titre : le CSS l'étend à toute la carte */}
+                <h3><Link to={`/salles/${salle.id}/`}>Salle {salle.numSalle}</Link></h3>
                 <p>
                     {salle.numBatiment && `Bâtiment ${salle.numBatiment}, `}
-                    {libelleEtage(salle.etage)}, {pluriel(salle.nbPostes, "poste")}
+                    {libelleStage(salle)}, {pluriel(salle.nbPostes, "poste")}
                 </p>
                 {salle.suspendu && (
                     <span className="gelb">

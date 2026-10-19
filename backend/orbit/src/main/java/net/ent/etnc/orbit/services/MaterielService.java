@@ -25,6 +25,9 @@ public interface MaterielService extends Service<Materiel, Long> {
 
     /** Image d'un master : chaque UC des postes de la salle a exactement ces processus. Renvoie le nombre d'UC. */
     int installerImage(Long idSalle, List<Processus> processus);
+
+    /** Même chose sur les UC d'un seul poste. Renvoie le nombre d'UC. */
+    int installerImageSurPoste(Long idPoste, List<Processus> processus);
     @Transactional
     CalendrierGarantiesDto calendrierGaranties(int annee);
 }

@@ -1,4 +1,4 @@
-nom;type;dateDebut;dateFin;nidFormateur;nbStagiaires
+nom;type;dateDebut;dateFin;nidCDSF;nbStagiaires
 VU82;ESR;2026-08-07;2027-04-07;2000000001;11
 VU80;ESR;2026-08-11;2027-04-11;2000000002;9
 WB48;PDI;2026-08-29;2027-01-29;2000000010;10

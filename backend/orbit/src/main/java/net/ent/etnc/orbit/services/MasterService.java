@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.services;
 
 import net.ent.etnc.orbit.models.entities.Master;
+import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.services.commons.Service;
@@ -24,6 +25,12 @@ public interface MasterService extends Service<Master, Long> {
      * reçoit exactement les processus du master (l'ancienne image est remplacée).
      */
     Salle plaquer(Long idSalle, Long idMaster) throws ServiceException;
+
+    /**
+     * Plaque le master sur un seul poste (ex. poste en erreur) : l'UC du poste reçoit exactement
+     * les processus du master. Le master de la salle ne change pas.
+     */
+    Poste plaquerSurPoste(Long idPoste, Long idMaster) throws ServiceException;
 
     /** Masters qui contiennent ce processus. */
     List<Master> mastersAvec(Long idProcessus);
