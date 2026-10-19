@@ -94,19 +94,19 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
 
     @Override
     @Transactional(readOnly = true)
-    public List<Defaillance> findBySignalePar(Long idPersonnel) {
+    public List<Defaillance> findBySignalePar(Long idPersonnel) throws ServiceException {
         return repository.findBySignalePar_IdOrderByDateSignalementDesc(idPersonnel);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean aUneDefaillanceOuverte(Long idMateriel) {
+    public boolean aUneDefaillanceOuverte(Long idMateriel) throws ServiceException {
         return repository.existsByMateriel_IdAndStatut(idMateriel, StatutDefaillance.SIGNALEE);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean aDesDefaillances(Long idMateriel) {
+    public boolean aDesDefaillances(Long idMateriel) throws ServiceException {
         return repository.existsByMateriel_Id(idMateriel);
     }
 
@@ -118,7 +118,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Defaillance> findPourUtilisateur(Personnel utilisateur, StatutDefaillance statut, Pageable pageable) {
+    public Page<Defaillance> findPourUtilisateur(Personnel utilisateur, StatutDefaillance statut, Pageable pageable) throws ServiceException {
         if (utilisateur.getRole() == Role.FORMATEUR) {
             return repository.findDansLesSallesDe(utilisateur.getId(), statut, pageable);
         }
@@ -140,7 +140,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
      * le formateur sur son propre poste ou sur un poste d'une salle qui lui est affectée.
      * Le matériel de salle (hors poste) et le matériel en stock ne se signalent pas.
      */
-    private boolean peutSignaler(Personnel user, Long idMateriel) {
+    private boolean peutSignaler(Personnel user, Long idMateriel) throws ServiceException {
         Optional<Poste> poste = posteService.posteDuMateriel(idMateriel);
         // l'occupant peut signaler le matériel de son poste
         if (poste.isPresent() && memePersonne(poste.get().getOccupant(), user)) {
@@ -150,7 +150,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
         return user.getRole().hasRole(Role.FORMATEUR) && dansSesSalles(user, idMateriel, poste);
     }
 
-    private boolean peutTraiter(Personnel user, Long idMateriel) {
+    private boolean peutTraiter(Personnel user, Long idMateriel) throws ServiceException {
         if (user.getRole().hasRole(Role.GESTIONNAIRE)) {
             return true;
         }
@@ -158,7 +158,7 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
                 && dansSesSalles(user, idMateriel, posteService.posteDuMateriel(idMateriel));
     }
 
-    private boolean dansSesSalles(Personnel user, Long idMateriel, Optional<Poste> poste) {
+    private boolean dansSesSalles(Personnel user, Long idMateriel, Optional<Poste> poste) throws ServiceException {
         Optional<Salle> salle = poste.isPresent()
                 ? salleService.salleDuPoste(poste.get().getId())
                 : salleService.salleDuMateriel(idMateriel);
@@ -167,13 +167,13 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     }
 
     /** Pour le journal : ", poste B2-S105-P07" ou ", salle 105" selon où est le matériel. */
-    private String ou(Long idMateriel) {
+    private String ou(Long idMateriel) throws ServiceException {
         return posteService.posteDuMateriel(idMateriel).map(p -> ", " + Libelles.poste(p))
                 .or(() -> salleService.salleDuMateriel(idMateriel).map(s -> ", " + Libelles.salle(s)))
                 .orElse("");
     }
 
-    private static boolean memePersonne(Personnel a, Personnel b) {
+    private static boolean memePersonne(Personnel a, Personnel b) throws ServiceException {
         return a != null && b != null && Objects.equals(a.getId(), b.getId());
     }
 }

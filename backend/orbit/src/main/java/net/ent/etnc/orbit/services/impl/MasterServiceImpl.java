@@ -44,7 +44,7 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
 
     @Override
     @Transactional
-    public Master creer(Master master, List<Long> processusIds) {
+    public Master creer(Master master, List<Long> processusIds) throws ServiceException {
         if (repository.existsByNom(master.getNom()))
             throw new ServiceException("Un master « " + master.getNom() + " » existe déjà");
         remplirProcessus(master, processusIds);
@@ -56,7 +56,7 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
 
     @Override
     @Transactional
-    public Master modifier(Long id, Master donnees, List<Long> processusIds) {
+    public Master modifier(Long id, Master donnees, List<Long> processusIds) throws ServiceException {
         Master master = trouver(id);
         if (repository.existsByNomAndIdNot(donnees.getNom(), id))
             throw new ServiceException("Un master « " + donnees.getNom() + " » existe déjà");
@@ -76,7 +76,7 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
     /** Pas de retour à l'ancien master : les salles concernées n'ont plus de master ni de processus. */
     @Override
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Long id) throws ServiceException {
         Master master = trouver(id);
         List<Salle> salles = salleService.sallesDuMaster(id);
         for (Salle s : salles) {
@@ -90,7 +90,7 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
 
     @Override
     @Transactional
-    public Salle plaquer(Long idSalle, Long idMaster) {
+    public Salle plaquer(Long idSalle, Long idMaster) throws ServiceException {
         Master master = trouver(idMaster);
         Salle salle = salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
@@ -108,18 +108,18 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
 
     @Override
     @Transactional(readOnly = true)
-    public List<Master> mastersAvec(Long idProcessus) {
+    public List<Master> mastersAvec(Long idProcessus) throws ServiceException {
         return repository.findByProcessus_Id(idProcessus);
     }
 
     @Override
     @Transactional
-    public void retirerProcessusPartout(Processus processus) {
+    public void retirerProcessusPartout(Processus processus) throws ServiceException {
         repository.findByProcessus_Id(processus.getId()).forEach(m -> m.removeProcessus(processus));
     }
 
     /** Remplace les processus du master ; un processus en liste noire ne peut pas faire partie d'une image. */
-    private void remplirProcessus(Master master, List<Long> processusIds) {
+    private void remplirProcessus(Master master, List<Long> processusIds) throws ServiceException {
         master.viderProcessus();
         for (Long idProcessus : processusIds == null ? List.<Long>of() : processusIds) {
             Processus p = processusService.findById(idProcessus)
@@ -130,7 +130,7 @@ public class MasterServiceImpl extends AbstractService<Master, MasterRepository>
         }
     }
 
-    private Master trouver(Long id) {
+    private Master trouver(Long id) throws ServiceException {
         return repository.findById(id).orElseThrow(() -> new ServiceException("Master " + id + " introuvable"));
     }
 

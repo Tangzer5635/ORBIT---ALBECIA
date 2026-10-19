@@ -57,7 +57,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
-    public Materiel creerEnStock(Materiel materiel, Long idStockage) {
+    public Materiel creerEnStock(Materiel materiel, Long idStockage) throws ServiceException {
         if (idStockage == null)
             throw new ServiceException("La salle de stockage est obligatoire");
         if (repository.existsByNumSerie(materiel.getNumSerie()))
@@ -75,7 +75,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
-    public Materiel update(Materiel materiel) {
+    public Materiel update(Materiel materiel) throws ServiceException {
         Materiel existant = trouver(materiel.getId());
         //TODO a voir avec l'équipe
         if (existant.isArchive())
@@ -98,14 +98,14 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Salle> salleDe(Materiel materiel) {
+    public Optional<Salle> salleDe(Materiel materiel) throws ServiceException {
         if (materiel.isArchive()) return Optional.empty();
         return salleService.localiser(materiel.getId());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Materiel> findPourUtilisateur(Long id, Personnel utilisateur) {
+    public Optional<Materiel> findPourUtilisateur(Long id, Personnel utilisateur) throws ServiceException {
         Optional<Materiel> materiel = repository.findById(id);
         if (materiel.isPresent() && utilisateur.getRole() == Role.FORMATEUR) {
             boolean dansSesSalles = salleDe(materiel.get())
@@ -120,13 +120,13 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
-    public void desinstallerPartout(Processus processus) {
+    public void desinstallerPartout(Processus processus) throws ServiceException {
         repository.findUcAvecProcessus(processus.getId()).forEach(uc -> uc.removeProcessus(processus));
     }
 
     @Override
     @Transactional
-    public int installerImage(Long idSalle, List<Processus> processus) {
+    public int installerImage(Long idSalle, List<Processus> processus) throws ServiceException {
         List<UC> ucs = repository.findUcDeLaSalle(idSalle);
         for (UC uc : ucs) {
             List.copyOf(uc.getProcessus()).forEach(uc::removeProcessus);
@@ -137,7 +137,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Long id) throws ServiceException {
         Materiel materiel = trouver(id);
         if (defaillanceService.aDesDefaillances(id))
             throw new ServiceException("Ce matériel a un historique de défaillances : archive-le au lieu de le supprimer");
@@ -150,7 +150,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
-    public Materiel archiver(Long id) {
+    public Materiel archiver(Long id) throws ServiceException {
         Materiel materiel = trouver(id);
         if (materiel.isArchive())
             throw new ServiceException("Ce matériel est déjà archivé");
@@ -166,7 +166,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional(readOnly = true)
-    public EtatMateriel etatDe(Materiel materiel) {
+    public EtatMateriel etatDe(Materiel materiel) throws ServiceException {
         if (materiel.isArchive()) return materiel.calculerEtat(false, false);
         boolean enStock = salleService.estEnStock(materiel.getId());
         boolean defaillanceOuverte = defaillanceService.aUneDefaillanceOuverte(materiel.getId());
@@ -175,7 +175,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
 
     @Override
     @Transactional
-    public CalendrierGarantiesDto calendrierGaranties(int annee) {
+    public CalendrierGarantiesDto calendrierGaranties(int annee) throws ServiceException {
         LocalDate debut = LocalDate.of(annee, 1, 1);   // 1er janvier
         LocalDate fin = debut.plusYears(1);            // 1er janvier suivant exclu
 
@@ -195,7 +195,7 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         return new CalendrierGarantiesDto(annee, expirees, mois);
     }
 
-    private Materiel trouver(Long id) {
+    private Materiel trouver(Long id) throws ServiceException {
         return repository.findById(id).orElseThrow(() -> new ServiceException("Matériel " + id + " introuvable"));
     }
 }

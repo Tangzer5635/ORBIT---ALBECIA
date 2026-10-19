@@ -73,7 +73,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Long id) throws ServiceException {
         Salle salle = repository.findById(id).orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("Une salle de stockage ne peut disparaître qu'avec la suppression de son bâtiment");
@@ -85,12 +85,12 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     /** Seul chemin qui supprime une salle de stockage : appelé par la suppression du bâtiment. */
     @Override
     @Transactional
-    public void supprimerAvecBatiment(Long id) {
+    public void supprimerAvecBatiment(Long id) throws ServiceException {
         Salle salle = repository.findById(id).orElseThrow(() -> new ServiceException("Salle " + id + " introuvable"));
         supprimer(salle);
     }
 
-    private void supprimer(Salle salle) {
+    private void supprimer(Salle salle) throws ServiceException {
         if (salle.getType() == TypeSalle.SalleStockage && !salle.getMateriels().isEmpty())
             throw new ServiceException("Vide la salle de stockage avant de la supprimer");
         List<Materiel> aRanger = new ArrayList<>(salle.getMateriels());
@@ -120,14 +120,14 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public Salle create(Long idBatiment, Salle salle) {
+    public Salle create(Long idBatiment, Salle salle) throws ServiceException {
         Salle creee = creerDans(idBatiment, salle);
         journalisationService.journaliser(TypeAction.CREATION, "Salle " + libelle(creee) + " créée");
         return creee;
     }
 
     /** Crée la salle dans le bâtiment (sans journaliser). */
-    private Salle creerDans(Long idBatiment, Salle salle) {
+    private Salle creerDans(Long idBatiment, Salle salle) throws ServiceException {
         Batiment batiment = trouverBatiment(idBatiment);
         if (batiment.getSalles().stream().anyMatch(s -> s.getNumSalle().equals(salle.getNumSalle())))
             throw new ServiceException("Une salle " + salle.getNumSalle() + " existe déjà dans ce bâtiment");
@@ -143,14 +143,14 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         return auth != null && auth.getPrincipal() instanceof Personnel p ? p.getPrenom() + " " + p.getNom() : null;
     }
 
-    private Batiment trouverBatiment(Long idBatiment) {
+    private Batiment trouverBatiment(Long idBatiment) throws ServiceException {
         return batimentRepository.findById(idBatiment)
                 .orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Salle> findAllAvecDetails(Pageable pageable) {
+    public Page<Salle> findAllAvecDetails(Pageable pageable) throws ServiceException {
         Page<Salle> page = repository.findAll(pageable);
         charger(page.getContent().stream().map(Salle::getId).toList());
         return page;
@@ -158,14 +158,14 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Salle> findByIdAvecDetails(Long id) {
+    public Optional<Salle> findByIdAvecDetails(Long id) throws ServiceException {
         Optional<Salle> salle = repository.findById(id);
         salle.ifPresent(s -> charger(List.of(s.getId())));
         return salle;
     }
 
     /** Initialise matériels et postes de ces salles : 2 requêtes, quel que soit le nombre de salles. */
-    private void charger(List<Long> ids) {
+    private void charger(List<Long> ids) throws ServiceException {
         if (ids.isEmpty()) return;
         repository.chargerMateriels(ids);
         repository.chargerPostes(ids);
@@ -173,7 +173,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public SalleEquipeeResponseDto creerSalleEquipee(SalleEquipeeRequestDto dto) {
+    public SalleEquipeeResponseDto creerSalleEquipee(SalleEquipeeRequestDto dto) throws ServiceException {
         Salle salle = new Salle();
         salle.setNumSalle(dto.getNumSalle());
         salle.setEtage(dto.getEtage());
@@ -212,7 +212,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public SalleEquipeeResponseDto modifierComposition(Long idSalle, SalleModificationRequestDto dto) {
+    public SalleEquipeeResponseDto modifierComposition(Long idSalle, SalleModificationRequestDto dto) throws ServiceException {
         Salle salle = trouver(idSalle);
         if (salle.getType() != TypeSalle.SalleDeCours)
             throw new ServiceException("Seule une salle de cours se modifie");
@@ -275,7 +275,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public Salle geler(Long idSalle, MotifGel motif, String note, LocalDate jusqu) {
+    public Salle geler(Long idSalle, MotifGel motif, String note, LocalDate jusqu) throws ServiceException {
         Salle salle = trouver(idSalle);
         if (salle.getType() != TypeSalle.SalleDeCours)
             throw new ServiceException("Seule une salle de cours se gèle");
@@ -297,7 +297,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public Salle degeler(Long idSalle) {
+    public Salle degeler(Long idSalle) throws ServiceException {
         Salle salle = trouver(idSalle);
         if (!salle.isSuspendu())
             throw new ServiceException("La salle " + salle.getNumSalle() + " n'est pas gelée");
@@ -312,7 +312,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public Salle deplacer(Long idSalle, Long idSalleCible) {
+    public Salle deplacer(Long idSalle, Long idSalleCible) throws ServiceException {
         if (idSalle.equals(idSalleCible))
             throw new ServiceException("Choisissez une autre salle que celle à déplacer");
         Salle source = trouver(idSalle);
@@ -390,7 +390,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         return cible;
     }
 
-    private static void verifierPlace(Salle cible, String quoi, long besoin, long place) {
+    private static void verifierPlace(Salle cible, String quoi, long besoin, long place) throws ServiceException {
         if (besoin > place)
             throw new ServiceException("La salle " + cible.getNumSalle() + " n'a que " + place + " " + quoi
                     + ", il en faut " + besoin);
@@ -406,16 +406,16 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public List<Salle> sallesDuMaster(Long idMaster) {
+    public List<Salle> sallesDuMaster(Long idMaster) throws ServiceException {
         return repository.findByMaster_Id(idMaster);
     }
 
-    private Salle trouver(Long idSalle) {
+    private Salle trouver(Long idSalle) throws ServiceException {
         return repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
     }
 
     /** Pour le journal : "105 du bâtiment 2" (le numéro de salle n'est unique que dans son bâtiment). */
-    private String libelle(Salle salle) {
+    private String libelle(Salle salle) throws ServiceException {
         return salle.getNumSalle() + batimentRepository.findBySalles_Id(salle.getId())
                 .map(b -> " du bâtiment " + b.getNumBatiment()).orElse("");
     }
@@ -426,7 +426,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
     }
 
     /** Stock du bâtiment, rangé par type (matériel archivé exclu). */
-    private Map<String, Deque<EnStock>> stockDu(Batiment batiment) {
+    private Map<String, Deque<EnStock>> stockDu(Batiment batiment) throws ServiceException {
         Map<String, Deque<EnStock>> stock = new HashMap<>();
         for (Salle reserve : batiment.getSalles()) {
             if (reserve.getType() != TypeSalle.SalleStockage) continue;
@@ -473,14 +473,14 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public Poste creerPoste(Long idSalle, Poste poste) {
+    public Poste creerPoste(Long idSalle, Poste poste) throws ServiceException {
         Poste cree = ajouterPoste(idSalle, poste);
         journalisationService.journaliser(TypeAction.CREATION, "Poste " + poste.getNumPoste() + " créé");
         return cree;
     }
 
     /** Crée le poste dans la salle (sans journaliser : sert aussi à la création et à la modification de salle). */
-    private Poste ajouterPoste(Long idSalle, Poste poste) {
+    private Poste ajouterPoste(Long idSalle, Poste poste) throws ServiceException {
         Salle salle = repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("On ne crée pas de poste dans une salle de stockage");
@@ -491,14 +491,14 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public void supprimerPoste(Long idPoste) {
+    public void supprimerPoste(Long idPoste) throws ServiceException {
         Poste poste = retirerPoste(idPoste);
         journalisationService.journaliser(TypeAction.SUPPRESSION,
                 "Poste " + poste.getNumPoste() + " supprimé (matériel remis en stock)");
     }
 
     /** Supprime le poste et remet son matériel en stock (sans journaliser : sert aussi à la modification de salle). */
-    private Poste retirerPoste(Long idPoste) {
+    private Poste retirerPoste(Long idPoste) throws ServiceException {
         Poste poste = posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
         List<Materiel> aRanger = List.copyOf(poste.getMateriels());
         if (!aRanger.isEmpty()) {
@@ -516,35 +516,35 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public boolean estEnStock(Long idMateriel) {
+    public boolean estEnStock(Long idMateriel) throws ServiceException {
         return repository.existsByTypeAndMateriels_Id(TypeSalle.SalleStockage, idMateriel);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Salle> salleDuMateriel(Long idMateriel) {
+    public Optional<Salle> salleDuMateriel(Long idMateriel) throws ServiceException {
         return repository.findByMateriels_Id(idMateriel);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Salle> salleDuPoste(Long idPoste) {
+    public Optional<Salle> salleDuPoste(Long idPoste) throws ServiceException {
         return repository.findByPostes_Id(idPoste);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Salle trouverStockage(Long idSalle) {
+    public Salle trouverStockage(Long idSalle) throws ServiceException {
         return premiereReserve(repository.findSallesDuBatiment(idSalle, TypeSalle.SalleStockage));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Salle trouverStockageDuPoste(Long idPoste) {
+    public Salle trouverStockageDuPoste(Long idPoste) throws ServiceException {
         return premiereReserve(repository.findSallesDuBatimentDuPoste(idPoste, TypeSalle.SalleStockage));
     }
 
-    private Salle premiereReserve(List<Salle> reservesDuBatiment) {
+    private Salle premiereReserve(List<Salle> reservesDuBatiment) throws ServiceException {
         if (reservesDuBatiment.isEmpty())
             throw new ServiceException("Aucune salle de stockage dans le bâtiment");
         return reservesDuBatiment.get(0);
@@ -552,7 +552,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Salle> localiser(Long idMateriel) {
+    public Optional<Salle> localiser(Long idMateriel)  throws ServiceException{
         return repository.findByMateriels_Id(idMateriel)
                 .or(() -> posteService.posteDuMateriel(idMateriel)
                         .flatMap(poste -> repository.findByPostes_Id(poste.getId())));
@@ -560,13 +560,13 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public List<SalleCarteDto> findCartesDuBatiment(Long idBatiment) {
+    public List<SalleCarteDto> findCartesDuBatiment(Long idBatiment) throws ServiceException {
         return cartes(repository.findByBatiment(idBatiment));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<SalleCarteDto> findCartesDuFormateur(Long idFormateur) {
+    public List<SalleCarteDto> findCartesDuFormateur(Long idFormateur) throws ServiceException {
         List<Salle> salles = repository.findByPersonnels_Id(idFormateur);
         List<SalleCarteDto> cartes = cartes(salles);
         if (cartes.isEmpty()) return cartes;
@@ -578,13 +578,13 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public void verifierAcces(Long idSalle, Personnel utilisateur) {
+    public void verifierAcces(Long idSalle, Personnel utilisateur) throws ServiceException {
         if (utilisateur.getRole() == Role.FORMATEUR && !repository.existsByIdAndPersonnels_Id(idSalle, utilisateur.getId()))
             throw new AccessDeniedException("Salle " + idSalle + " non affectée à ce formateur");
     }
 
     /** Cartes de ces salles : tout est compté en base, nombre de requêtes fixe. */
-    private List<SalleCarteDto> cartes(List<Salle> salles) {
+    private List<SalleCarteDto> cartes(List<Salle> salles) throws ServiceException {
         if (salles.isEmpty()) return List.of();
         List<Long> ids = salles.stream().map(Salle::getId).toList();
 
@@ -618,7 +618,7 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional(readOnly = true)
-    public Map<Long, AnneauDto> anneaux(List<Long> idsSalles) {
+    public Map<Long, AnneauDto> anneaux(List<Long> idsSalles) throws ServiceException {
         if (idsSalles.isEmpty()) return Map.of();
         List<Salle> salles = repository.chargerPostes(idsSalles);
         Map<Long, EtatPoste> etats = posteService.etats(salles.stream().flatMap(s -> s.getPostes().stream()).toList());

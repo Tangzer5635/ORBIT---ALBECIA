@@ -18,7 +18,6 @@ import java.util.Set;
 @Table(name = "poste",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_poste_num_poste", columnNames = {"num_poste"}),
-                // un stagiaire n'occupe qu'un poste à la fois (occupant_id vide = poste libre)
                 @UniqueConstraint(name = "uk_poste_occupant", columnNames = {"occupant_id"})
         })
 @EqualsAndHashCode(callSuper = false, of = {"numPoste"})

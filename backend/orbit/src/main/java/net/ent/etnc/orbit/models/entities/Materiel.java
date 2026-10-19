@@ -19,7 +19,7 @@ import java.time.LocalDate;
 @Table(name = "materiel",
         uniqueConstraints = @UniqueConstraint(name = "uk_materiel_num_serie", columnNames = {"num_serie"}))
 @EqualsAndHashCode(callSuper = false, of = {"numSerie"})
-@ToString(callSuper = true, of = {"numSerie", "modele", "dateFinGarantie", "dateAcquisition", "archive"})
+@ToString(callSuper = true, of = {"numSerie", "modele", "dateFinGarantie", "dateAcquisition", "archive", "dateArchivage"})
 public abstract class Materiel extends AbstractPersistableWithIdSetter<Long> {
 
     //TODO voir la gestion des numSerie avec le jeu de donnée

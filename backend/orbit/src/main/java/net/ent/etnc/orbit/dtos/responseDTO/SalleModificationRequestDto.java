@@ -1,4 +1,4 @@
-package net.ent.etnc.orbit.dtos.requestDTO;
+package net.ent.etnc.orbit.dtos.responseDTO;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

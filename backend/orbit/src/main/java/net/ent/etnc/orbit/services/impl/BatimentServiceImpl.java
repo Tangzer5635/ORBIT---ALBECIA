@@ -54,7 +54,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
      */
     @Override
     @Transactional
-    public Batiment create(Batiment batiment) {
+    public Batiment create(Batiment batiment) throws ServiceException {
         Batiment cree = super.create(batiment);
         Salle stockage = new Salle();
         stockage.setNumSalle(NUM_SALLE_STOCKAGE);
@@ -68,7 +68,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
     @Override
     @Transactional
-    public void supprimer(Long idBatiment, Long idStockageCible) {
+    public void supprimer(Long idBatiment, Long idStockageCible) throws ServiceException {
         Batiment batiment = repository.findById(idBatiment)
                 .orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
         List<Salle> salles = List.copyOf(batiment.getSalles());
@@ -87,7 +87,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
             materiels.addAll(enSalle);
         }
 
-        if (!materiels.isEmpty()) {
+        if (!materiels.isEmpty())  {
             if (idStockageCible == null)
                 throw new ServiceException("Choisissez une salle de stockage pour le matériel");
             Salle cible = salleService.findById(idStockageCible)
@@ -114,7 +114,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
     @Override
     @Transactional
-    public Batiment affecterSalle(Long idBatiment, Long idSalle) {
+    public Batiment affecterSalle(Long idBatiment, Long idSalle) throws ServiceException {
         Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
         Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         if (repository.existsBySalles_Id(idSalle))
@@ -129,7 +129,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
     @Override
     @Transactional
-    public void retirerSalle(Long idBatiment, Long idSalle) {
+    public void retirerSalle(Long idBatiment, Long idSalle) throws ServiceException {
         Batiment batiment = repository.findById(idBatiment).orElseThrow(() -> new ServiceException("Bâtiment " + idBatiment + " introuvable"));
         Salle salle = batiment.getSalles().stream()
                 .filter(s -> s.getId().equals(idSalle))
@@ -144,7 +144,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BatimentCarteDto> findCartes(Pageable pageable) {
+    public Page<BatimentCarteDto> findCartes(Pageable pageable) throws ServiceException {
         Page<Batiment> page = repository.findAll(pageable);
         List<Long> ids = page.map(Batiment::getId).getContent();
         if (ids.isEmpty()) return Page.empty(pageable);
@@ -175,7 +175,7 @@ public class BatimentServiceImpl extends AbstractService<Batiment, BatimentRepos
 
     @Transactional
     @Override
-    public Optional<Batiment> batimentDeLaSalle(Long idSalle) {
+    public Optional<Batiment> batimentDeLaSalle(Long idSalle) throws ServiceException {
         return repository.findBySalles_Id(idSalle);
     }
 }

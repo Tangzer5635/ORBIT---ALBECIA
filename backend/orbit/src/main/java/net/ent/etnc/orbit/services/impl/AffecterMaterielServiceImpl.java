@@ -39,7 +39,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     @Override
     @Transactional
-    public Materiel affecterASalle(Long idSalle, Long idMateriel) {
+    public Materiel affecterASalle(Long idSalle, Long idMateriel) throws ServiceException {
         Salle salle = salleDeCours(idSalle);
         Materiel materiel = trouverMateriel(idMateriel);
         sortirDuStock(materiel);
@@ -51,7 +51,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     @Override
     @Transactional
-    public Materiel affecterAPoste(Long idPoste, Long idMateriel) {
+    public Materiel affecterAPoste(Long idPoste, Long idMateriel) throws ServiceException {
         Poste poste = trouverPoste(idPoste);
         Materiel materiel = trouverMateriel(idMateriel);
         sortirDuStock(materiel);
@@ -63,7 +63,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     @Override
     @Transactional
-    public Materiel retirerDeSalle(Long idSalle, Long idMateriel) {
+    public Materiel retirerDeSalle(Long idSalle, Long idMateriel) throws ServiceException {
         Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         Materiel materiel = enleverDeSalle(salle, idMateriel);
         journalisationService.journaliser(TypeAction.RETRAIT,
@@ -73,7 +73,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     @Override
     @Transactional
-    public Materiel retirerDuPoste(Long idPoste, Long idMateriel) {
+    public Materiel retirerDuPoste(Long idPoste, Long idMateriel) throws ServiceException {
         Poste poste = trouverPoste(idPoste);
         Materiel materiel = enleverDuPoste(poste, idMateriel);
         journalisationService.journaliser(TypeAction.RETRAIT,
@@ -84,7 +84,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     /** Une seule transaction : si l'affectation échoue, le retrait est annulé (le matériel ne reste pas en stock). */
     @Override
     @Transactional
-    public Materiel deplacerVersSalle(Long idSalle, Long idMateriel) {
+    public Materiel deplacerVersSalle(Long idSalle, Long idMateriel) throws ServiceException {
         String origine = remettreEnStock(idMateriel);
         Salle salle = salleDeCours(idSalle);
         Materiel materiel = trouverMateriel(idMateriel);
@@ -97,7 +97,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     @Override
     @Transactional
-    public Materiel deplacerVersPoste(Long idPoste, Long idMateriel) {
+    public Materiel deplacerVersPoste(Long idPoste, Long idMateriel) throws ServiceException {
         String origine = remettreEnStock(idMateriel);
         Poste poste = trouverPoste(idPoste);
         Materiel materiel = trouverMateriel(idMateriel);
@@ -109,7 +109,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     }
 
     /** Salle qui peut recevoir du matériel : pas une salle de stockage. */
-    private Salle salleDeCours(Long idSalle) {
+    private Salle salleDeCours(Long idSalle) throws ServiceException {
         Salle salle = salleService.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("On n'affecte pas un matériel à une salle de stockage");
@@ -117,7 +117,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     }
 
     /** Remet en stock un matériel de la salle (sans journaliser). */
-    private Materiel enleverDeSalle(Salle salle, Long idMateriel) {
+    private Materiel enleverDeSalle(Salle salle, Long idMateriel) throws ServiceException {
         if (salle.getType() == TypeSalle.SalleStockage)
             throw new ServiceException("Ce matériel est déjà en stock");
         Materiel materiel = chercher(salle.getMateriels(), idMateriel);
@@ -130,7 +130,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     }
 
     /** Remet en stock un matériel du poste (sans journaliser). */
-    private Materiel enleverDuPoste(Poste poste, Long idMateriel) {
+    private Materiel enleverDuPoste(Poste poste, Long idMateriel) throws ServiceException {
         Materiel materiel = chercher(poste.getMateriels(), idMateriel);
         if (materiel == null)
             throw new ServiceException("Ce matériel n'est pas sur ce poste");
@@ -144,7 +144,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
      * Retire le matériel de son poste ou de sa salle de cours actuelle.
      * @return d'où il vient, pour le journal : "du poste B2-S105-P07" ou "de la salle 105"
      */
-    private String remettreEnStock(Long idMateriel) {
+    private String remettreEnStock(Long idMateriel) throws ServiceException {
         Poste poste = posteService.posteDuMateriel(idMateriel).orElse(null);
         if (poste != null) {
             enleverDuPoste(poste, idMateriel);
@@ -156,7 +156,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
         return "de la " + Libelles.salle(salle);
     }
 
-    private void sortirDuStock(Materiel materiel) {
+    private void sortirDuStock(Materiel materiel) throws ServiceException {
         if (materiel.isArchive())
             throw new ServiceException("Un matériel archivé ne peut pas être affecté");
         Salle salle = salleService.salleDuMateriel(materiel.getId()).orElse(null);
@@ -165,15 +165,15 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
         salle.removeMateriel(materiel);
     }
 
-    private Poste trouverPoste(Long idPoste) {
+    private Poste trouverPoste(Long idPoste) throws ServiceException {
         return posteService.findById(idPoste).orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
     }
 
-    private Materiel trouverMateriel(Long idMateriel) {
+    private Materiel trouverMateriel(Long idMateriel) throws ServiceException {
         return materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("Matériel " + idMateriel + " introuvable"));
     }
 
-    private Materiel chercher(List<Materiel> materiels, Long idMateriel) {
+    private Materiel chercher(List<Materiel> materiels, Long idMateriel) throws ServiceException {
         for (Materiel m : materiels) {
             if (m.getId().equals(idMateriel)) {
                 return m;

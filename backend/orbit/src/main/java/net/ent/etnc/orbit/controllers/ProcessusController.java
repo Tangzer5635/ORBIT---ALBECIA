@@ -42,7 +42,7 @@ public class ProcessusController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping("/")
     @PreAuthorize("hasAnyRole('FORMATEUR','ADMINISTRATEUR')")
     public ResponseEntity<ProcessusResponseDto> post(@Valid @RequestBody ProcessusRequestDto dto) {
         return ResponseEntity.ok(processusAssembler.toDto(processusService.create(processusAssembler.toEntity(dto))));

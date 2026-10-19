@@ -24,7 +24,7 @@ public class MasterController {
         this.masterAssembler = masterAssembler;
     }
 
-    @GetMapping
+    @GetMapping("/")
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<MasterDto>> getAll(
             @PageableDefault(size = 20) Pageable pageable
@@ -41,14 +41,14 @@ public class MasterController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MasterDto> post(@RequestBody MasterDto masterDto) {
         return ResponseEntity.ok(masterAssembler.toDto(
                 masterService.creer(masterAssembler.toEntity(masterDto), masterDto.getProcessusIds())));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<MasterDto> put(@PathVariable Long id, @RequestBody MasterDto masterDto) {
         if (!masterService.existsById(id)) return ResponseEntity.notFound().build();
@@ -56,7 +56,7 @@ public class MasterController {
                 masterService.modifier(id, masterAssembler.toEntity(masterDto), masterDto.getProcessusIds())));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (!masterService.existsById(id)) return ResponseEntity.notFound().build();

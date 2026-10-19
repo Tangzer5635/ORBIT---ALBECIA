@@ -145,7 +145,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Personnel> findByUsername(String username) {
+    public Optional<Personnel> findByUsername(String username) throws ServiceException {
         return repository.findByUsername(username);
     }
 
@@ -254,25 +254,25 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Personnel> findByRole(Role role, Pageable pageable) {
+    public Page<Personnel> findByRole(Role role, Pageable pageable) throws ServiceException {
         return repository.findByRole(role, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existeDansStage(Long idStage) {
+    public boolean existeDansStage(Long idStage) throws ServiceException {
         return repository.existsByStage_Id(idStage);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Personnel> findByNid(String nid) {
+    public Optional<Personnel> findByNid(String nid) throws ServiceException {
         return repository.findByNid(nid);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Personnel> stagiairesSansPoste(Long idStage) {
+    public List<Personnel> stagiairesSansPoste(Long idStage) throws ServiceException {
         return repository.stagiairesSansPoste(idStage);
     }
 
