@@ -262,11 +262,9 @@ export interface Materiel {
     type: TypeMateriel;
     etat: EtatMateriel;
     dateArchivage: string | null;
-    // UC uniquement
-    nomMachine?: string;
+    nomMachine?: string; // UC uniquement
     processus?: Processus[];
-    // Salle où se trouve le matériel (absents s'il est archivé)
-    numSalle?: string;
+    numSalle?: string; // Salle où se trouve le matériel (absents s'il est archivé)
     typeSalle?: TypeSalle;
 }
 
@@ -407,4 +405,16 @@ export interface Journalisation {
     auteurId?: number; // absent si l'auteur est inconnu (échec de connexion)
     action: TypeAction;
     detail: string;
+//===================================
+//      CALENDRIER
+//===================================
+export interface MoisGarantie {
+    mois: string;   // "2026-10"
+    nb: number;     // materiels dont la garantie se termine ce mois la
+}
+
+export interface CalendrierGaranties {
+    annee: number;
+    expirees: number;        // hors garantie à ce jour
+    mois: MoisGarantie[];    // janvier à décembre de l'année affichée
 }

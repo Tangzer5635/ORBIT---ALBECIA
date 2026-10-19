@@ -14,6 +14,8 @@ export class ProcessusError extends Error {
     }
 }
 
+// liste des processus
+export async function getProcessus(): Promise<Processus[]> {
 // Requête avec le message du back en cas d'erreur (pas de corps pour un 204)
 async function requete<T>(url: string, init: RequestInit = {}): Promise<T> {
     let response: Response;
@@ -27,6 +29,18 @@ async function requete<T>(url: string, init: RequestInit = {}): Promise<T> {
     return response.status === 204 ? (undefined as T) : await response.json();
 }
 
+
+export async function ajouterProcessus(processus: ProcessusRequest): Promise<Processus> {
+    let response: Response;
+    try {
+        response = await apiFetch(URL, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(processus),
+        });
+    } catch {
+        throw new ProcessusError(0);
+    }
 // Tout le référentiel des processus
 export async function getProcessus(): Promise<Processus[]> {
     const page = await requete<Page<Processus>>(`${URL}/?size=500&sort=nom`);
