@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,11 +55,32 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         if (entity.getPassword() == null || entity.getPassword().isBlank()) {
             throw new ServiceException("RG-U03", "Le mot de passe est obligatoire");
         }
+        //TODO mdp initale ?
         entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
+        String login = nettoyer(entity.getPrenom())+"."+nettoyer(entity.getNom());
+
+        //incrémente s'il y a un doublon
+        int i=0;
+        while (repository.existsByLogin(login)){
+            i++;
+            login +=i;
+        }
+
+        entity.setLogin(login);
         Personnel cree = super.create(entity);
         journalisationService.journaliser(TypeAction.CREATION,
                 "Utilisateur " + Libelles.personne(entity) + " créé (" + entity.getRole().getLibelle() + ")");
         return cree;
+    }
+
+    private String nettoyer(String s){
+        if (s==null) return"";
+
+        return Normalizer.normalize(s.strip(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}","")
+                .replaceAll("['’-]", "")
+                .replace(" ","")
+                .toLowerCase();
     }
 
     /**
