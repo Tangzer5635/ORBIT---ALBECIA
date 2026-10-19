@@ -408,7 +408,6 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
 
     @Override
     @Transactional
-    public Salle deplacer(Long idSalle, Long idSalleCible) {
     public Salle deplacer(Long idSalle, Long idSalleCible) throws ServiceException {
         if (idSalle.equals(idSalleCible))
             throw new ServiceException("Choisissez une autre salle que celle à déplacer");

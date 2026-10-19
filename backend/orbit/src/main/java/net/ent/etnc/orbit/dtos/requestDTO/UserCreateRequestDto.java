@@ -24,9 +24,6 @@ public class UserCreateRequestDto {
     @NotBlank(message = "prenom doit contenir des caractères lisibles")
     @Size(max = 30, message = "prenom de max 30 caractères")
     private String prenom;
-    @NotBlank(message = "login doit contenir des caractères lisibles")
-    @Size(min = 3, max = 50, message = "login doit avoir entre 3 et 50 caractères")
-    private String login;
     @NotBlank(message = "motDePasse doit contenir des caractères lisibles")
     @Size(max = 72, message = "motDePasse de max 72 caractères")
     private String motDePasse;

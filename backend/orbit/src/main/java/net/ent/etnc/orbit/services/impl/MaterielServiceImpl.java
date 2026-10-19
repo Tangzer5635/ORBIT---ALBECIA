@@ -128,7 +128,6 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     @Transactional
     public int installerImage(Long idSalle, List<Processus> processus) throws ServiceException {
         List<UC> ucs = repository.findUcDeLaSalle(idSalle);
-    public int installerImage(Long idSalle, List<Processus> processus) {
         return installer(repository.findUcDeLaSalle(idSalle), processus);
     }
 

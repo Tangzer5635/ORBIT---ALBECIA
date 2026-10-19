@@ -43,7 +43,6 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
     private String prenom;
 
     @Getter
-    @NotBlank
     @Size(min = 3, max = 50, message = "login doit avoir entre 3 et 50 caractères")
     @Column(name = "login", length = 50, nullable = false)
     private String login;
