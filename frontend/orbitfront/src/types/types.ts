@@ -405,6 +405,7 @@ export interface Journalisation {
     auteurId?: number; // absent si l'auteur est inconnu (échec de connexion)
     action: TypeAction;
     detail: string;
+}
 //===================================
 //      CALENDRIER
 //===================================
