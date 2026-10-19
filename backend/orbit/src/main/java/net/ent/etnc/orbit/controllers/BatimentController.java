@@ -30,7 +30,7 @@ public class BatimentController {
     @GetMapping("/")
     @PreAuthorize("hasRole('TECHNIQUE')")
     public ResponseEntity<Page<BatimentCarteDto>> getAll(
-            @PageableDefault(size = 15, sort = "numBatiment") Pageable pageable
+            @PageableDefault(size = 50, sort = "numBatiment") Pageable pageable
     ) {
         return ResponseEntity.ok(batimentService.findCartes(pageable));
     }

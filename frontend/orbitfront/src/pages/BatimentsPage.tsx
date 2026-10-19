@@ -9,7 +9,6 @@ import type {Batiment} from "../types/types.ts";
 
 type PopupState = { type: "creer" } | { type: "supprimer"; batiment: Batiment } | null;
 
-// Le matériel est dans les salles ou les stockages : sans salle et stockages vides, il n'y en a pas
 const aDuMateriel = (b: Batiment) => b.nbSalles > 0 || b.stockages.some((s) => s.nbMateriels > 0);
 
 export function BatimentsPage() {

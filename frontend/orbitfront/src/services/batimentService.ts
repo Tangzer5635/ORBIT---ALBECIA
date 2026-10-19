@@ -30,7 +30,7 @@ export async function getBatiments(): Promise<Batiment[]> {
 export async function ajouterBatiment(batiment: BatimentRequest): Promise<Batiment> {
     let response: Response;
     try {
-        response = await apiFetch(URL, {
+        response = await apiFetch(`${URL}/`, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(batiment),
