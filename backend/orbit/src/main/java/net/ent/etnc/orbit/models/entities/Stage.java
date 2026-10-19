@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @Table(name = "stage",
         uniqueConstraints = @UniqueConstraint(name = "uk_stage_nom", columnNames = {"nom"}))
 @EqualsAndHashCode(callSuper = false, of = {"nom"})
-@ToString(callSuper = true, of = {"nom", "type"})
+@ToString(callSuper = true, of = {"nom", "type", "dateDebut", "dateFin"})
 public class Stage extends AbstractPersistableWithIdSetter<Long> {
 
     /** Ex. WB47 : 2 lettres majuscules puis 2 chiffres. */

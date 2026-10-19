@@ -28,12 +28,14 @@ public class SalleResponseDto {
     private Long masterId;    // master plaqué sur la salle, absent s'il n'y en a pas
     private String masterNom; // "Dev (1.2)"
     private String creePar;   // "Prénom Nom" du gestionnaire qui a créé la salle, absent si inconnu
-    // détail du stage, seulement sur GET /salles/{id}/ (panneau « Vue de la salle »)
+
+    // détail du stage, seulement sur GET /salles/{id}/
     private TypeFormation stageType;
     private LocalDate stageDateDebut;
     private LocalDate stageDateFin;
     private String stageFormateur; // "Prénom Nom" du formateur qui gère le stage
     private List<FormateurDto> formateurs; // formateurs attribués, seulement sur GET /salles/{id}/
+
     // gel de la salle (gelMotif, gelNote, gelDepuis et gelJusqu absents si elle n'est pas gelée)
     private boolean suspendu;
     private MotifGel gelMotif;

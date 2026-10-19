@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,11 +55,37 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         if (entity.getPassword() == null || entity.getPassword().isBlank()) {
             throw new ServiceException("RG-U03", "Le mot de passe est obligatoire");
         }
+        //TODO mdp initale ?
         entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
+
+        String prenom = nettoyer(entity.getPrenom());
+        String nom = nettoyer(entity.getNom());
+        if (prenom.isEmpty() || nom.isEmpty()) throw new ServiceException("Impossible de générer un login à partir du nom et du prénom");
+
+        String base = prenom + "." + nom;
+        // incrémente s'il y a un doublon : jean.dupont, jean.dupont2, jean.dupont3
+        String login = base;
+        int i = 1;
+        while (repository.existsByLogin(login)) {
+            i++;
+            login = base + i;
+        }
+
+        entity.setLogin(login);
         Personnel cree = super.create(entity);
         journalisationService.journaliser(TypeAction.CREATION,
                 "Utilisateur " + Libelles.personne(entity) + " créé (" + entity.getRole().getLibelle() + ")");
         return cree;
+    }
+
+    private String nettoyer(String s){
+        if (s==null) return"";
+
+        return Normalizer.normalize(s.strip(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}","")
+                .replaceAll("['’-]", "")
+                .replace(" ","")
+                .toLowerCase();
     }
 
     /**
@@ -145,7 +172,7 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Personnel> findByUsername(String username) {
+    public Optional<Personnel> findByUsername(String username) throws ServiceException {
         return repository.findByUsername(username);
     }
 
@@ -254,25 +281,25 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Personnel> findByRole(Role role, Pageable pageable) {
+    public Page<Personnel> findByRole(Role role, Pageable pageable) throws ServiceException {
         return repository.findByRole(role, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existeDansStage(Long idStage) {
+    public boolean existeDansStage(Long idStage) throws ServiceException {
         return repository.existsByStage_Id(idStage);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Personnel> findByNid(String nid) {
+    public Optional<Personnel> findByNid(String nid) throws ServiceException {
         return repository.findByNid(nid);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Personnel> stagiairesSansPoste(Long idStage) {
+    public List<Personnel> stagiairesSansPoste(Long idStage) throws ServiceException {
         return repository.stagiairesSansPoste(idStage);
     }
 

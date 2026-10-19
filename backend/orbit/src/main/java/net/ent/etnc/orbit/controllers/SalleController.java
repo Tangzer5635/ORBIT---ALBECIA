@@ -75,7 +75,7 @@ public class SalleController {
         return ResponseEntity.ok(salleService.findCartesDuBatiment(idBatiment));
     }
 
-    @PostMapping
+    @PostMapping("/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
     public ResponseEntity<SalleResponseDto> post(@Valid @RequestBody SalleRequestDto salleDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(salleAssembler.toDto(

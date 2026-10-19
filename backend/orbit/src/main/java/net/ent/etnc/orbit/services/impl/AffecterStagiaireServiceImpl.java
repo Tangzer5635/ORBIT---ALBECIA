@@ -35,7 +35,7 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
     /** Un poste stagiaire libre reçoit un stagiaire du stage de la salle, qui n'a pas encore de poste. */
     @Override
     @Transactional
-    public Poste affecterAPoste(Long idPoste, Long idStagiaire) {
+    public Poste affecterAPoste(Long idPoste, Long idStagiaire) throws ServiceException {
         Poste poste = poste(idPoste);
         Personnel stagiaire = personnelService.findById(idStagiaire)
                 .orElseThrow(() -> new ServiceException("Stagiaire " + idStagiaire + " introuvable"));
@@ -69,7 +69,7 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
 
     @Override
     @Transactional
-    public Poste retirerDePoste(Long idPoste, Long idStagiaire) {
+    public Poste retirerDePoste(Long idPoste, Long idStagiaire) throws ServiceException {
         Poste poste = poste(idPoste);
         if (poste.getOccupant() == null || !poste.getOccupant().getId().equals(idStagiaire))
             throw new ServiceException("Ce stagiaire n'est pas sur le poste " + poste.getNumPoste());
@@ -80,7 +80,7 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
         return poste;
     }
 
-    private Poste poste(Long idPoste) {
+    private Poste poste(Long idPoste) throws ServiceException {
         return posteService.findById(idPoste)
                 .orElseThrow(() -> new ServiceException("Poste " + idPoste + " introuvable"));
     }

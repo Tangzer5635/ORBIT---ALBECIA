@@ -33,7 +33,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
     /** Un stagiaire n'est que dans un stage, et on ne le change pas de stage. */
     @Override
     @Transactional
-    public Personnel ajouterAStage(Long idStage, Long idStagiaire) {
+    public Personnel ajouterAStage(Long idStage, Long idStagiaire) throws ServiceException {
         Stage stage = stageService.findById(idStage)
                 .orElseThrow(() -> new ServiceException("Stage " + idStage + " introuvable"));
         Personnel stagiaire = stagiaire(idStagiaire);
@@ -53,7 +53,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
     /** Sorti du stage, le stagiaire n'a plus sa place dans la salle du stage : son poste est libéré. */
     @Override
     @Transactional
-    public Personnel supprimerAStage(Long idStage, Long idStagiaire) {
+    public Personnel supprimerAStage(Long idStage, Long idStagiaire) throws ServiceException {
         Personnel stagiaire = stagiaire(idStagiaire);
         if (stagiaire.getStage() == null || !stagiaire.getStage().getId().equals(idStage))
             throw new ServiceException(nom(stagiaire) + " n'est pas dans ce stage");
@@ -66,7 +66,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
     }
 
     /** Rôle exact : un formateur hérite des droits stagiaire mais n'entre pas dans un stage. */
-    private Personnel stagiaire(Long idStagiaire) {
+    private Personnel stagiaire(Long idStagiaire) throws ServiceException {
         Personnel p = personnelService.findById(idStagiaire)
                 .orElseThrow(() -> new ServiceException("Stagiaire " + idStagiaire + " introuvable"));
         if (p.getRole() != Role.STAGIAIRE)

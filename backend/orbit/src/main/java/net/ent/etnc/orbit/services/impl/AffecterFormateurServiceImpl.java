@@ -38,6 +38,7 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
     @Transactional
     public Salle affecter(Long idSalle, Long idFormateur, LocalDate jusqu) {
         verifierDate(jusqu);
+    public Salle affecter(Long idSalle, Long idFormateur) throws ServiceException {
         Salle salle = trouverSalle(idSalle);
         Personnel formateur = personnelService.findById(idFormateur)
                 .orElseThrow(() -> new ServiceException("Personnel " + idFormateur + " introuvable"));
@@ -72,7 +73,7 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
 
     @Override
     @Transactional
-    public Salle retirer(Long idSalle, Long idFormateur) {
+    public Salle retirer(Long idSalle, Long idFormateur) throws ServiceException {
         Salle salle = trouverSalle(idSalle);
         Personnel formateur = salle.personnel(idFormateur)
                 .orElseThrow(() -> new ServiceException("Ce formateur n'est pas affecté à la salle " + salle.getNumSalle()));
@@ -94,5 +95,13 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
     private Salle trouverSalle(Long idSalle) {
         return salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+    }
+    private Salle trouverSalle(Long idSalle) throws ServiceException {
+        return salleService.findById(idSalle)
+                .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
+    }
+
+    private static Optional<Personnel> affecte(Salle salle, Long idFormateur) throws ServiceException {
+        return salle.getPersonnels().stream().filter(p -> Objects.equals(p.getId(), idFormateur)).findFirst();
     }
 }
