@@ -6,6 +6,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Processus;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
+import net.ent.etnc.orbit.repositories.projections.MaterielStock;
 import net.ent.etnc.orbit.services.commons.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,9 @@ public interface MaterielService extends Service<Materiel, Long> {
     EtatMateriel etatDe(Materiel materiel);
     /** Salle où se trouve le matériel (vide s'il est archivé). */
     Optional<Salle> salleDe(Materiel materiel);
+
+    /** Tout le stock, avec sa réserve et son bâtiment, en une seule requête (« Affecter un matériel »). */
+    List<MaterielStock> findStock();
 
     /** Fiche d'un matériel : le formateur ne lit que le matériel de ses salles (sur un poste ou posé dans la salle). */
     Optional<Materiel> findPourUtilisateur(Long id, Personnel utilisateur);

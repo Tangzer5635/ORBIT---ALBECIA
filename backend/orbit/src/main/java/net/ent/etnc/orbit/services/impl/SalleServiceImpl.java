@@ -463,13 +463,11 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
             cible.addMateriel(m);
         }
 
-        // 4. formateurs attribués (avec leur date limite) et master
-        new HashMap<>(source.getAcces()).forEach((formateur, jusqu) -> {
+        // 4. formateurs attribués et master
+        for (Personnel formateur : source.getPersonnels()) {
             source.removePersonnel(formateur);
-            if (cible.personnel(formateur.getId()).isEmpty()) cible.addPersonnel(formateur, jusqu);
-        });
-        cible.setMaster(source.getMaster());
-        source.setMaster(null);
+            if (cible.personnel(formateur.getId()).isEmpty()) cible.addPersonnel(formateur);
+        }
 
         // 5. stage (un stage n'est que dans une salle : on le libère en base avant de le poser sur la cible)
         Stage stage = source.getStage();

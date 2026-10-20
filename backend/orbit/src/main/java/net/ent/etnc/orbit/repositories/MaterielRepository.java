@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.repositories;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.repositories.commons.BaseRepository;
+import net.ent.etnc.orbit.repositories.projections.MaterielStock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -41,4 +42,11 @@ public interface MaterielRepository extends BaseRepository<Materiel> {
 
     /** Matériel en service dont la garantie est déjà terminée avant cette date. */
     long countByArchiveFalseAndDateFinGarantieBefore(LocalDate date);
+
+    /** Tout le stock (rangé dans une salle de stockage) avec sa réserve et son bâtiment : une seule requête. */
+    @Query("select " + MaterielStock.NEW + "(m, s.numSalle, b.numBatiment)"
+            + " from Batiment b join b.salles s join s.materiels m"
+            + " where s.type = net.ent.etnc.orbit.models.enums.TypeSalle.SalleStockage and m.archive = false"
+            + " order by b.numBatiment, m.id")
+    List<MaterielStock> findStock();
 }

@@ -4,6 +4,7 @@ import Popup from "../components/Popup/Popup.tsx";
 import {getDefaillance, getDefaillances, getDefaillancesDuMateriel, resoudreDefaillance} from "../services/defaillanceService.ts";
 import type {Defaillance, Page, StatutDefaillance} from "../types/types.ts";
 import {LIBELLE_STATUT_DEFAILLANCE, LIBELLE_TYPE_MATERIEL} from "../types/types.ts";
+import Pagination from "../components/Utils/Pagination.tsx";
 
 const TAILLE_PAGE = 20;
 const dateFr = (date?: string | null) => date
@@ -239,12 +240,8 @@ export default function DefaillancePage() {
                 </div>
             )}
 
-            {!recherche.trim() && !typeFiltre && !dateDebut && !dateFin && resultat && resultat.totalPages > 1 && (
-                <div className="pagination" style={{display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 18}}>
-                    <button className="btn" type="button" disabled={page === 0 || chargement} onClick={() => setPage(p => p - 1)}>Précédent</button>
-                    <span className="muted small">Page {page + 1} sur {resultat.totalPages}</span>
-                    <button className="btn" type="button" disabled={page + 1 >= resultat.totalPages || chargement} onClick={() => setPage(p => p + 1)}>Suivant</button>
-                </div>
+            {!recherche.trim() && !typeFiltre && !dateDebut && !dateFin && resultat && (
+                <Pagination page={page} totalPages={resultat.totalPages} onChange={setPage} disabled={chargement}/>
             )}
 
             {/* titre vide : le titre est affiché dans l'en-tête coloré de la fiche */}

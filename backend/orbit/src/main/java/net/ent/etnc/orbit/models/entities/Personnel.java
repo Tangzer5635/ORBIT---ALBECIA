@@ -113,9 +113,13 @@ public class Personnel extends AbstractPersistableWithIdSetter<Long> implements 
         return active;
     }
 
+    /**
+     * Un compte verrouillé ne peut plus se connecter, sauf le stagiaire : il garde l'accès à l'appli
+     * mais ne peut plus remonter de défaillance (contrôlé dans DefaillanceService).
+     */
     @Override
     public boolean isAccountNonLocked() {
-        return !verrouille;
+        return !verrouille || role == Role.STAGIAIRE;
     }
 
 }

@@ -12,6 +12,7 @@ import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.repositories.MaterielRepository;
+import net.ent.etnc.orbit.repositories.projections.MaterielStock;
 import net.ent.etnc.orbit.services.DefaillanceService;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
@@ -101,6 +102,12 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     public Optional<Salle> salleDe(Materiel materiel) throws ServiceException {
         if (materiel.isArchive()) return Optional.empty();
         return salleService.localiser(materiel.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MaterielStock> findStock() throws ServiceException {
+        return repository.findStock();
     }
 
     @Override

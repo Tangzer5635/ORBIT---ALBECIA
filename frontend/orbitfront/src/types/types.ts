@@ -92,7 +92,7 @@ export interface UtilisateurRequest {
     nid?: string; //Seulement a la création : en modif le back garde le NID existant
     nom: string;
     prenom: string;
-    login: string;
+    login?: string; // seulement en modification : en création le back génère le login
     motDePasse?: string;
     role: Role;
     active?: boolean;
@@ -138,6 +138,7 @@ export interface ComptesAnneau {
 export interface Salle {
     id: number;
     numSalle: string;
+    numBatiment?: string | null; // GET /salles/{id}/ seulement
     etage: string;
     type: TypeSalle;
     materielsId: number[];
@@ -182,8 +183,6 @@ export interface Formateur {
     id: number;
     prenom: string;
     nom: string;
-    jusqu?: string | null; // dernier jour d'accès à la salle (inclus), null = sans fin
-    expire?: boolean;      // date limite dépassée : le formateur n'a plus accès à la salle
 }
 
 // SalleCarteDto (GET /salles/?batiment=XX)
@@ -272,6 +271,17 @@ export interface Materiel {
     processus?: Processus[];
     numSalle?: string; // Salle où se trouve le matériel (absents s'il est archivé)
     typeSalle?: TypeSalle;
+}
+
+// MaterielStockDto (GET /materiels/stock/) : une ligne de la liste « Affecter un matériel »
+export interface MaterielStock {
+    id: number;
+    type: TypeMateriel;
+    modele: string;
+    numSerie: string;
+    nomMachine?: string | null; // UC uniquement
+    numSalle: string;           // réserve où il est rangé
+    numBatiment: string;
 }
 
 // AffectationMaterielDto (GET /materiels/{id}/affectation/) : tout est null pour un matériel archivé

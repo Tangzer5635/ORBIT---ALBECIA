@@ -3,8 +3,9 @@ import {LIBELLE_ACTION, type Journalisation, type Page, type TypeAction} from ".
 import {getJournal, getJournalPeriode, JournalError} from "../services/journalService.ts";
 import {auteurJournal, dateHeureJournal, journalVersCsv, rechercheJournalVersRsql} from "../utils/journal.ts";
 import ExporterJournalPopup from "../components/Popup/Journal/ExporterJournalPopup.tsx";
+import Pagination from "../components/Utils/Pagination.tsx";
 
-const TAILLE_PAGE = 50;
+const TAILLE_PAGE = 20;
 const ACTIONS = Object.keys(LIBELLE_ACTION) as TypeAction[];
 
 // Couleur du liseré : rouge = échec de connexion, orange = défaillance signalée, vert = résolue, gris = le reste
@@ -159,17 +160,8 @@ export default function JournalPage() {
             </div>
 
             {/* boutons de changement de page (même principe que UtilisateurPage) */}
-            {resultat && resultat.totalPages > 1 && (
-                <nav className="pagination" aria-label="Pagination">
-                    <button type="button" className="btn sm" disabled={resultat.first} onClick={() => setPage((p) => p - 1)}>
-                        ‹ Précédent
-                    </button>
-                    <span className="muted small">Page {resultat.page + 1} sur {resultat.totalPages}</span>
-                    <button type="button" className="btn sm" disabled={resultat.last} onClick={() => setPage((p) => p + 1)}>
-                        Suivant ›
-                    </button>
-                </nav>
-            )}
+            {resultat && <Pagination page={resultat.page} totalPages={resultat.totalPages} onChange={setPage}
+                                     info={`(${resultat.totalElements} matériels)`}/>}
 
             {exportPret && <ExporterJournalPopup {...exportPret} onClose={() => setExportPret(null)}/>}
         </>

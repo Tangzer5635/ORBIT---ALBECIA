@@ -92,10 +92,13 @@ export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRe
 
     let modifie = await envoyer(`${URL}/${id}/`, "PUT", identite);
     if (role !== ancien.role) modifie = await envoyer(`${URL}/${id}/role/`, "PATCH", {role});
-    if (active !== undefined && active !== ancien.active) {
-        modifie = await envoyer(`${URL}/${id}/${active ? "activer" : "desactiver"}/`, "PATCH");
-    }
+    if (active !== undefined && active !== ancien.active) modifie = await changerActif(id, active);
     return modifie;
+}
+
+// Méthode pour activer ou désactiver un compte (route sans accent : /desactiver/)
+export async function changerActif(id: number, actif: boolean): Promise<Utilisateur> {
+    return envoyer(`${URL}/${id}/${actif ? "activer" : "desactiver"}/`, "PATCH");
 }
 
 // Méthode pour verrouiller ou déverrouiller un compte

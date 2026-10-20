@@ -28,3 +28,6 @@ app:
     refresh-expiration-ms: 14400000
 server:
   port: 8080
+agent:
+  url: http://localhost:8777
+  token: lJ0HxavQo-1dlAToADYOyOIGpzo_gKQY

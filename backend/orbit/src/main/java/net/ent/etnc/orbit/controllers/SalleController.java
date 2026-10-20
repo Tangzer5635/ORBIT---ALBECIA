@@ -60,6 +60,7 @@ public class SalleController {
                 .map(salle -> {
                     SalleResponseDto dto = salleAssembler.toDto(salle);
                     dto.setAnneau(salleService.anneauDe(id));
+                    batimentService.batimentDeLaSalle(id).ifPresent(b -> dto.setNumBatiment(b.getNumBatiment()));
                     dto.setFormateurs(salleAssembler.formateurs(salle));
                     salleAssembler.completerStage(dto, salle);
                     return ResponseEntity.ok(dto);

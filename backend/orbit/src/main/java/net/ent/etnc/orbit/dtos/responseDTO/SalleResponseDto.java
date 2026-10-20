@@ -17,6 +17,7 @@ import java.util.Map;
 public class SalleResponseDto {
     private Long id;
     private String numSalle;
+    private String numBatiment; // seulement sur GET /salles/{id}/
     private String etage;
     private TypeSalle type;
     private List<Long> materielsId;

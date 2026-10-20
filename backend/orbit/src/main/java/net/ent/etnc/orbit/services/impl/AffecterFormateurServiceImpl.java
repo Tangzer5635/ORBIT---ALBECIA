@@ -14,15 +14,8 @@ import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Objects;
-import java.util.Optional;
-
 @Service
 public class AffecterFormateurServiceImpl implements AffecterFormateurService {
-
-    private static final DateTimeFormatter DATE_FR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final SalleService salleService;
     private final PersonnelService personnelService;
@@ -40,8 +33,7 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
      */
     @Override
     @Transactional
-    public Salle affecter(Long idSalle, Long idFormateur, LocalDate jusqu) throws ServiceException {
-        verifierDate(jusqu);
+    public Salle affecter(Long idSalle, Long idFormateur) throws ServiceException {
         Salle salle = trouverSalle(idSalle);
         Personnel formateur = personnelService.findById(idFormateur)
                 .orElseThrow(() -> new ServiceException("Personnel " + idFormateur + " introuvable"));
@@ -51,26 +43,11 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
         if (formateur.getRole() != Role.FORMATEUR)
             throw new ServiceException(formateur.getPrenom() + " " + formateur.getNom() + " n'est pas formateur");
         if (salle.personnel(idFormateur).isPresent())
-            throw new ServiceException("Ce formateur est déjà affecté à la salle " + salle.getNumSalle()
-                    + " : prolongez son accès");
+            throw new ServiceException("Ce formateur est déjà affecté à la salle " + salle.getNumSalle());
 
-        salle.addPersonnel(formateur, jusqu);
+        salle.addPersonnel(formateur);
         journalisationService.journaliser(TypeAction.AFFECTATION, "Formateur " + Libelles.personne(formateur)
-                + " attribué à la " + Libelles.salle(salle) + " jusqu'au " + jusqu.format(DATE_FR));
-        return salle;
-    }
-
-    @Override
-    @Transactional
-    public Salle prolonger(Long idSalle, Long idFormateur, LocalDate jusqu) {
-        verifierDate(jusqu);
-        Salle salle = trouverSalle(idSalle);
-        Personnel formateur = salle.personnel(idFormateur)
-                .orElseThrow(() -> new ServiceException("Ce formateur n'est pas affecté à la salle " + salle.getNumSalle()));
-
-        salle.addPersonnel(formateur, jusqu); // remplace l'ancienne date
-        journalisationService.journaliser(TypeAction.MODIFICATION, "Accès du formateur " + Libelles.personne(formateur)
-                + " à la " + Libelles.salle(salle) + " jusqu'au " + jusqu.format(DATE_FR));
+                + " attribué à la " + Libelles.salle(salle));
         return salle;
     }
 
@@ -87,22 +64,9 @@ public class AffecterFormateurServiceImpl implements AffecterFormateurService {
         return salle;
     }
 
-    /**
-     * Date limite obligatoire, aujourd'hui au plus tôt (l'accès dure jusqu'au soir de cette date).
-     */
-    private static void verifierDate(LocalDate jusqu) {
-        if (jusqu == null)
-            throw new ServiceException("La date limite d'accès est obligatoire");
-        if (jusqu.isBefore(LocalDate.now()))
-            throw new ServiceException("La date limite d'accès est déjà passée");
-    }
-
     private Salle trouverSalle(Long idSalle) throws ServiceException {
         return salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
     }
 
-    private static Optional<Personnel> affecte(Salle salle, Long idFormateur) throws ServiceException {
-        return salle.getPersonnels().stream().filter(p -> Objects.equals(p.getId(), idFormateur)).findFirst();
-    }
 }
