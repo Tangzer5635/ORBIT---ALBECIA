@@ -50,6 +50,9 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     @Override
     @Transactional
     public Defaillance signaler(Long idMateriel, String description, Personnel auteur) throws ServiceException {
+        if (auteur.isVerrouille()) {
+            throw new ServiceException("Votre compte a été verrouillé, vous ne pouvez plus remonter de défaillance.");
+        }
         Materiel materiel = materielService.findById(idMateriel).orElseThrow(() -> new ServiceException("RG-D01", "Matériel " + idMateriel + " introuvable"));
         if (!peutSignaler(auteur, idMateriel)) {
             throw new AccessDeniedException("Ce matériel n'est ni sur votre poste ni sur un poste de vos salles");

@@ -8,6 +8,7 @@ import net.ent.etnc.orbit.dtos.responseDTO.commons.PageResponse;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
+import net.ent.etnc.orbit.dtos.responseDTO.MaterielStockDto;
 import net.ent.etnc.orbit.dtos.assemblers.MaterielAssembler;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.LocalisationMateriel;
@@ -83,6 +84,13 @@ public class MaterielController {
         return materielService.findPourUtilisateur(id, user)
                 .map(m -> ResponseEntity.ok(dto(m)))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** « Affecter un matériel » : tout le stock en une requête (projection), sans état ni processus. */
+    @GetMapping("/stock/")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<List<MaterielStockDto>> getStock() {
+        return ResponseEntity.ok(materielService.findStock().stream().map(materielAssembler::toStockDto).toList());
     }
 
     @GetMapping("/garanties/")

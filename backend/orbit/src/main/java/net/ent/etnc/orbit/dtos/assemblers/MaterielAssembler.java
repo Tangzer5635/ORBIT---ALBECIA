@@ -2,8 +2,10 @@ package net.ent.etnc.orbit.dtos.assemblers;
 
 import net.ent.etnc.orbit.dtos.requestDTO.MaterielRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.MaterielResponseDto;
+import net.ent.etnc.orbit.dtos.responseDTO.MaterielStockDto;
 import net.ent.etnc.orbit.models.entities.*;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
+import net.ent.etnc.orbit.repositories.projections.MaterielStock;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,6 +47,20 @@ public class MaterielAssembler {
             dto.setTypeSalle(salle.getType());
         }
         return dto;
+    }
+
+    /** Ligne de la liste « Affecter un matériel » : tout vient de la projection, aucune requête en plus. */
+    public MaterielStockDto toStockDto(MaterielStock ligne) {
+        Materiel materiel = ligne.materiel();
+        return MaterielStockDto.builder()
+                .id(materiel.getId())
+                .type(materiel.getType())
+                .modele(materiel.getModele())
+                .numSerie(materiel.getNumSerie())
+                .nomMachine(Hibernate.unproxy(materiel) instanceof UC uc ? uc.getNomMachine() : null)
+                .numSalle(ligne.numSalle())
+                .numBatiment(ligne.numBatiment())
+                .build();
     }
 
     /** Le type est déjà validé par @Pattern sur le DTO. */

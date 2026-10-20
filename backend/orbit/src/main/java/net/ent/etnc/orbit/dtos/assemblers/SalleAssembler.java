@@ -10,10 +10,8 @@ import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -43,14 +41,12 @@ public class SalleAssembler {
                 .build();
     }
 
-    /** Formateurs attribués à la salle, accès expiré compris (charge les personnels : à n'appeler que pour une salle). */
+    /** Formateurs attribués à la salle (charge les personnels : à n'appeler que pour une salle). */
     public List<FormateurDto> formateurs(Salle salle) {
-        return salle.getAcces().entrySet().stream()
-                .filter(e -> e.getKey().getRole() == Role.FORMATEUR)
-                .sorted(Comparator.comparing((Map.Entry<Personnel, LocalDate> e) -> e.getKey().getNom())
-                        .thenComparing(e -> e.getKey().getPrenom()))
-                .map(e -> new FormateurDto(e.getKey().getId(), e.getKey().getPrenom(), e.getKey().getNom(),
-                        e.getValue(), !Salle.accesActif(e.getValue())))
+        return salle.getPersonnels().stream()
+                .filter(p -> p.getRole() == Role.FORMATEUR)
+                .sorted(Comparator.comparing(Personnel::getNom).thenComparing(Personnel::getPrenom))
+                .map(p -> new FormateurDto(p.getId(), p.getPrenom(), p.getNom()))
                 .toList();
     }
 

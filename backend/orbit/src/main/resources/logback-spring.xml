@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Logs techniques et copie de secours du journal d'ORBIT.
-  - console + logs/orbit.log : logs techniques (erreurs, démarrage...), rotation quotidienne et à 10 Mo, 30 jours gardés
-  - logs/audit.log            : copie des actions du journal (logger "AUDIT"), rotation quotidienne, 1 an gardé
-  Le dossier se change avec la variable d'environnement LOG_DIR (ex. /var/log/orbit sur la VM).
--->
 <configuration>
 
     <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>

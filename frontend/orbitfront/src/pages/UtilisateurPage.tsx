@@ -9,6 +9,7 @@ import {
 import {
     ajouterUtilisateur,
     changerVerrou,
+    changerActif,
     compterUtilisateurs,
     type FiltresUtilisateur,
     getUtilisateurs,
@@ -20,6 +21,7 @@ import {getUtilisateur} from "../services/authService.ts";
 import UtilisateurLigne from "../components/Utilisateur/UtilisateurLigne.tsx";
 import Popup from "../components/Popup/Popup.tsx";
 import {rechercheVersRsql} from "../utils/utilisateur.ts";
+import Pagination from "../components/Utils/Pagination.tsx";
 
 const ROLES = Object.keys(LIBELLE_ROLE) as Role[];
 // Boutons "état du compte" : chacun correspond à des filtres booléens envoyés au back
@@ -160,6 +162,7 @@ export default function UtilisateurPage() {
     function verifier(creation: boolean): string {
         if (prenom.trim() === "" || prenom.trim().length > 30) return "Le prénom est obligatoire (30 caractères maximum).";
         if (nom.trim() === "" || nom.trim().length > 50) return "Le nom est obligatoire (50 caractères maximum).";
+        if (!creation && (login.trim().length < 3 || login.trim().length > 50)) return "L’identifiant doit avoir entre 3 et 50 caractères.";
         if (creation && !/^[0-9]{10}$/.test(nid.trim())) return "Le NID doit contenir exactement 10 chiffres.";
         if (creation && motDePasse === "") return "Le mot de passe provisoire est obligatoire.";
         return "";
@@ -177,7 +180,7 @@ export default function UtilisateurPage() {
             ...(aModifier ? {} : { nid: nid.trim() }),
             nom: nom.trim(),
             prenom: prenom.trim(),
-            ...(aModifier ? { login: aModifier.login } : {}),
+            ...(aModifier ? { login: login.trim() } : {}), // en création, le back génère le login
             role,
             active: actif,
             ...(motDePasse ? { motDePasse } : {}),
@@ -185,7 +188,8 @@ export default function UtilisateurPage() {
 
         setEnvoi(true);
         try {
-            if (aModifier) await modifierUtilisateur(aModifier.id, dto, aModifier);            else await ajouterUtilisateur(dto);
+            if (aModifier) await modifierUtilisateur(aModifier.id, dto, aModifier);
+            else await ajouterUtilisateur(dto);
             fermerPopup();
             recharger();
         } catch (err) {
@@ -213,6 +217,18 @@ export default function UtilisateurPage() {
             else setErreur("Le service est indisponible. Réessayez plus tard.");
         } finally {
             setEnvoi(false);
+        }
+    }
+
+    async function handleActif(u: Utilisateur) {
+        setError(undefined);
+        try {
+            await changerActif(u.id, !u.active);
+            recharger();
+        } catch (err) {
+            if (err instanceof UtilisateurError && err.status === 400) setError(err.detail || "Action impossible sur ce compte.");
+            else if (err instanceof UtilisateurError && err.status === 403) setError("Vous n'avez pas le droit d'activer ou de désactiver un compte.");
+            else setError("Le service est indisponible. Réessayez plus tard.");
         }
     }
 
@@ -321,6 +337,7 @@ export default function UtilisateurPage() {
                         estMoi={u.id === moi?.id}
                         onModifier={ouvrirModification}
                         onVerrou={handleVerrou}
+                        onActif={handleActif}
                         onSupprime={ouvrirSuppression}
                     />
                 ))}
@@ -329,17 +346,8 @@ export default function UtilisateurPage() {
             </div>
 
             {/* boutons de changement de page (même principe que MaterielPage) */}
-            {resultat && resultat.totalPages > 1 && (
-                <nav className="pagination" aria-label="Pagination">
-                    <button type="button" className="btn sm" disabled={resultat.first} onClick={() => setPage((p) => p - 1)}>
-                        ‹ Précédent
-                    </button>
-                    <span className="muted small">Page {resultat.page + 1} sur {resultat.totalPages}</span>
-                    <button type="button" className="btn sm" disabled={resultat.last} onClick={() => setPage((p) => p + 1)}>
-                        Suivant ›
-                    </button>
-                </nav>
-            )}
+            {resultat && <Pagination page={resultat.page} totalPages={resultat.totalPages} onChange={setPage}
+                                     info={`(${resultat.totalElements} matériels)`}/>}
 
             <Popup
                 open={popup !== null}
@@ -368,6 +376,13 @@ export default function UtilisateurPage() {
                                 <label htmlFor="uNom">Nom</label>
                                 <input id="uNom" value={nom} onChange={champ(setNom)}/>
                             </div>
+                            {aModifier && (
+                                <div>
+                                    <label htmlFor="uLogin">Identifiant</label>
+                                    <input id="uLogin" value={login} onChange={champ(setLogin)} maxLength={50}
+                                           autoComplete="off"/>
+                                </div>
+                            )}
                             {!aModifier && (
                                 <div>
                                     <label htmlFor="uNid">NID</label>

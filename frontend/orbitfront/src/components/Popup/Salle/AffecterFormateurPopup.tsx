@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import Popup from "../Popup.tsx";
 import type {Salle, Utilisateur} from "../../../types/types.ts";
-import {affecterFormateurASalle, aujourdhuiIso, FormateurError, getFormateurs} from "../../../services/formateurService.ts";
+import {affecterFormateurASalle, FormateurError, getFormateurs} from "../../../services/formateurService.ts";
 
 interface Props {
     salle: Salle;
@@ -12,7 +12,6 @@ interface Props {
 export default function AffecterFormateurPopup({salle, onClose, onFait}: Props) {
     const [formateurs, setFormateurs] = useState<Utilisateur[] | null>(null);
     const [choix, setChoix] = useState("");
-    const [jusqu, setJusqu] = useState("");
     const [erreur, setErreur] = useState("");
     const [enCours, setEnCours] = useState(false);
 
@@ -25,11 +24,11 @@ export default function AffecterFormateurPopup({salle, onClose, onFait}: Props) 
     }, [salle]);
 
     async function valider() {
-        if (!choix || !jusqu) return;
+        if (!choix) return;
         setEnCours(true);
         setErreur("");
         try {
-            await affecterFormateurASalle(Number(choix), salle.id, jusqu);
+            await affecterFormateurASalle(Number(choix), salle.id);
             onFait();
         } catch (err) {
             setErreur(err instanceof FormateurError && err.detail ? err.detail : "Affectation impossible.");
@@ -42,11 +41,11 @@ export default function AffecterFormateurPopup({salle, onClose, onFait}: Props) 
             open
             onClose={onClose}
             title={`Affecter un formateur à la salle ${salle.numSalle}`}
-            description="Un formateur ne voit que les salles qui lui sont attribuées, jusqu'au soir de la date limite."
+            description="Un formateur ne voit que les salles qui lui sont attribuées, jusqu'à ce qu'on le retire."
             confirmLabel="Affecter"
             onConfirm={valider}
             loading={enCours}
-            disabled={!choix || !jusqu}
+            disabled={!choix}
         >
             {formateurs !== null && formateurs.length === 0 ? (
                 <p className="muted">Aucun formateur disponible : tous sont déjà affectés à cette salle.</p>
@@ -59,10 +58,6 @@ export default function AffecterFormateurPopup({salle, onClose, onFait}: Props) 
                             <option key={f.id} value={f.id}>{f.prenom} {f.nom}</option>
                         ))}
                     </select>
-
-                    <label htmlFor="jusqu">Accès jusqu'au</label>
-                    <input id="jusqu" type="date" min={aujourdhuiIso()} value={jusqu}
-                           onChange={(e) => setJusqu(e.target.value)} required/>
                 </>
             )}
             {erreur && <p className="error-message" role="alert">{erreur}</p>}

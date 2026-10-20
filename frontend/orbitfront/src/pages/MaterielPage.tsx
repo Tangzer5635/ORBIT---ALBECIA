@@ -15,6 +15,7 @@ import {
 } from "../utils/materiels.ts";
 import AjouterMaterielPopup from "../components/Popup/Materiel/AjouterMaterielPopup.tsx";
 import MaterielLigne from "../components/Materiel/MaterielLigne.tsx";
+import Pagination from "../components/Utils/Pagination.tsx";
 
 
 const TAILLE_PAGE = 20;
@@ -180,21 +181,8 @@ export default function MaterielPage() {
             )}
 
             {/* boutons de changement de page */}
-            {resultat && resultat.totalPages > 1 && (
-                <nav className="pagination" aria-label="Pages">
-                    <button type="button" className="btn sm" disabled={resultat.first}
-                            onClick={() => setPage((p) => p - 1)}>
-                        ‹ Précédent
-                    </button>
-                    <span className="muted small">
-                        Page {resultat.page + 1} sur {resultat.totalPages} ({resultat.totalElements} matériels)
-                    </span>
-                    <button type="button" className="btn sm" disabled={resultat.last}
-                            onClick={() => setPage((p) => p + 1)}>
-                        Suivant ›
-                    </button>
-                </nav>
-            )}
+            {resultat && <Pagination page={resultat.page} totalPages={resultat.totalPages} onChange={setPage}
+                                     info={`(${resultat.totalElements} matériels)`}/>}
 
             {ajoutOuvert && (
                 <AjouterMaterielPopup

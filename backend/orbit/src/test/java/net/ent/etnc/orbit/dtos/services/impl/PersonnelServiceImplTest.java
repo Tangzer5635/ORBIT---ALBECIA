@@ -331,7 +331,7 @@ class PersonnelServiceImplTest {
         Personnel resultat = service.verrouiller(7L);
 
         assertThat(resultat.isVerrouille()).isTrue();
-        assertThat(resultat.isAccountNonLocked()).isFalse();
+        assertThat(resultat.isAccountNonLocked()).isTrue(); // un stagiaire verrouillé garde l'accès à l'appli
         verify(refreshTokenService).revokeAllForUser("user7");
     }
 

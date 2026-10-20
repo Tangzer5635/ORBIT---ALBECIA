@@ -1,4 +1,4 @@
-import type {AffectationMateriel, CalendrierGaranties, EtatMateriel, Materiel, MaterielRequest, Page, TypeMateriel} from "../types/types.ts";
+import type {AffectationMateriel, CalendrierGaranties, EtatMateriel, Materiel, MaterielRequest, MaterielStock, Page, TypeMateriel} from "../types/types.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 import type {Localisation} from "../utils/materiels.ts";
 
@@ -57,6 +57,11 @@ export async function compterMateriels(filtres: FiltresMateriel): Promise<number
     return (await getMateriels(filtres, 0, 1)).totalElements;
 }
 
+// Tout le stock (tous bâtiments) pour « Affecter un matériel » : une seule requête côté back
+export function getStock(): Promise<MaterielStock[]> {
+    return requete(`${URL}/stock/`);
+}
+
 // Méthode pour récupérer un matériel par son id
 export function getMaterielById(id: number): Promise<Materiel> {
     return requete(`${URL}/${id}/`);
@@ -64,7 +69,7 @@ export function getMaterielById(id: number): Promise<Materiel> {
 
 // Méthode pour ajouter un materiel
 export function ajouterMateriel(materiel: MaterielRequest): Promise<Materiel> {
-    return requete(URL, {method: "POST", body: JSON.stringify(materiel)});
+    return requete(`${URL}/`, {method: "POST", body: JSON.stringify(materiel)});
 }
 
 // Méthode pour modifier un matériel (le type ne change pas)

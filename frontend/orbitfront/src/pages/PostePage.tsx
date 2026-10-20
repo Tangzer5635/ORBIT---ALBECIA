@@ -7,6 +7,7 @@ import {
     type MonPoste,
 } from "../types/types.ts";
 import {getMyPoste} from "../services/posteService.ts";
+import {getUtilisateur} from "../services/authService.ts";
 import {getMesDefaillances, signalerDefaillance} from "../services/defaillanceService.ts";
 import Popup from "../components/Popup/Popup.tsx";
 import MaterielCard from "../components/Materiel/MaterielCard.tsx";
@@ -68,6 +69,7 @@ export default function PostePage() {
     const etat = poste.etat ?? "UTILISE";
     const [titre, explication] = MESSAGES[etat];
     const numero = numeroCourt(poste.numPoste);
+    const verrouille = getUtilisateur()?.verrouille ?? false; // stagiaire verrouillé : plus de signalement
     const ouvrirSignalement = () => {
         setMaterielSignale(poste.materiels[0]?.id ?? "");
         setDescription("");
@@ -105,10 +107,16 @@ export default function PostePage() {
                         Salle {poste.numSalle}, Bâtiment {poste.numBatiment}
                         {poste.stageNom && `, stage ${poste.stageNom}`}. {explication}
                     </p>
-                    <button type="button" className="btn primary" onClick={ouvrirSignalement}
-                            disabled={poste.materiels.length === 0}>
-                        Remonter une défaillance
-                    </button>
+                    {verrouille ? (
+                        <p className="error-message" role="alert">
+                            Votre compte a été verrouillé, vous ne pouvez plus remonter de défaillance.
+                        </p>
+                    ) : (
+                        <button type="button" className="btn primary" onClick={ouvrirSignalement}
+                                disabled={poste.materiels.length === 0}>
+                            Remonter une défaillance
+                        </button>
+                    )}
                 </div>
             </section>
 

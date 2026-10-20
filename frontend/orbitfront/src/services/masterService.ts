@@ -48,10 +48,10 @@ export function supprimerMaster(id: number): Promise<void> {
 
 // Les UC de la salle reçoivent exactement les processus du master
 export function plaquerMaster(idSalle: number, idMaster: number): Promise<Salle> {
-    return requete(`/api/v1/salles/${idSalle}/?masterId=${idMaster}/`, {method: "POST"});
+    return requete(`/api/v1/salles/${idSalle}/?masterId=${idMaster}`, {method: "POST"});
 }
 
 // Un seul poste (ex. poste en erreur) : son UC reçoit exactement les processus du master
 export function plaquerMasterSurPoste(idPoste: number, idMaster: number): Promise<void> {
-    return requete(`/api/v1/postes/${idPoste}/?masterId=${idMaster}/`, {method: "POST"});
+    return requete(`/api/v1/postes/${idPoste}/?masterId=${idMaster}`, {method: "POST"});
 }

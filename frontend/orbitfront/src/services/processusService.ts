@@ -39,7 +39,7 @@ export function ajouterProcessus(processus: ProcessusRequest): Promise<Processus
 
 // Liste blanche ou noire : refusé en noire si le processus fait partie d'un master (la blanche a le dessus)
 export function changerListe(id: number, liste: ListeProcessus): Promise<Processus> {
-    return requete(`${URL}/${id}/?liste=${liste}/`, {method: "PATCH"});
+    return requete(`${URL}/${id}/?liste=${liste}`, {method: "PATCH"});
 }
 
 // Méthode pour supprimer un processus (il est désinstallé de toutes les UC)

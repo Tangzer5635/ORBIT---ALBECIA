@@ -71,6 +71,8 @@ export async function rafraichirToken(): Promise<boolean> {
     if (!response.ok) return false;
     const data: TokenResponse = await response.json();
     sessionStorage.setItem(TOKEN_KEY, data.accessToken);
+    // l'utilisateur a pu changer depuis la connexion (ex. compte verrouillé ou déverrouillé)
+    if (data.utilisateur) sessionStorage.setItem(USER_KEY, JSON.stringify(data.utilisateur));
     return true;
   } catch {
     return false; // serveur injoignable

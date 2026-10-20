@@ -26,22 +26,13 @@ public interface SalleRepository extends BaseRepository<Salle> {
 
     Optional<Salle> findByPostes_Id(Long idPoste);
 
-    /** Salles attribuées à ce personnel, accès expiré compris (suppression du personnel). */
-    @Query("select s from Salle s join s.personnels f where key(f).id = :idPersonnel")
-    List<Salle> findByPersonnels_Id(@Param("idPersonnel") Long idPersonnel);
-
-    /** Salles où l'accès du formateur est en cours (le jour de la date limite compte encore). */
-    @Query("select s from Salle s join s.personnels f where key(f).id = :idFormateur"
-            + " and (value(f) is null or value(f) >= current_date)")
-    List<Salle> sallesActivesDuFormateur(@Param("idFormateur") Long idFormateur);
+    /** Salles attribuées à ce personnel. */
+    List<Salle> findByPersonnels_Id(Long idPersonnel);
 
     List<Salle> findByMaster_Id(Long idMaster);
 
-    /** Le formateur a un accès en cours à cette salle. */
-    @Query("select case when count(s) > 0 then true else false end from Salle s join s.personnels f"
-            + " where s.id = :idSalle and key(f).id = :idPersonnel"
-            + " and (value(f) is null or value(f) >= current_date)")
-    boolean existsByIdAndPersonnels_Id(@Param("idSalle") Long idSalle, @Param("idPersonnel") Long idPersonnel);
+    /** Le formateur est attribué à cette salle. */
+    boolean existsByIdAndPersonnels_Id(Long idSalle, Long idPersonnel);
 
     /** Bâtiment de chacune de ces salles : une requête pour toutes les salles. */
     @Query("select " + SalleBatiment.NEW + "(s.id, b.numBatiment) from Batiment b join b.salles s where s.id in :ids")

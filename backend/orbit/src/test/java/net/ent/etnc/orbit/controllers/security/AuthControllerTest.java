@@ -166,7 +166,7 @@ class AuthControllerTest extends ControllerTestSupport {
 
     @Test
     void refresh_doitRenvoyer400_etRevoquer_quandCompteVerrouille() throws Exception {
-        Personnel user = stagiaire();
+        Personnel user = personnel(Role.FORMATEUR); // un stagiaire verrouillé, lui, garde l'accès
         user.setVerrouille(true);
         when(refreshTokenService.rotateRefreshToken("ancien"))
                 .thenReturn(new RefreshTokenService.RotateResult("nouveau", user.getUsername()));

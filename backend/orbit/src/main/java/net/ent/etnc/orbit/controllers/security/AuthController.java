@@ -122,7 +122,9 @@ public class AuthController {
             throw new ServiceException("RG-SEC05", "Compte verrouillé");
         }
         addRefreshCookie(response, result.rawToken());
-        return ResponseEntity.ok(new TokenResponse(jwtUtils.generateJwtToken(user), jwtExpirationMs / 1000));
+        TokenResponse body = new TokenResponse(jwtUtils.generateJwtToken(user), jwtExpirationMs / 1000);
+        body.setUtilisateur(userAssembler.toDto(user)); // le front met à jour l'utilisateur (ex. verrouillé)
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/logout/")

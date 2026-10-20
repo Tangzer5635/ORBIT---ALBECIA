@@ -34,7 +34,6 @@ import AffecterStagiairePopup from "../components/Popup/Stage/AffecterStagiaireP
 import AffecterMaterielPopup from "../components/Popup/Materiel/AffecterMaterielPopup.tsx";
 import AffecterStagePopup from "../components/Popup/Stage/AffecterStagePopup.tsx";
 import AffecterFormateurPopup from "../components/Popup/Salle/AffecterFormateurPopup.tsx";
-import ProlongerFormateurPopup from "../components/Popup/Salle/ProlongerFormateurPopup.tsx";
 import ModifierSallePopup from "../components/Popup/Salle/ModifierSallePopup.tsx";
 import GelerSallePopup from "../components/Popup/Salle/GelerSallePopup.tsx";
 import DeplacerSallePopup from "../components/Popup/Salle/DeplacerSallePopup.tsx";
@@ -86,7 +85,6 @@ function SalleDetail({salleId}: { salleId: string }) {
     const [popup, setPopup] = useState<PopupOuverte>(null);
     const [erreurStage, setErreurStage] = useState("");
     const [formateurARetirer, setFormateurARetirer] = useState<Formateur | null>(null);
-    const [formateurAProlonger, setFormateurAProlonger] = useState<Formateur | null>(null);
     const [erreurFormateur, setErreurFormateur] = useState("");
     const [erreurAction, setErreurAction] = useState(""); // erreur de la popup de confirmation ouverte
     const [info, setInfo] = useState(""); // message après « Modifier la salle » (matériel manquant)
@@ -186,7 +184,6 @@ function SalleDetail({salleId}: { salleId: string }) {
                       onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
                       onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
                       onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}
-                      onProlongerFormateur={peutGerer ? setFormateurAProlonger : undefined}
                       onPlaquerMaster={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("master") : undefined}
         />
     );
@@ -329,14 +326,6 @@ function SalleDetail({salleId}: { salleId: string }) {
 
             {popup === "formateur" &&
                 <AffecterFormateurPopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
-            {formateurAProlonger && (
-                <ProlongerFormateurPopup salle={salle} formateur={formateurAProlonger}
-                                         onClose={() => setFormateurAProlonger(null)}
-                                         onFait={() => {
-                                             setFormateurAProlonger(null);
-                                             recharger();
-                                         }}/>
-            )}
             {formateurARetirer && (
                 <Popup
                     open
@@ -448,6 +437,7 @@ function SalleDetail({salleId}: { salleId: string }) {
                 <AffecterMaterielPopup
                     posteId={posteSelectionne.id}
                     titrePoste={nomPoste(posteSelectionne)}
+                    numBatiment={salle.numBatiment}
                     onClose={fermerPopup}
                     onFait={apresAction}/>
             )}
