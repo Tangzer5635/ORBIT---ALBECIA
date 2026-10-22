@@ -1,5 +1,6 @@
 package net.ent.etnc.orbit.dtos.assemblers;
 
+import net.ent.etnc.orbit.dtos.requestDTO.SalleModificationRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.FormateurDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
@@ -7,6 +8,8 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
+import net.ent.etnc.orbit.models.entities.TableauInteractif;
+import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.enums.Role;
 import org.springframework.stereotype.Component;
 
@@ -58,6 +61,17 @@ public class SalleAssembler {
         dto.setStageDateDebut(stage.getDateDebut());
         dto.setStageDateFin(stage.getDateFin());
         dto.setStageFormateur(stage.getFormateur().getPrenom() + " " + stage.getFormateur().getNom());
+    }
+
+    /** Composition actuelle (« Modifier la salle ») pour un PATCH : postes stagiaires, vidéoprojecteurs, tableaux. */
+    public SalleModificationRequestDto toModificationDto(Salle salle) {
+        int postesStagiaires = (int) salle.getPostes().stream().filter(p -> !p.getNumPoste().endsWith("-F")).count();
+        return new SalleModificationRequestDto(postesStagiaires,
+                nombre(salle, VideoProjecteur.TYPE), nombre(salle, TableauInteractif.TYPE));
+    }
+
+    private static int nombre(Salle salle, String type) {
+        return (int) salle.getMateriels().stream().filter(m -> type.equals(m.getType())).count();
     }
 
     public Salle toEntity(SalleRequestDto salleDto) {

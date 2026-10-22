@@ -3,6 +3,7 @@ package net.ent.etnc.orbit.websocket;
 import net.ent.etnc.orbit.dtos.agent.MessageAgentDto;
 import net.ent.etnc.orbit.services.AgentService;
 import net.ent.etnc.orbit.services.AgentService.ResultatArret;
+import net.ent.etnc.orbit.services.ProcessusLanceService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,8 @@ import java.util.function.Consumer;
 
 /**
  * WebSocket de l'Agent ORBIT (ouvert par l'agent, relayé par Nginx) : reçoit sa présentation et ses listes de
- * processus, et lui envoie les ordres d'arrêt. Aucune règle métier ici : tout est dans {@link AgentService}.
+ * processus, et lui envoie les ordres d'arrêt (demandés depuis le panneau d'un poste, ou automatiques pour la liste
+ * noire). Aucune règle métier ici : tout est dans {@link AgentService} et {@link ProcessusLanceService}.
  * Le format des messages est décrit dans {@link MessageAgentDto}.
  */
 @Component
@@ -35,11 +37,14 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
     private static final int TAILLE_MAX_MESSAGE = 1024 * 1024;
 
     private final AgentService agentService;
+    private final ProcessusLanceService processusLanceService;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public AgentWebSocketHandler(AgentService agentService, ObjectMapper objectMapper) {
+    public AgentWebSocketHandler(AgentService agentService, ProcessusLanceService processusLanceService,
+                                 ObjectMapper objectMapper) {
         this.agentService = agentService;
+        this.processusLanceService = processusLanceService;
         this.objectMapper = objectMapper;
     }
 
@@ -78,7 +83,12 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
                 session.getAttributes().put(ATTRIBUT_MAC, message.mac());
                 session.getAttributes().put(ATTRIBUT_ENVOI, envoi);
             }
-            case "processus" -> agentService.recevoirProcessus(mac(session), message.processes());
+            case "processus" -> {
+                String mac = mac(session);
+                agentService.recevoirProcessus(mac, message.processes());
+                // les processus en liste noire dans la salle de la machine sont arrêtés tout de suite
+                processusLanceService.appliquerListeNoire(mac);
+            }
             case "resultat" -> agentService.recevoirResultat(message.id(), new ResultatArret(
                     Boolean.TRUE.equals(message.ok()), message.statut() == null ? 0 : message.statut(),
                     message.erreur()));

@@ -27,6 +27,17 @@ public class StageAssembler {
                 .build();
     }
 
+    /** État actuel du stage pour un PATCH. */
+    public StageRequestDto toRequestDto(Stage stage) {
+        return StageRequestDto.builder()
+                .nom(stage.getNom())
+                .type(stage.getType())
+                .dateDebut(stage.getDateDebut())
+                .dateFin(stage.getDateFin())
+                .formateurId(stage.getFormateur().getId())
+                .build();
+    }
+
     /** Le formateur est résolu par le service à partir de formateurId. */
     public Stage toEntity(StageRequestDto dto) {
         Stage stage = new Stage();

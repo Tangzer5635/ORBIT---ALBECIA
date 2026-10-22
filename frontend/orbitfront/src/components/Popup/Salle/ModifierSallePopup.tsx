@@ -1,8 +1,9 @@
 import {type ChangeEvent, useState} from "react";
 import Popup from "../Popup.tsx";
-import type {Poste, Salle} from "../../../types/types.ts";
+import type {Poste, Salle, SalleModification} from "../../../types/types.ts";
 import {modifierSalle, SalleError} from "../../../services/salleService.ts";
 import {estFormateur, libelleEtage, numeroPoste, pluriel} from "../../../utils/postes.ts";
+import {versPatch} from "../../../utils/patch.ts";
 
 interface Props {
     salle: Salle;
@@ -24,11 +25,20 @@ export default function ModifierSallePopup({salle, postes, onClose, onFait}: Pro
     const retires = stagiaires.slice(nbPostes);
     const occupesRetires = retires.filter(p => p.occupant).length;
 
+    // composition à l'ouverture : seuls les nombres changés partent dans le PATCH
+    const avant: SalleModification = {
+        nbPostes: stagiaires.length,
+        nbVideoProjecteurs: salle.materielsParType.VideoProjecteur ?? 0,
+        nbTableaux: salle.materielsParType.TableauInteractif ?? 0,
+    };
+    const operations = versPatch(avant, {nbPostes, nbVideoProjecteurs, nbTableaux});
+
     async function valider() {
+        if (operations.length === 0) return onClose(); // rien n'a changé
         setEnCours(true);
         setErreur("");
         try {
-            const {manquants} = await modifierSalle(salle.id, {nbPostes, nbVideoProjecteurs, nbTableaux});
+            const {manquants} = await modifierSalle(salle.id, operations);
             onFait(manquants);
         } catch (err) {
             setErreur(err instanceof SalleError && err.detail ? err.detail : "Modification impossible.");

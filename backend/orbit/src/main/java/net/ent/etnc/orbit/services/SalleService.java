@@ -81,6 +81,9 @@ public interface SalleService extends Service<Salle, Long> {
     /** Salles où ce master est plaqué. */
     List<Salle> sallesDuMaster(Long idMaster);
 
+    /** Salles qui accueillent ce stage (une au plus en pratique). */
+    List<Salle> sallesDuStage(Long idStage);
+
     /**
      * « Déplacer la salle » : postes (formateur compris), matériel de salle, stage, formateurs et master
      * passent dans la salle cible, qui doit avoir au moins autant de postes stagiaires, de vidéoprojecteurs

@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
@@ -17,10 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,6 +90,30 @@ class AffecterStagiaireServiceImplTest {
         when(posteService.occupeUnPoste(7L)).thenReturn(false);
 
         assertThat(service.affecterAPoste(10L, 7L).getOccupant()).isEqualTo(theo);
+    }
+
+    @Test
+    void affecterAPoste_doitLeverServiceException_quandPosteDefectueux() {
+        Stage wb47 = stage(3L, "WB47");
+        when(posteService.findById(10L)).thenReturn(Optional.of(poste(10L, "B351-S105-P01")));
+        when(personnelService.findById(7L)).thenReturn(Optional.of(stagiaire(7L, wb47)));
+        when(posteService.etats(any())).thenReturn(Map.of(10L, EtatPoste.DEFECTUEUX));
+
+        assertThatThrownBy(() -> service.affecterAPoste(10L, 7L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Le poste B351-S105-P01 est défectueux : on n'y affecte pas de stagiaire");
+    }
+
+    @Test
+    void affecterAPoste_doitLeverServiceException_quandPosteACompleter() {
+        Stage wb47 = stage(3L, "WB47");
+        when(posteService.findById(10L)).thenReturn(Optional.of(poste(10L, "B351-S105-P01")));
+        when(personnelService.findById(7L)).thenReturn(Optional.of(stagiaire(7L, wb47)));
+        when(posteService.etats(any())).thenReturn(Map.of(10L, EtatPoste.A_COMPLETER));
+
+        assertThatThrownBy(() -> service.affecterAPoste(10L, 7L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageStartingWith("Le poste B351-S105-P01 est à compléter");
     }
 
     @Test

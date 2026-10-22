@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.dtos.assemblers.StageAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.StageRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.BilanImportStagesDto;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/stages")
@@ -29,11 +31,16 @@ public class StageController {
 
     private final StageService stageService;
     private final StageAssembler stageAssembler;
+    private final JsonPatchUtils jsonPatchUtils;
+
+    /** Tout reste modifiable, même une fois le stage commencé. */
+    static final Set<String> PATCHABLES = Set.of("nom", "type", "dateDebut", "dateFin", "formateurId");
 
     @Autowired
-    public StageController(StageService stageService, StageAssembler stageAssembler) {
+    public StageController(StageService stageService, StageAssembler stageAssembler, JsonPatchUtils jsonPatchUtils) {
         this.stageService = stageService;
         this.stageAssembler = stageAssembler;
+        this.jsonPatchUtils = jsonPatchUtils;
     }
 
     @GetMapping("/")
@@ -66,10 +73,15 @@ public class StageController {
         return ResponseEntity.ok(stageService.importer(new String(fichier.getBytes(), StandardCharsets.UTF_8)));
     }
 
-    @PutMapping("/{id}/")
+    /** JSON Patch (opérations « replace »). Ex. [{"op":"replace","path":"/dateFin","value":"2027-02-05"}] */
+    @PatchMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<StageResponseDto> put(@PathVariable Long id, @Valid @RequestBody StageRequestDto dto) {
-        return ResponseEntity.ok(dto(stageService.modifier(id, stageAssembler.toEntity(dto), dto.getFormateurId())));
+    public ResponseEntity<StageResponseDto> patch(@PathVariable Long id, @RequestBody String patch) {
+        Stage existant = stageService.findById(id).orElse(null);
+        if (existant == null) return ResponseEntity.notFound().build();
+        StageRequestDto modifie = jsonPatchUtils.apply(patch, stageAssembler.toRequestDto(existant),
+                StageRequestDto.class, PATCHABLES);
+        return ResponseEntity.ok(dto(stageService.modifier(id, stageAssembler.toEntity(modifie), modifie.getFormateurId())));
     }
 
     @DeleteMapping("/{id}/")

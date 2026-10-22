@@ -38,6 +38,9 @@ public interface PersonnelService extends Service<Personnel, Long> {
 
     boolean existeDansStage(Long idStage) throws ServiceException;
 
+    /** Stagiaires inscrits dans ce stage. */
+    List<Personnel> stagiairesDuStage(Long idStage) throws ServiceException;
+
     /** Stagiaires actifs du stage qui n'ont pas encore de poste. */
     List<Personnel> stagiairesSansPoste(Long idStage);
 }

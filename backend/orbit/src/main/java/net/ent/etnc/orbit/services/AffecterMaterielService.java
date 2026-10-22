@@ -17,4 +17,7 @@ public interface AffecterMaterielService {
 
     /** Où se trouve le matériel : salle, bâtiment, poste et son occupant, stage et responsable de la salle. */
     AffectationMaterielDto affectation(Long idMateriel);
+
+    /** Archive un matériel ; s'il est encore affecté (poste ou salle de cours), il est d'abord remis en stock. */
+    Materiel retirerEtArchiver(Long idMateriel);
 }

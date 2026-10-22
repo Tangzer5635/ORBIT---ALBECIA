@@ -1,5 +1,6 @@
 package net.ent.etnc.orbit.controllers;
 
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteUpdateRequestDto;
@@ -35,13 +36,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PosteController.class)
-@Import(WebSecurityConfig.class)
+@Import({WebSecurityConfig.class, JsonPatchUtils.class}) // JsonPatchUtils : composant réel, utilisé par patch
 class PosteControllerTest extends ControllerTestSupport {
 
     @MockitoBean
@@ -221,51 +221,59 @@ class PosteControllerTest extends ControllerTestSupport {
                 .andExpect(status().isMethodNotAllowed());
     }
 
-    // ---------- put ----------
+    // ---------- patch ----------
+
+    private static final String PATCH_NUMERO = "[{\"op\":\"replace\",\"path\":\"/numPoste\",\"value\":\"P101-02\"}]";
+
+    private void etatCourant() {
+        when(posteService.findById(1L)).thenReturn(Optional.of(poste()));
+        when(posteAssembler.toUpdateDto(any())).thenReturn(PosteUpdateRequestDto.builder().numPoste("P101-01").build());
+    }
 
     @Test
-    void put_doitRenvoyer200_etTransmettreLId() throws Exception {
+    void patch_doitRenvoyer200_etTransmettreLIdEtLeNouveauNumero() throws Exception {
+        etatCourant();
         when(posteAssembler.toEntity(any(PosteUpdateRequestDto.class))).thenReturn(new Poste());
         when(posteService.update(any())).thenReturn(poste());
         reponse();
 
-        mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numPoste\":\"P101-01\"}"))
+        mockMvc.perform(patch("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_NUMERO))
                 .andExpect(status().isOk());
 
+        ArgumentCaptor<PosteUpdateRequestDto> dto = ArgumentCaptor.forClass(PosteUpdateRequestDto.class);
+        verify(posteAssembler).toEntity(dto.capture());
+        assertThat(dto.getValue().getNumPoste()).isEqualTo("P101-02");
         ArgumentCaptor<Poste> captor = ArgumentCaptor.forClass(Poste.class);
         verify(posteService).update(captor.capture());
         assertThat(captor.getValue().getId()).isEqualTo(1L);
     }
 
     @Test
-    void put_doitRenvoyer400_quandIntrouvable() throws Exception {
-        when(posteAssembler.toEntity(any(PosteUpdateRequestDto.class))).thenReturn(new Poste());
-        when(posteService.update(any())).thenThrow(new ServiceException("Poste 1 introuvable"));
-
-        mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numPoste\":\"P101-01\"}"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void put_doitRenvoyer400_quandNumeroDejaPris() throws Exception {
+    void patch_doitRenvoyer400_quandNumeroDejaPris() throws Exception {
+        etatCourant();
         when(posteAssembler.toEntity(any(PosteUpdateRequestDto.class))).thenReturn(new Poste());
         when(posteService.update(any())).thenThrow(new ServiceException("Le poste P101-02 existe déjà"));
 
-        mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numPoste\":\"P101-02\"}"))
+        mockMvc.perform(patch("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_NUMERO))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void put_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(put("/api/v1/postes/{id}/", 1L).with(connecte(Role.FORMATEUR))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numPoste\":\"P101-01\"}"))
+    void patch_doitRenvoyer404_quandIntrouvable() throws Exception {
+        when(posteService.findById(1L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(patch("/api/v1/postes/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_NUMERO))
+                .andExpect(status().isNotFound());
+        verify(posteService, never()).update(any());
+    }
+
+    @Test
+    void patch_doitRenvoyer403_quandFormateur() throws Exception {
+        mockMvc.perform(patch("/api/v1/postes/{id}/", 1L).with(connecte(Role.FORMATEUR))
+                        .contentType("application/json-patch+json").content(PATCH_NUMERO))
                 .andExpect(status().isForbidden());
     }
 

@@ -2934,7 +2934,7 @@ button.cal-hors[aria-pressed="true"] {
     background: var(--card);
 }
 
-/* Boutons du bas : Voir le poste / Modifier la garantie */
+/* Boutons du bas : Voir le poste / Archiver */
 .fiche-foot {
     display: flex;
     flex-wrap: wrap;
@@ -2950,4 +2950,80 @@ button.cal-hors[aria-pressed="true"] {
 
 .fiche-foot .btn:not(.primary) {
     background: var(--card2);
+}
+
+/* ==========================================
+   CATÉGORIES DÉPLIABLES DU PANNEAU D'UN POSTE (Repliable)
+   ========================================== */
+.repliable {
+    align-items: stretch;
+}
+
+.repliable-titre {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.repliable-titre h3 {
+    margin: 0;
+}
+
+.repliable-titre:focus-visible {
+    outline: 2px solid var(--line);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.repliable-chevron {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--muted);
+    transition: transform 0.15s;
+}
+
+.repliable-chevron.ouvert {
+    transform: rotate(180deg);
+}
+
+.repliable-corps {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.repliable-corps > .carte-mat,
+.repliable-corps > .proc-liste {
+    align-self: stretch;
+}
+
+/* Poste dont la composition sort de la règle (ex. 2 unités centrales) */
+.poste-anomalies {
+    margin: 0;
+    padding-left: 18px;
+}
+
+/* Processus de la salle (page d'une salle) : liste globale et surcharge des formateurs */
+.processus-salle {
+    margin-top: 14px;
+}
+
+.processus-salle .processus-surcharge {
+    display: block;
+    margin-top: 4px;
+}
+
+.processus-noir {
+    color: var(--def);
 }

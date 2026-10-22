@@ -132,6 +132,12 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
+    @Override
+    public void ordonnerArret(String mac, long pid) throws ServiceException {
+        // identifiant que personne n'attend : la réponse de l'agent sera simplement ignorée
+        agentEnLigne(mac).envoi.accept(MessageAgentDto.kill("auto-" + UUID.randomUUID(), pid));
+    }
+
     /** L'agent de cette machine, s'il est connecté et donne encore des nouvelles. */
     private AgentConnu agentEnLigne(String mac) throws ServiceException {
         AgentConnu agent = agents.get(UC.normaliserMac(mac));

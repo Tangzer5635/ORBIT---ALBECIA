@@ -504,6 +504,12 @@ public class SalleServiceImpl extends AbstractService<Salle, SalleRepository> im
         return repository.findByMaster_Id(idMaster);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Salle> sallesDuStage(Long idStage) throws ServiceException {
+        return repository.findByStage_Id(idStage);
+    }
+
     private Salle trouver(Long idSalle) throws ServiceException {
         return repository.findById(idSalle).orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
     }

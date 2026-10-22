@@ -1,6 +1,8 @@
 package net.ent.etnc.orbit.commons;
 
 import jakarta.json.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -8,6 +10,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.StringReader;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Applique un JSON Patch (RFC 6902) sur un DTO, en contrôlant les champs autorisés (whitelist).
@@ -16,15 +19,20 @@ import java.util.Set;
  * (qui peuvent différer, ex. {@code trainId} ↔ {@code train}) est ensuite assurée par l'assembler
  * ({@code toEntity}). On reste indépendant de la version de Jackson : le patch est traité via
  * Jakarta JSON-P, l'ObjectMapper ne sert qu'à convertir DTO ↔ JSON.
+ *
+ * <p>Le DTO obtenu est validé (Bean Validation) comme le serait un {@code @Valid @RequestBody} :
+ * un patch ne peut pas laisser la ressource dans un état invalide.
  */
 @Component
 public class JsonPatchUtils {
 
     private final ObjectMapper objectMapper;
+    private final Validator validator;
 
     @Autowired
-    public JsonPatchUtils(ObjectMapper objectMapper) {
+    public JsonPatchUtils(ObjectMapper objectMapper, Validator validator) {
         this.objectMapper = objectMapper;
+        this.validator = validator;
     }
 
     /**
@@ -36,7 +44,20 @@ public class JsonPatchUtils {
     public <P> P apply(String patchJson, P currentDto, Class<P> dtoType, Set<String> patchableFields) {
         JsonArray operations = parseOperations(patchJson);
         enforceWhitelist(operations, patchableFields);
-        return applyPatch(operations, currentDto, dtoType);
+        P patched = applyPatch(operations, currentDto, dtoType);
+        validate(patched);
+        return patched;
+    }
+
+    /** Mêmes contraintes que pour un {@code @Valid @RequestBody} : « champ : message ; champ : message ». */
+    private <P> void validate(P patched) {
+        Set<ConstraintViolation<P>> violations = validator.validate(patched);
+        if (!violations.isEmpty()) {
+            throw new ServiceException("Patch invalide : " + violations.stream()
+                    .map(v -> v.getPropertyPath() + " : " + v.getMessage())
+                    .sorted()
+                    .collect(Collectors.joining(" ; ")));
+        }
     }
 
     private JsonArray parseOperations(String patchJson) {

@@ -1,20 +1,20 @@
 import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
-import ModifierMaterielPopup from "./ModifierMaterielPopup.tsx";
+import Popup from "../Popup.tsx";
 import {
     type AffectationMateriel,
     type Defaillance,
     LIBELLE_TYPE_MATERIEL,
     type Materiel,
 } from "../../../types/types.ts";
-import {getAffectationMateriel} from "../../../services/materielService.ts";
+import {getAffectationMateriel, MaterielError, retirerEtArchiverMateriel} from "../../../services/materielService.ts";
 import {getDefaillancesDuMateriel} from "../../../services/defaillanceService.ts";
 import {dateFr, libelleEtage} from "../../../utils/postes.ts";
 
 interface Props {
     materiel: Materiel;
     onClose: () => void;
-    onChange: () => void; // garantie modifiée : le calendrier se recharge
+    onChange: () => void; // matériel archivé : le calendrier se recharge
 }
 
 const JOUR = 86_400_000;
@@ -52,7 +52,9 @@ export default function FicheGarantiePopup({materiel: m, onClose, onChange}: Pro
     const [affectation, setAffectation] = useState<AffectationMateriel | null>(null);
     const [erreurAffectation, setErreurAffectation] = useState(false);
     const [defaillances, setDefaillances] = useState<Defaillance[]>([]);
-    const [modifier, setModifier] = useState(false);
+    const [confirmation, setConfirmation] = useState(false); // « Archiver » cliqué : on demande confirmation
+    const [archivage, setArchivage] = useState(false);
+    const [erreurArchivage, setErreurArchivage] = useState("");
 
     useEffect(() => {
         let actif = true;
@@ -66,9 +68,9 @@ export default function FicheGarantiePopup({materiel: m, onClose, onChange}: Pro
         return () => { actif = false; };
     }, [m.id]);
 
-    // Échap ferme la fiche (sauf si la popup de modification est ouverte par-dessus)
+    // Échap ferme la fiche (sauf si la confirmation d'archivage est ouverte à sa place)
     useEffect(() => {
-        if (modifier) return;
+        if (confirmation) return;
         const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
         document.addEventListener("keydown", onKey);
         document.body.style.overflow = "hidden";
@@ -76,11 +78,34 @@ export default function FicheGarantiePopup({materiel: m, onClose, onChange}: Pro
             document.removeEventListener("keydown", onKey);
             document.body.style.overflow = "";
         };
-    }, [modifier, onClose]);
+    }, [confirmation, onClose]);
 
-    if (modifier) {
-        return <ModifierMaterielPopup materiel={m} onClose={() => setModifier(false)}
-                                      onFait={() => { setModifier(false); onChange(); onClose(); }}/>;
+    async function archiver() {
+        setArchivage(true);
+        setErreurArchivage("");
+        try {
+            await retirerEtArchiverMateriel(m.id);
+            onChange(); // il disparaît du calendrier ; on le retrouve dans Matériel avec le filtre « Archivés »
+            onClose();
+        } catch (err) {
+            setErreurArchivage(err instanceof MaterielError && err.detail ? err.detail : "Archivage impossible.");
+            setArchivage(false);
+        }
+    }
+
+    if (confirmation) {
+        const ou = affectation && affectation.typeSalle === "SalleDeCours" && affectation.idSalle != null
+            ? `${emplacement(affectation)} de la salle ${affectation.numSalle}${affectation.occupant ? ` (${affectation.occupant})` : ""}`
+            : null;
+        return (
+            <Popup open onClose={() => !archivage && setConfirmation(false)}
+                   title={`Archiver ${LIBELLE_TYPE_MATERIEL[m.type].toLowerCase()} ${m.modele}`}
+                   description={`${ou ? `Il est encore affecté (${ou}) : il en sera retiré et remis en stock, puis archivé. ` : ""}Un matériel archivé n'est plus utilisable ni modifiable ; il reste consultable dans Matériel avec le filtre « Archivés ».`}
+                   confirmLabel="Archiver" variant="danger"
+                   loading={archivage} onConfirm={() => void archiver()}>
+                {erreurArchivage && <p className="error-message" role="alert">{erreurArchivage}</p>}
+            </Popup>
+        );
     }
 
     const reste = joursAvant(m.dateFinGarantie);
@@ -190,7 +215,7 @@ export default function FicheGarantiePopup({materiel: m, onClose, onChange}: Pro
                         <Link className="btn" to={lienSalle}>{a?.idPoste ? "Voir le poste" : "Voir dans la salle"}</Link>
                     )}
                     {m.etat !== "ARCHIVE" && (
-                        <button type="button" className="btn primary" onClick={() => setModifier(true)}>Modifier la garantie</button>
+                        <button type="button" className="btn primary" onClick={() => setConfirmation(true)}>Archiver</button>
                     )}
                 </footer>
             </div>

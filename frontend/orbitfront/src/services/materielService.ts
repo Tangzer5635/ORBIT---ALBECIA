@@ -1,4 +1,5 @@
 import type {AffectationMateriel, CalendrierGaranties, EtatMateriel, Materiel, MaterielRequest, MaterielStock, Page, TypeMateriel} from "../types/types.ts";
+import type {OperationPatch} from "../utils/patch.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 import type {Localisation} from "../utils/materiels.ts";
 
@@ -72,9 +73,10 @@ export function ajouterMateriel(materiel: MaterielRequest): Promise<Materiel> {
     return requete(`${URL}/`, {method: "POST", body: JSON.stringify(materiel)});
 }
 
-// Méthode pour modifier un matériel (le type ne change pas)
-export function modifierMateriel(id: number, materiel: MaterielRequest): Promise<Materiel> {
-    return requete(`${URL}/${id}/`, {method: "PUT", body: JSON.stringify(materiel)});
+// Méthode pour modifier un matériel : JSON Patch des seuls champs changés
+// (modèle, dates, nom machine, adresse MAC ; ni le type ni le n° de série ne changent)
+export function modifierMateriel(id: number, operations: OperationPatch[]): Promise<Materiel> {
+    return requete(`${URL}/${id}/`, {method: "PATCH", body: JSON.stringify(operations)});
 }
 
 // Méthode pour supprimer un materiel (s'il est affecté, le back le sort d'abord de sa salle ou de son poste)
@@ -95,6 +97,11 @@ export function affecterMateriel(id: number, vers: Emplacement): Promise<Materie
 // Archive un matériel en stock (il n'est plus utilisable ni modifiable, mais reste consultable)
 export function archiverMateriel(id: number): Promise<Materiel> {
     return requete(`${URL}/${id}/archiver/`, {method: "PATCH"});
+}
+
+// Archive un matériel depuis sa fiche garantie : s'il est encore affecté, le back le remet d'abord en stock
+export function retirerEtArchiverMateriel(id: number): Promise<Materiel> {
+    return requete(`${URL}/${id}/archiver/?retirer=true`, {method: "PATCH"});
 }
 
 // Remet en stock un matériel posé dans une salle ou sur un poste

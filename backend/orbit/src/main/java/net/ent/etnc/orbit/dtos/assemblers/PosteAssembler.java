@@ -36,6 +36,7 @@ public class PosteAssembler {
                 .materielsId(poste.getMateriels().stream().map(Materiel::getId).toList())
                 .materielsParType(poste.getMateriels().stream()
                         .collect(Collectors.groupingBy(Materiel::getType, Collectors.counting())))
+                .anomalies(poste.anomalies())
                 .build();
     }
 
@@ -48,6 +49,11 @@ public class PosteAssembler {
         Poste poste = new Poste();
         poste.setNumPoste(posteDto.getNumPoste());
         return poste;
+    }
+
+    /** État actuel du poste pour un PATCH (seul le numéro est modifiable). */
+    public PosteUpdateRequestDto toUpdateDto(Poste poste) {
+        return PosteUpdateRequestDto.builder().numPoste(poste.getNumPoste()).build();
     }
 
     public Poste toEntity(PosteUpdateRequestDto posteDto) {

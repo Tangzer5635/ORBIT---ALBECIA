@@ -65,6 +65,23 @@ public class MaterielAssembler {
     }
 
     /** Le type est déjà validé par @Pattern sur le DTO. */
+    /** État actuel du matériel sous forme de DTO de requête : base d'un PATCH (le type et le n° de série ne changent pas). */
+    public MaterielRequestDto toRequestDto(Materiel materiel) {
+        MaterielRequestDto dto = MaterielRequestDto.builder()
+                .numSerie(materiel.getNumSerie())
+                .modele(materiel.getModele())
+                .dateFinGarantie(materiel.getDateFinGarantie())
+                .dateAcquisition(materiel.getDateAcquisition())
+                .type(materiel.getType())
+                .build();
+        // unproxy : un matériel chargé en LAZY est un proxy de Materiel, pas de UC
+        if (Hibernate.unproxy(materiel) instanceof UC uc) {
+            dto.setNomMachine(uc.getNomMachine());
+            dto.setAdresseMac(uc.getAdresseMac());
+        }
+        return dto;
+    }
+
     public Materiel toEntity(MaterielRequestDto dto) {
         Materiel materiel = switch (dto.getType()) {
             case UC.TYPE -> {

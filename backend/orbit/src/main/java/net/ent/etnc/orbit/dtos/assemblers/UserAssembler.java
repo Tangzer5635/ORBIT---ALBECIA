@@ -34,6 +34,16 @@ public class UserAssembler {
     }
 
     /** Rôle et activation ne viennent pas de ce DTO : le service conserve ceux du compte existant. */
+    /** État actuel du compte pour un PATCH : le mot de passe n'est jamais renvoyé (null = inchangé). */
+    public UserUpdateRequestDto toUpdateDto(Personnel personnel) {
+        UserUpdateRequestDto dto = new UserUpdateRequestDto();
+        dto.setNid(personnel.getNid());
+        dto.setNom(personnel.getNom());
+        dto.setPrenom(personnel.getPrenom());
+        dto.setLogin(personnel.getUsername());
+        return dto;
+    }
+
     public Personnel toEntity(UserUpdateRequestDto userDto) {
         Personnel user = new Personnel();
         user.setNid(userDto.getNid());

@@ -1,12 +1,14 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.*;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleEquipeeResponseDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
+import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/salles")
@@ -28,9 +31,15 @@ public class SalleController {
     private final SalleService salleService;
     private final BatimentService batimentService;
     private final SalleAssembler salleAssembler;
+    private final JsonPatchUtils jsonPatchUtils;
+
+    /** « Modifier la salle » : seule la composition change (bâtiment, numéro et étage ne bougent pas). */
+    static final Set<String> PATCHABLES = Set.of("nbPostes", "nbVideoProjecteurs", "nbTableaux");
 
     @Autowired
-    public SalleController(SalleService salleService, BatimentService batimentService, SalleAssembler salleAssembler) {
+    public SalleController(SalleService salleService, BatimentService batimentService, SalleAssembler salleAssembler,
+                           JsonPatchUtils jsonPatchUtils) {
+        this.jsonPatchUtils = jsonPatchUtils;
         this.salleService = salleService;
         this.batimentService = batimentService;
         this.salleAssembler = salleAssembler;
@@ -84,10 +93,18 @@ public class SalleController {
     }
 
     /** « Modifier la salle » : nombre de postes stagiaires, de vidéoprojecteurs et de tableaux interactifs. */
-    @PutMapping("/{id}/")
+    /**
+     * « Modifier la salle » en JSON Patch (opérations « replace ») : le matériel manquant vient du stock,
+     * celui en trop y retourne. Ex. [{"op":"replace","path":"/nbPostes","value":12}]
+     */
+    @PatchMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<SalleEquipeeResponseDto> put(@PathVariable Long id, @Valid @RequestBody SalleModificationRequestDto dto) {
-        return ResponseEntity.ok(salleService.modifierComposition(id, dto));
+    public ResponseEntity<SalleEquipeeResponseDto> patch(@PathVariable Long id, @RequestBody String patch) {
+        Salle existante = salleService.findById(id).orElse(null);
+        if (existante == null) return ResponseEntity.notFound().build();
+        SalleModificationRequestDto modifie = jsonPatchUtils.apply(patch, salleAssembler.toModificationDto(existante),
+                SalleModificationRequestDto.class, PATCHABLES);
+        return ResponseEntity.ok(salleService.modifierComposition(id, modifie));
     }
 
     @PatchMapping("/{id}/geler/")

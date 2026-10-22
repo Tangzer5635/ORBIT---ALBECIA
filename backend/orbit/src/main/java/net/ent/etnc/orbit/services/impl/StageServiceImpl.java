@@ -2,6 +2,7 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.dtos.responseDTO.BilanImportStagesDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
+import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeAction;
@@ -10,6 +11,8 @@ import net.ent.etnc.orbit.repositories.StageRepository;
 import net.ent.etnc.orbit.repositories.projections.SalleDuStage;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PersonnelService;
+import net.ent.etnc.orbit.services.PosteService;
+import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.StageService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.Libelles;
@@ -40,13 +43,18 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
     private static final DateTimeFormatter DATE_FR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final PersonnelService personnelService;
+    private final PosteService posteService;
+    private final SalleService salleService;
     private final JournalisationService journalisationService;
 
     @Autowired
     public StageServiceImpl(StageRepository stageRepository, PersonnelService personnelService,
+                            PosteService posteService, SalleService salleService,
                             JournalisationService journalisationService) {
         super(stageRepository);
         this.personnelService = personnelService;
+        this.posteService = posteService;
+        this.salleService = salleService;
         this.journalisationService = journalisationService;
     }
 
@@ -188,8 +196,8 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
     }
 
     /**
-     * On ne supprime qu'un stage terminé (date de fin passée), et qui n'a plus ni stagiaires ni salle :
-     * il faut d'abord les retirer.
+     * On ne supprime qu'un stage terminé (date de fin passée). Ses stagiaires sont retirés du stage et de
+     * leur poste (leurs comptes restent), et il est retiré de la salle qui l'accueille.
      */
     @Override
     @Transactional
@@ -198,12 +206,24 @@ public class StageServiceImpl extends AbstractService<Stage, StageRepository> im
                 .orElseThrow(() -> new ServiceException("Stage " + id + " introuvable"));
         if (!stage.getDateFin().isBefore(LocalDate.now()))
             throw new ServiceException("Le stage " + stage.getNom() + " n'est pas terminé : on ne supprime qu'un stage terminé");
-        if (personnelService.existeDansStage(id))
-            throw new ServiceException("Le stage " + stage.getNom() + " contient encore des stagiaires");
-        if (repository.nbSalles(id) > 0)
-            throw new ServiceException("Le stage " + stage.getNom() + " est affecté à une salle : retirez-le d'abord");
+
+        // les stagiaires sortent du stage et de leur poste (leur compte est conservé)
+        List<Personnel> stagiaires = personnelService.stagiairesDuStage(id);
+        for (Personnel stagiaire : stagiaires) {
+            posteService.libererPosteDe(stagiaire.getId());
+            stagiaire.setStage(null);
+        }
+        // la salle qui l'accueille n'a plus de stage, ses postes repartent libres
+        List<Salle> salles = salleService.sallesDuStage(id);
+        for (Salle salle : salles) {
+            salle.setStage(null);
+            salle.getPostes().forEach(poste -> poste.setOccupant(null));
+        }
+
         repository.delete(stage);
-        journalisationService.journaliser(TypeAction.SUPPRESSION, Libelles.stage(stage) + " supprimé");
+        journalisationService.journaliser(TypeAction.SUPPRESSION, Libelles.stage(stage) + " supprimé ("
+                + stagiaires.size() + " stagiaire(s) retiré(s) du stage"
+                + salles.stream().map(s -> ", retiré de la " + Libelles.salle(s)).collect(Collectors.joining()) + ")");
     }
 
     @Override

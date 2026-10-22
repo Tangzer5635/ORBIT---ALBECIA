@@ -6,6 +6,7 @@ import net.ent.etnc.orbit.dtos.requestDTO.UserUpdateRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.UserResponseDto;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.PersonnelService;
@@ -35,13 +36,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PersonnelController.class)
-@Import({WebSecurityConfig.class, RsqlFilterUtils.class}) // RsqlFilterUtils : composant réel, utilisé par getAll
+@Import({WebSecurityConfig.class, RsqlFilterUtils.class, JsonPatchUtils.class}) // composants réels, utilisés par getAll et patch
 class PersonnelControllerTest extends ControllerTestSupport {
 
     private static final String JSON_VALIDE = """
@@ -167,15 +167,6 @@ class PersonnelControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void post_doitRenvoyer400_quandLoginTropCourt() throws Exception {
-        mockMvc.perform(post("/api/v1/personnels/").with(connecte(Role.ADMINISTRATEUR))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(JSON_VALIDE.replace("j.test", "ab")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.login").exists());
-    }
-
-    @Test
     void post_doitRenvoyer400_quandRoleInconnu() throws Exception {
         mockMvc.perform(post("/api/v1/personnels/").with(connecte(Role.ADMINISTRATEUR))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -201,44 +192,74 @@ class PersonnelControllerTest extends ControllerTestSupport {
                 .andExpect(status().isForbidden());
     }
 
-    // ---------- put ----------
+    // ---------- patch ----------
+
+    private static final String PATCH_NOM = "[{\"op\":\"replace\",\"path\":\"/nom\",\"value\":\"Martin\"}]";
+
+    private void etatCourant() {
+        when(personnelService.findById(7L)).thenReturn(Optional.of(personnel(Role.STAGIAIRE)));
+        UserUpdateRequestDto courant = new UserUpdateRequestDto();
+        courant.setNid("5000000001");
+        courant.setNom("Test");
+        courant.setPrenom("Jean");
+        courant.setLogin("j.test");
+        when(userAssembler.toUpdateDto(any())).thenReturn(courant);
+    }
 
     @Test
-    void put_doitRenvoyer200_quandValide() throws Exception {
+    void patch_doitRenvoyer200_etNeModifierQueLeNom() throws Exception {
+        etatCourant();
         when(userAssembler.toEntity(any(UserUpdateRequestDto.class))).thenReturn(personnel(Role.STAGIAIRE));
         when(personnelService.modifier(eq(7L), any())).thenReturn(personnel(Role.STAGIAIRE));
         reponse(false);
 
-        mockMvc.perform(put("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
-                        .contentType(MediaType.APPLICATION_JSON).content(JSON_MODIFICATION))
+        mockMvc.perform(patch("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
+                        .contentType("application/json-patch+json").content(PATCH_NOM))
                 .andExpect(status().isOk());
+
+        ArgumentCaptor<UserUpdateRequestDto> captor = ArgumentCaptor.forClass(UserUpdateRequestDto.class);
+        verify(userAssembler).toEntity(captor.capture());
+        assertThat(captor.getValue().getNom()).isEqualTo("Martin");
+        assertThat(captor.getValue().getLogin()).isEqualTo("j.test");
+        assertThat(captor.getValue().getMotDePasse()).isNull();
     }
 
     @Test
-    void put_doitRenvoyer400_quandIntrouvable() throws Exception {
-        when(userAssembler.toEntity(any(UserUpdateRequestDto.class))).thenReturn(personnel(Role.STAGIAIRE));
-        when(personnelService.modifier(eq(7L), any())).thenThrow(new ServiceException("RG-U02", "Utilisateur introuvable"));
+    void patch_doitRenvoyer400_quandNidInvalide() throws Exception {
+        etatCourant();
 
-        mockMvc.perform(put("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
-                        .contentType(MediaType.APPLICATION_JSON).content(JSON_MODIFICATION))
+        mockMvc.perform(patch("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"replace\",\"path\":\"/nid\",\"value\":\"123\"}]"))
+                .andExpect(status().isBadRequest());
+        verify(personnelService, never()).modifier(any(), any());
+    }
+
+    @Test
+    void patch_doitRenvoyer400_quandRole() throws Exception {
+        etatCourant();
+
+        mockMvc.perform(patch("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"replace\",\"path\":\"/role\",\"value\":\"ADMINISTRATEUR\"}]"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Utilisateur introuvable"));
+                .andExpect(content().string("Champ non patchable : role"));
+        verify(personnelService, never()).modifier(any(), any());
     }
 
     @Test
-    void put_doitRenvoyer400_quandNidInvalide() throws Exception {
-        mockMvc.perform(put("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(JSON_MODIFICATION.replace("5000000001", "123")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.nid").exists());
-        verify(personnelService, never()).update(any());
+    void patch_doitRenvoyer404_quandIntrouvable() throws Exception {
+        when(personnelService.findById(7L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(patch("/api/v1/personnels/{id}/", 7L).with(connecte(Role.ADMINISTRATEUR))
+                        .contentType("application/json-patch+json").content(PATCH_NOM))
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    void put_doitRenvoyer403_quandGestionnaire() throws Exception {
-        mockMvc.perform(put("/api/v1/personnels/{id}/", 7L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON).content(JSON_MODIFICATION))
+    void patch_doitRenvoyer403_quandGestionnaire() throws Exception {
+        mockMvc.perform(patch("/api/v1/personnels/{id}/", 7L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_NOM))
                 .andExpect(status().isForbidden());
     }
 

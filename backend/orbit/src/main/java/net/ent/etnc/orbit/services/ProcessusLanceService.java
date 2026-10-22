@@ -20,4 +20,11 @@ public interface ProcessusLanceService {
      * @return le nombre d'instances arrêtées
      */
     int tuer(Long idPoste, String nom) throws ServiceException;
+
+    /**
+     * À chaque liste reçue de l'agent : arrête les processus en liste noire dans la salle de la machine
+     * (liste globale ou surcharge d'un formateur de la salle). Ne lève jamais d'exception : une erreur
+     * ne doit pas couper la connexion de l'agent.
+     */
+    void appliquerListeNoire(String mac);
 }

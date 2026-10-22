@@ -79,10 +79,10 @@ export default function ProcessusPage() {
             <section className="card-s" style={{marginTop: 14}}>
                 <h2>Référentiel des processus</h2>
                 <p className="muted small">
-                    Liste blanche : autorisé, peut faire partie d'un master. Liste noire : interdit sur tous les postes
-                    et désinstallé des UC. La liste blanche a toujours le dessus : un processus qui fait partie d'un
-                    master ne peut pas passer en liste noire. Les processus lancés sur les postes arriveront avec
-                    l'Agent ORBIT.
+                    Liste blanche : autorisé, peut faire partie d'un master. Liste noire : interdit, désinstallé des UC
+                    et arrêté automatiquement dès qu'il est lancé sur un poste. La liste blanche a toujours le dessus :
+                    un processus qui fait partie d'un master ne peut pas passer en liste noire ici. Chaque formateur peut
+                    surcharger cette liste pour ses salles, depuis la page d'une de ses salles.
                 </p>
                 <input
                     className="search"

@@ -1,4 +1,4 @@
-import type {ListeProcessus, Page, Processus, ProcessusRequest} from "../types/types.ts";
+import type {ListeProcessus, Page, Processus, ProcessusRequest, ProcessusSalle} from "../types/types.ts";
 import {apiFetch} from "./api.ts";
 
 const URL = `/api/v1/processus`;
@@ -40,6 +40,21 @@ export function ajouterProcessus(processus: ProcessusRequest): Promise<Processus
 // Liste blanche ou noire : refusé en noire si le processus fait partie d'un master (la blanche a le dessus)
 export function changerListe(id: number, liste: ListeProcessus): Promise<Processus> {
     return requete(`${URL}/${id}/?liste=${liste}`, {method: "PATCH"});
+}
+
+// Processus avec la liste qui s'applique dans la salle (liste globale ou surcharge d'un de ses formateurs)
+export function getProcessusDeLaSalle(salleId: number): Promise<ProcessusSalle[]> {
+    return requete(`/api/v1/surcharges-processus/?salleId=${salleId}`);
+}
+
+// Le formateur connecté passe ce processus en blanche ou noire pour toutes ses salles
+export function surchargerProcessus(processusId: number, liste: ListeProcessus): Promise<void> {
+    return requete(`/api/v1/surcharges-processus/?processusId=${processusId}&liste=${liste}`, {method: "PUT"});
+}
+
+// Le formateur connecté revient à la liste globale pour ce processus
+export function reinitialiserProcessus(processusId: number): Promise<void> {
+    return requete(`/api/v1/surcharges-processus/?processusId=${processusId}`, {method: "DELETE"});
 }
 
 // Méthode pour supprimer un processus (il est désinstallé de toutes les UC)
