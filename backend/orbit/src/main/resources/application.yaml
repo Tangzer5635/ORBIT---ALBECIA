@@ -28,6 +28,7 @@ app:
     refresh-expiration-ms: 14400000
 server:
   port: 8080
+# Agent ORBIT : joint sur l'adresse IP de l'UC du poste (fiche matériel), à ce port
 agent:
-  url: http://localhost:8777
+  port: 8777
   token: lJ0HxavQo-1dlAToADYOyOIGpzo_gKQY

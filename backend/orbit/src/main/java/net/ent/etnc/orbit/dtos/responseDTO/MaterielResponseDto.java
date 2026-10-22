@@ -20,6 +20,7 @@ public class MaterielResponseDto {
     private LocalDate dateAcquisition;
     private String type;
     private String nomMachine;
+    private String adresseMac;
     private List<ProcessusResponseDto> processus;
     private EtatMateriel etat;
     private LocalDate dateArchivage;

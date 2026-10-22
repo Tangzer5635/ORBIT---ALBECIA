@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import net.ent.etnc.orbit.models.entities.Materiel;
+import net.ent.etnc.orbit.models.entities.UC;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
@@ -36,6 +37,10 @@ public class MaterielRequestDto {
 
     @Length(max = 50, message = "nomMachine doit avoir au plus 50 caractères")
     private String nomMachine;
+
+    /** UC uniquement, facultative (vide accepté), séparateur « : » ou « - ». */
+    @Pattern(regexp = "^$|" + UC.MAC, message = "adresseMac doit être une adresse MAC (ex. 00:0C:29:AB:CD:EF)")
+    private String adresseMac;
 
     private Long idStockage;
 }

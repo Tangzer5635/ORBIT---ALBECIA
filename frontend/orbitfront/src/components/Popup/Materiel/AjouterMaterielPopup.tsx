@@ -1,6 +1,6 @@
 import {useState} from "react";
 import Popup from "../Popup.tsx";
-import {LIBELLE_TYPE_MATERIEL, type TypeMateriel} from "../../../types/types.ts";
+import {MAC, LIBELLE_TYPE_MATERIEL, type TypeMateriel} from "../../../types/types.ts";
 import {ajouterMateriel, MaterielError} from "../../../services/materielService.ts";
 import {useBatiments} from "../../../context/BatimentsContext.tsx";
 import {ORDRE_TYPES} from "../../../utils/materiels.ts";
@@ -27,6 +27,7 @@ export default function AjouterMaterielPopup({onClose, onFait}: Props) {
     const [modele, setModele] = useState("");
     const [numSerie, setNumSerie] = useState("");
     const [nomMachine, setNomMachine] = useState("");
+    const [adresseMac, setAdresseMac] = useState("");
     const [dateAcquisition, setDateAcquisition] = useState(aujourdhui());
     const [garantie, setGarantie] = useState(2); // en années
     const [idStockage, setIdStockage] = useState(String(batiments.find(b => b.stockages.length)?.stockages[0]?.id ?? ""));
@@ -34,7 +35,8 @@ export default function AjouterMaterielPopup({onClose, onFait}: Props) {
     const [enCours, setEnCours] = useState(false);
 
     const dateFinGarantie = dateAcquisition ? plusAnnees(dateAcquisition, garantie) : "";
-    const complet = modele.trim() && numSerie.trim().length >= 3 && dateAcquisition && idStockage;
+    const macValide = type !== "UC" || !adresseMac.trim() || MAC.test(adresseMac.trim());
+    const complet = modele.trim() && numSerie.trim().length >= 3 && dateAcquisition && idStockage && macValide;
 
     async function valider() {
         if (!complet) return;
@@ -46,6 +48,7 @@ export default function AjouterMaterielPopup({onClose, onFait}: Props) {
                 modele: modele.trim(),
                 numSerie: numSerie.trim(),
                 nomMachine: type === "UC" && nomMachine.trim() ? nomMachine.trim() : undefined,
+                adresseMac: type === "UC" && adresseMac.trim() ? adresseMac.trim() : undefined,
                 dateAcquisition,
                 dateFinGarantie,
                 idStockage: Number(idStockage),
@@ -84,6 +87,11 @@ export default function AjouterMaterielPopup({onClose, onFait}: Props) {
                 <>
                     <label htmlFor="nomMachine">Nom machine (facultatif)</label>
                     <input id="nomMachine" value={nomMachine} onChange={e => setNomMachine(e.target.value)} maxLength={50}/>
+
+                    <label htmlFor="adresseMac">Adresse MAC (facultatif)</label>
+                    <input id="adresseMac" value={adresseMac} onChange={e => setAdresseMac(e.target.value)} maxLength={17}
+                           placeholder="Ex. 00:0C:29:AB:CD:EF"/>
+                    {!macValide && <p className="error-message" role="alert">Adresse MAC attendue, ex. 00:0C:29:AB:CD:EF.</p>}
                 </>
             )}
 

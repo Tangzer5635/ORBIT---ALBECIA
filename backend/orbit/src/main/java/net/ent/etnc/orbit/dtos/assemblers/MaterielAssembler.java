@@ -34,6 +34,7 @@ public class MaterielAssembler {
         // unproxy : un matériel chargé en LAZY est un proxy de Materiel, pas de UC
         if (Hibernate.unproxy(materiel) instanceof UC uc) {
             dto.setNomMachine(uc.getNomMachine());
+            dto.setAdresseMac(uc.getAdresseMac());
             dto.setProcessus(uc.getProcessus().stream().map(processusAssembler::toDto).toList());
         }
         return dto;
@@ -69,6 +70,7 @@ public class MaterielAssembler {
             case UC.TYPE -> {
                 UC uc = new UC();
                 uc.setNomMachine(dto.getNomMachine());
+                uc.setAdresseMac(dto.getAdresseMac());
                 yield uc;
             }
             case Ecran.TYPE -> new Ecran();

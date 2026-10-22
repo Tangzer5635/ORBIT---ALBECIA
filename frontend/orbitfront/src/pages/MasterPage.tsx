@@ -7,7 +7,6 @@ import {dateFr, pluriel} from "../utils/postes.ts";
 import Popup from "../components/Popup/Popup.tsx";
 import MasterPopup from "../components/Popup/Master/MasterPopup.tsx";
 import PlaquerMasterPopup from "../components/Popup/Master/PlaquerMasterPopup.tsx";
-import ProcessMonitor from "../components/ProcessMonitor.tsx";
 
 // Masters : une carte par master (salles où il est plaqué, processus, actions)
 export default function MasterPage() {
@@ -142,8 +141,6 @@ export default function MasterPage() {
                     {erreurSuppression && <p className="error-message" role="alert">{erreurSuppression}</p>}
                 </Popup>
             )}
-
-            <ProcessMonitor />
         </>
     );
 }

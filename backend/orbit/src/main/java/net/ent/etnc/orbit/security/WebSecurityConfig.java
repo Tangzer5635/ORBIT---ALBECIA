@@ -4,7 +4,6 @@ import net.ent.etnc.orbit.security.jwt.AuthJwtFilter;
 import net.ent.etnc.orbit.security.services.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -62,7 +61,8 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/agent/**").permitAll()
+                        // WebSocket de l'Agent ORBIT : authentifié par son en-tête X-Token (AgentWebSocketConfig)
+                        .requestMatchers("/api/v1/agents/ws").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
