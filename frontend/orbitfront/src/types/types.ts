@@ -268,6 +268,7 @@ export interface Materiel {
     etat: EtatMateriel;
     dateArchivage: string | null;
     nomMachine?: string; // UC uniquement
+    adresseMac?: string; // UC uniquement : "00:0C:29:AB:CD:EF", identifie la machine auprès de l'Agent ORBIT
     processus?: Processus[];
     numSalle?: string; // Salle où se trouve le matériel (absents s'il est archivé)
     typeSalle?: TypeSalle;
@@ -308,8 +309,12 @@ export interface MaterielRequest {
     dateAcquisition: string;
     type: TypeMateriel;
     nomMachine?: string;   // UC uniquement
+    adresseMac?: string;   // UC uniquement, absente = pas d'adresse (séparateur « : » ou « - »)
     idStockage?: number;
 }
+
+// Adresse MAC d'une UC, même règle que UC.MAC côté back (ex. 00:0C:29:AB:CD:EF ou 00-0C-29-AB-CD-EF)
+export const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/;
 
 //==========================================
 //      PROCESSUS
@@ -332,6 +337,27 @@ export interface Processus {
 export interface ProcessusRequest {
     nom: string;
     liste: ListeProcessus;
+}
+
+// ProcessusLanceDto : un processus lancé sur un poste, ses instances regroupées sous son nom
+export interface ProcessusLance {
+    nom: string;     // "notepad.exe"
+    nombre: number;  // nombre d'instances
+    pids: number[];
+    memoire: number; // % de la RAM de la machine, cumulé
+    cpu: number;     // %, cumulé
+}
+
+// ProcessusPosteDto (GET /processus-lances/?posteId=) : ce que l'Agent ORBIT voit sur l'UC du poste
+export interface ProcessusPoste {
+    nomMachine?: string;     // nom machine de l'UC dans ORBIT
+    adresseMac: string;      // adresse MAC de l'UC dans ORBIT
+    adresseIp: string;       // IP d'où l'agent de cette MAC s'est annoncé
+    machineDetectee?: string; // nom de la machine qui a répondu
+    os?: string;
+    ramGo?: number;
+    conforme: boolean;       // false : la machine qui répond n'est pas l'UC du poste (liste vide)
+    processus: ProcessusLance[];
 }
 
 //==========================================

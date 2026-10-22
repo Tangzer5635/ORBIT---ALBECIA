@@ -1,6 +1,6 @@
 import {useState} from "react";
 import Popup from "../Popup.tsx";
-import {LIBELLE_TYPE_MATERIEL, type Materiel} from "../../../types/types.ts";
+import {MAC, LIBELLE_TYPE_MATERIEL, type Materiel} from "../../../types/types.ts";
 import {MaterielError, modifierMateriel} from "../../../services/materielService.ts";
 
 interface Props {
@@ -16,11 +16,13 @@ export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props
     const [dateAcquisition, setDateAcquisition] = useState(materiel.dateAcquisition);
     const [dateFinGarantie, setDateFinGarantie] = useState(materiel.dateFinGarantie);
     const [nomMachine, setNomMachine] = useState(materiel.nomMachine ?? "");
+    const [adresseMac, setAdresseMac] = useState(materiel.adresseMac ?? "");
     const [erreur, setErreur] = useState("");
     const [enCours, setEnCours] = useState(false);
 
     const estUC = materiel.type === "UC";
-    const complet = modele.trim() && numSerie.trim() && dateAcquisition && dateFinGarantie;
+    const macValide = !estUC || !adresseMac.trim() || MAC.test(adresseMac.trim());
+    const complet = modele.trim() && numSerie.trim() && dateAcquisition && dateFinGarantie && macValide;
 
     async function valider() {
         if (!complet) return;
@@ -34,6 +36,7 @@ export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props
                 dateAcquisition,
                 dateFinGarantie,
                 nomMachine: estUC ? nomMachine.trim() : undefined,
+                adresseMac: estUC && adresseMac.trim() ? adresseMac.trim() : undefined, // vide : l'adresse est effacée
             });
             onFait();
         } catch (err) {
@@ -64,6 +67,11 @@ export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props
                     <label htmlFor="nomMachine">Nom machine</label>
                     <input id="nomMachine" value={nomMachine} onChange={e => setNomMachine(e.target.value)}
                            maxLength={50}/>
+
+                    <label htmlFor="adresseMac">Adresse MAC</label>
+                    <input id="adresseMac" value={adresseMac} onChange={e => setAdresseMac(e.target.value)} maxLength={17}
+                           placeholder="Ex. 00:0C:29:AB:CD:EF"/>
+                    {!macValide && <p className="error-message" role="alert">Adresse MAC attendue, ex. 00:0C:29:AB:CD:EF.</p>}
                 </>
             )}
 

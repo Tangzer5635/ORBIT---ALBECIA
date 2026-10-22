@@ -1,0 +1,46 @@
+services:
+  bdd:
+    image: postgres:16-alpine
+    container_name: orbit-bdd
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orbit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+    volumes:
+      - orbit_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orbit"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  back:
+    build: ./backend/orbit
+    container_name: orbit-back
+    restart: unless-stopped
+    depends_on:
+      bdd:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://bdd:5432/orbit
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      APP_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
+      AGENT_TOKEN: ${AGENT_TOKEN:?AGENT_TOKEN manquant dans .env}
+      LOG_DIR: /app/logs
+    volumes:
+      - ./logs:/app/logs
+
+  front:
+    build: ./frontend/orbitfront
+    container_name: orbit-front
+    restart: unless-stopped
+    depends_on:
+      - back
+    ports:
+      - "3000:80"     # l'appli : http://localhost:3000
+      - "8444:8444"   # les agents des VM : ws://192.168.147.1:8444 (Nginx relaie vers le back)
+
+volumes:
+  orbit_pgdata:

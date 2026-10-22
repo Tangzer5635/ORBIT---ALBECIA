@@ -90,8 +90,10 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         existant.setModele(materiel.getModele());
         existant.setDateFinGarantie(materiel.getDateFinGarantie());
         existant.setDateAcquisition(materiel.getDateAcquisition());
-        if (existant instanceof UC uc && materiel instanceof UC modifie)
+        if (existant instanceof UC uc && materiel instanceof UC modifie) {
             uc.setNomMachine(modifie.getNomMachine());
+            uc.setAdresseMac(modifie.getAdresseMac());
+        }
         Materiel enregistre = repository.save(existant);
         journalisationService.journaliser(TypeAction.MODIFICATION, Libelles.materiel(existant) + " modifié");
         return enregistre;
