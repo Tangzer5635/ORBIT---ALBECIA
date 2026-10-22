@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.dtos.assemblers.PosteAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.PosteUpdateRequestDto;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * CRUD des postes. Un poste est créé dans une salle de cours ; à sa suppression,
@@ -38,9 +40,14 @@ public class PosteController {
     private final PosteService posteService;
     private final SalleService salleService;
     private final PosteAssembler posteAssembler;
+    private final JsonPatchUtils jsonPatchUtils;
+
+    static final Set<String> PATCHABLES = Set.of("numPoste");
 
     @Autowired
-    public PosteController(PosteService posteService, SalleService salleService, PosteAssembler posteAssembler) {
+    public PosteController(PosteService posteService, SalleService salleService, PosteAssembler posteAssembler,
+                           JsonPatchUtils jsonPatchUtils) {
+        this.jsonPatchUtils = jsonPatchUtils;
         this.posteService = posteService;
         this.salleService = salleService;
         this.posteAssembler = posteAssembler;
@@ -82,10 +89,15 @@ public class PosteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(posteAssembler.toDto(cree));
     }
 
-    @PutMapping("/{id}/")
+    /** JSON Patch (opération « replace » sur /numPoste). */
+    @PatchMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<PosteResponseDto> put(@PathVariable Long id, @Valid @RequestBody PosteUpdateRequestDto posteDto) {
-        Poste poste = posteAssembler.toEntity(posteDto);
+    public ResponseEntity<PosteResponseDto> patch(@PathVariable Long id, @RequestBody String patch) {
+        Poste existant = posteService.findById(id).orElse(null);
+        if (existant == null) return ResponseEntity.notFound().build();
+        PosteUpdateRequestDto modifie = jsonPatchUtils.apply(patch, posteAssembler.toUpdateDto(existant),
+                PosteUpdateRequestDto.class, PATCHABLES);
+        Poste poste = posteAssembler.toEntity(modifie);
         poste.setId(id);
         return ResponseEntity.ok(posteAssembler.toDto(posteService.update(poste)));
     }

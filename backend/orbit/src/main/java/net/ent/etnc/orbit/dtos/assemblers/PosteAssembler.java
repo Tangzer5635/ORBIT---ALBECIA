@@ -51,6 +51,11 @@ public class PosteAssembler {
         return poste;
     }
 
+    /** État actuel du poste pour un PATCH (seul le numéro est modifiable). */
+    public PosteUpdateRequestDto toUpdateDto(Poste poste) {
+        return PosteUpdateRequestDto.builder().numPoste(poste.getNumPoste()).build();
+    }
+
     public Poste toEntity(PosteUpdateRequestDto posteDto) {
         Poste poste = new Poste();
         poste.setNumPoste(posteDto.getNumPoste());

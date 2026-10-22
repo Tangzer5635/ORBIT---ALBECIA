@@ -153,7 +153,7 @@ export default function StagePage() {
                     open
                     onClose={fermerSuppression}
                     title={`Supprimer le stage ${stageASupprimer.nom}`}
-                    description="Seul un stage terminé peut être supprimé, et seulement s'il n'a plus de stagiaires ni de salle. Cette action est définitive."
+                    description="Seul un stage terminé peut être supprimé. Ses stagiaires sont retirés du stage et de leur poste (leurs comptes sont conservés), et il est retiré de sa salle. Cette action est définitive."
                     confirmLabel="Supprimer"
                     variant="danger"
                     loading={suppressionEnCours}

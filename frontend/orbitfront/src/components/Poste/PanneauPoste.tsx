@@ -31,8 +31,9 @@ export default function PanneauPoste({
     const [version, setVersion] = useState(0); // +1 après un signalement : recharge le matériel et ses défaillances
     const formateur = estFormateur(poste);
     const etat = etatPoste(poste.etat);
-    // le formateur remonte une défaillance uniquement sur le poste formateur de ses salles
-    const peutSignaler = formateur && getUtilisateur()?.role === "FORMATEUR";
+    // le formateur remonte une défaillance sur n'importe quel poste de ses salles (formateur ou stagiaire) :
+    // il voit le matériel en lecture seule, et c'est le gestionnaire qui traite la défaillance
+    const peutSignaler = getUtilisateur()?.role === "FORMATEUR";
     const voitMateriel = peutGerer || peutSignaler;
     // un stagiaire ne s'assoit que sur un poste libre : ni défectueux, ni à compléter (au moins une UC et un écran)
     const posteLibre = poste.etat !== "DEFECTUEUX" && poste.etat !== "A_COMPLETER";
@@ -45,7 +46,7 @@ export default function PanneauPoste({
     const [envoi, setEnvoi] = useState(false);
     const [erreurSignalement, setErreurSignalement] = useState("");
 
-    // le détail du matériel : gestionnaire, ou formateur sur le poste formateur (sinon seulement les types)
+    // le détail du matériel : gestionnaire, ou formateur sur un poste de ses salles (sinon seulement les types)
     // chargé tout de suite : le bouton « Remonter une défaillance » en a besoin, même catégorie repliée
     useEffect(() => {
         if (!voitMateriel) return;
@@ -184,7 +185,7 @@ export default function PanneauPoste({
             {peutSignaler && (
                 <Popup open={signalementOuvert} onClose={() => !envoi && setSignalementOuvert(false)}
                        title="Remonter une défaillance"
-                       description="Décrivez le problème constaté sur un matériel du poste formateur. Le gestionnaire pourra le traiter."
+                       description="Décrivez le problème constaté sur un matériel de ce poste. Le gestionnaire pourra le traiter."
                        confirmLabel="Remonter la défaillance" onConfirm={() => void envoyerSignalement()}
                        loading={envoi} disabled={materielSignale === "" || description.trim().length < 5}>
                     <label className="lbl" htmlFor="materiel-signale-formateur">Matériel concerné</label>

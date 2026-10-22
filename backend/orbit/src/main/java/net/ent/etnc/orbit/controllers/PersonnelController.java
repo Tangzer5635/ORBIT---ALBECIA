@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.dtos.assemblers.UserAssembler;
 import net.ent.etnc.orbit.dtos.requestDTO.RoleRequestDto;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/personnels")
@@ -39,13 +41,18 @@ public class PersonnelController {
     private final PersonnelService personnelService;
     private final UserAssembler userAssembler;
     private final RsqlFilterUtils rsqlFilterUtils;
+    private final JsonPatchUtils jsonPatchUtils;
+
+    /** Modifiables par PATCH (mot de passe : absent ou vide = inchangé). */
+    static final Set<String> PATCHABLES = Set.of("nid", "nom", "prenom", "login", "motDePasse");
 
     @Autowired
     public PersonnelController(PersonnelService personnelService, UserAssembler userAssembler,
-                               RsqlFilterUtils rsqlFilterUtils) {
+                               RsqlFilterUtils rsqlFilterUtils, JsonPatchUtils jsonPatchUtils) {
         this.personnelService = personnelService;
         this.userAssembler = userAssembler;
         this.rsqlFilterUtils = rsqlFilterUtils;
+        this.jsonPatchUtils = jsonPatchUtils;
     }
 
     /**
@@ -88,10 +95,18 @@ public class PersonnelController {
                 userAssembler.toDto(personnelService.create(userAssembler.toEntity(userDto))));
     }
 
-    @PutMapping("/{id}/")
+    /**
+     * JSON Patch (opérations « replace ») sur l'identité et le mot de passe ; le rôle et l'activation
+     * gardent leurs propres PATCH (/role/, /activer/...). Ex. [{"op":"replace","path":"/nom","value":"Martin"}]
+     */
+    @PatchMapping("/{id}/")
     @PreAuthorize("hasRole('ADMINISTRATEUR')")
-    public ResponseEntity<UserResponseDto> put(@PathVariable Long id, @Valid @RequestBody UserUpdateRequestDto userDto) {
-        return ResponseEntity.ok(userAssembler.toDto(personnelService.modifier(id, userAssembler.toEntity(userDto))));
+    public ResponseEntity<UserResponseDto> patch(@PathVariable Long id, @RequestBody String patch) {
+        Personnel existant = personnelService.findById(id).orElse(null);
+        if (existant == null) return ResponseEntity.notFound().build();
+        UserUpdateRequestDto modifie = jsonPatchUtils.apply(patch, userAssembler.toUpdateDto(existant),
+                UserUpdateRequestDto.class, PATCHABLES);
+        return ResponseEntity.ok(userAssembler.toDto(personnelService.modifier(id, userAssembler.toEntity(modifie))));
     }
 
     @PatchMapping("/{id}/role/")

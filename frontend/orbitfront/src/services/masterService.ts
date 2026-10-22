@@ -1,4 +1,5 @@
 import type {Master, MasterRequest, Page, Salle} from "../types/types.ts";
+import type {OperationPatch} from "../utils/patch.ts";
 import {apiFetch} from "./api.ts";
 
 const URL = `/api/v1/masters`;
@@ -36,9 +37,9 @@ export function creerMaster(dto: MasterRequest): Promise<Master> {
     return requete(`${URL}/`, {method: "POST", body: JSON.stringify(dto)});
 }
 
-// Les salles où il est plaqué reçoivent la nouvelle liste de processus
-export function modifierMaster(id: number, dto: MasterRequest): Promise<Master> {
-    return requete(`${URL}/${id}/`, {method: "PUT", body: JSON.stringify(dto)});
+// JSON Patch des seuls champs changés (nom, version, processus) ; les salles où il est plaqué suivent
+export function modifierMaster(id: number, operations: OperationPatch[]): Promise<Master> {
+    return requete(`${URL}/${id}/`, {method: "PATCH", body: JSON.stringify(operations)});
 }
 
 // Les salles où il est plaqué n'ont plus de master ni de processus

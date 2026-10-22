@@ -293,6 +293,12 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
 
     @Override
     @Transactional(readOnly = true)
+    public List<Personnel> stagiairesDuStage(Long idStage) throws ServiceException {
+        return repository.findByStage_Id(idStage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Personnel> findByNid(String nid) throws ServiceException {
         return repository.findByNid(nid);
     }

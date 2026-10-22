@@ -7,11 +7,13 @@ import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.EtatMateriel;
 import net.ent.etnc.orbit.models.enums.Role;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.security.WebSecurityConfig;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +26,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -34,13 +37,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MaterielController.class)
-@Import({WebSecurityConfig.class, RsqlFilterUtils.class}) // RsqlFilterUtils : composant réel, utilisé par getAll
+@Import({WebSecurityConfig.class, RsqlFilterUtils.class, JsonPatchUtils.class}) // composants réels, utilisés par getAll et patch
 class MaterielControllerTest extends ControllerTestSupport {
 
     private static final String JSON_VALIDE = """
@@ -180,46 +182,88 @@ class MaterielControllerTest extends ControllerTestSupport {
                 .andExpect(status().isForbidden());
     }
 
-    // ---------- put ----------
+    // ---------- patch ----------
+
+    private static final String PATCH_MODELE = "[{\"op\":\"replace\",\"path\":\"/modele\",\"value\":\"Dell OptiPlex 7090\"}]";
+
+    /** État courant renvoyé par l'assembler (mocké) : base sur laquelle le patch s'applique. */
+    private void etatCourant() {
+        when(materielService.findById(1L)).thenReturn(Optional.of(materiel()));
+        when(materielAssembler.toRequestDto(any())).thenReturn(MaterielRequestDto.builder()
+                .numSerie("UC-0100").modele("Dell OptiPlex 7020").type("UC")
+                .dateAcquisition(LocalDate.of(2026, 9, 1)).dateFinGarantie(LocalDate.of(2029, 9, 1)).build());
+    }
 
     @Test
-    void put_doitRenvoyer200_quandValide() throws Exception {
-        when(materielService.existsById(1L)).thenReturn(true);
+    void patch_doitRenvoyer200_etNeModifierQueLeModele() throws Exception {
+        etatCourant();
         when(materielAssembler.toEntity(any(MaterielRequestDto.class))).thenReturn(materiel());
         when(materielService.update(any())).thenReturn(materiel());
         reponse(EtatMateriel.NORMAL);
 
-        mockMvc.perform(put("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
+        mockMvc.perform(patch("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_MODELE))
                 .andExpect(status().isOk());
+
+        ArgumentCaptor<MaterielRequestDto> captor = ArgumentCaptor.forClass(MaterielRequestDto.class);
+        verify(materielAssembler).toEntity(captor.capture());
+        assertThat(captor.getValue().getModele()).isEqualTo("Dell OptiPlex 7090");
+        assertThat(captor.getValue().getNumSerie()).isEqualTo("UC-0100");
     }
 
     @Test
-    void put_doitRenvoyer404_quandIntrouvable() throws Exception {
-        when(materielService.existsById(1L)).thenReturn(false);
+    void patch_doitRenvoyer400_quandNumeroDeSerie() throws Exception {
+        etatCourant();
 
-        mockMvc.perform(put("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(patch("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"replace\",\"path\":\"/numSerie\",\"value\":\"UC-9999\"}]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Champ non patchable : numSerie"));
         verify(materielService, never()).update(any());
     }
 
     @Test
-    void put_doitRenvoyer400_quandMaterielArchive() throws Exception {
-        when(materielService.existsById(1L)).thenReturn(true);
+    void patch_doitRenvoyer400_quandValeurInvalide() throws Exception {
+        etatCourant();
+
+        mockMvc.perform(patch("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"replace\",\"path\":\"/modele\",\"value\":\"\"}]"))
+                .andExpect(status().isBadRequest());
+        verify(materielService, never()).update(any());
+    }
+
+    @Test
+    void patch_doitRenvoyer400_quandOperationAutreQueReplace() throws Exception {
+        etatCourant();
+
+        mockMvc.perform(patch("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"remove\",\"path\":\"/modele\"}]"))
+                .andExpect(status().isBadRequest());
+        verify(materielService, never()).update(any());
+    }
+
+    @Test
+    void patch_doitRenvoyer400_quandMaterielArchive() throws Exception {
+        etatCourant();
         when(materielAssembler.toEntity(any(MaterielRequestDto.class))).thenReturn(materiel());
         when(materielService.update(any())).thenThrow(new ServiceException("Un matériel archivé ne peut pas être modifié"));
 
-        mockMvc.perform(put("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
+        mockMvc.perform(patch("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_MODELE))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void put_doitRenvoyer400_quandCorpsInvalide() throws Exception {
-        mockMvc.perform(put("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
-                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isBadRequest());
+    void patch_doitRenvoyer404_quandIntrouvable() throws Exception {
+        when(materielService.findById(1L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(patch("/api/v1/materiels/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_MODELE))
+                .andExpect(status().isNotFound());
+        verify(materielService, never()).update(any());
     }
 
     // ---------- delete ----------

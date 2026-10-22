@@ -2,6 +2,7 @@ import {useState} from "react";
 import Popup from "../Popup.tsx";
 import {MAC, LIBELLE_TYPE_MATERIEL, type Materiel} from "../../../types/types.ts";
 import {MaterielError, modifierMateriel} from "../../../services/materielService.ts";
+import {versPatch} from "../../../utils/patch.ts";
 
 interface Props {
     materiel: Materiel;
@@ -9,10 +10,9 @@ interface Props {
     onFait: () => void;
 }
 
-// Le type ne se modifie pas : on garde celui du matériel
+// Ni le type ni le n° de série ne se modifient : seuls les champs changés partent dans le PATCH
 export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props) {
     const [modele, setModele] = useState(materiel.modele);
-    const [numSerie, setNumSerie] = useState(materiel.numSerie);
     const [dateAcquisition, setDateAcquisition] = useState(materiel.dateAcquisition);
     const [dateFinGarantie, setDateFinGarantie] = useState(materiel.dateFinGarantie);
     const [nomMachine, setNomMachine] = useState(materiel.nomMachine ?? "");
@@ -22,22 +22,29 @@ export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props
 
     const estUC = materiel.type === "UC";
     const macValide = !estUC || !adresseMac.trim() || MAC.test(adresseMac.trim());
-    const complet = modele.trim() && numSerie.trim() && dateAcquisition && dateFinGarantie && macValide;
+    const complet = modele.trim() && dateAcquisition && dateFinGarantie && macValide;
 
     async function valider() {
         if (!complet) return;
         setEnCours(true);
         setErreur("");
         try {
-            await modifierMateriel(materiel.id, {
-                type: materiel.type,
-                modele: modele.trim(),
-                numSerie: numSerie.trim(),
-                dateAcquisition,
-                dateFinGarantie,
-                nomMachine: estUC ? nomMachine.trim() : undefined,
-                adresseMac: estUC && adresseMac.trim() ? adresseMac.trim() : undefined, // vide : l'adresse est effacée
-            });
+            const operations = versPatch(
+                {
+                    modele: materiel.modele,
+                    dateAcquisition: materiel.dateAcquisition,
+                    dateFinGarantie: materiel.dateFinGarantie,
+                    nomMachine: estUC ? materiel.nomMachine ?? "" : undefined,
+                    adresseMac: estUC ? materiel.adresseMac ?? "" : undefined,
+                },
+                {
+                    modele: modele.trim(),
+                    dateAcquisition,
+                    dateFinGarantie,
+                    nomMachine: estUC ? nomMachine.trim() : undefined,
+                    adresseMac: estUC ? adresseMac.trim() : undefined, // vide : l'adresse est effacée
+                });
+            if (operations.length) await modifierMateriel(materiel.id, operations);
             onFait();
         } catch (err) {
             setErreur(err instanceof MaterielError && err.detail ? err.detail : "Modification impossible.");
@@ -59,8 +66,8 @@ export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props
             <input id="modele" value={modele} onChange={e => setModele(e.target.value)} maxLength={50} autoFocus/>
 
             <label htmlFor="numSerie">N° de série</label>
-            <input id="numSerie" value={numSerie} onChange={e => setNumSerie(e.target.value)} minLength={3}
-                   maxLength={50}/>
+            <input id="numSerie" value={materiel.numSerie} readOnly disabled
+                   title="Le n° de série identifie le matériel : il ne se modifie pas"/>
 
             {estUC && (
                 <>

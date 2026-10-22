@@ -4,6 +4,7 @@ import type {Master, Processus} from "../../../types/types.ts";
 import {creerMaster, MasterError, modifierMaster} from "../../../services/masterService.ts";
 import {getProcessus} from "../../../services/processusService.ts";
 import {pluriel} from "../../../utils/postes.ts";
+import {versPatch} from "../../../utils/patch.ts";
 
 interface Props {
     master?: Master; // absent = création
@@ -47,8 +48,13 @@ export default function MasterPopup({master, nbSalles, onClose, onFait}: Props) 
         setErreur("");
         const dto = {nom: nom.trim(), versionMaster: version.trim(), processusIds: [...choisis]};
         try {
-            if (master) await modifierMaster(master.id, dto);
-            else await creerMaster(dto);
+            if (master) {
+                // seuls les champs changés partent dans le PATCH ; rien de changé : rien à envoyer
+                const operations = versPatch(
+                    {nom: master.nom, versionMaster: master.versionMaster, processusIds: [...master.processusIds].sort((a, b) => a - b)},
+                    {...dto, processusIds: [...dto.processusIds].sort((a, b) => a - b)});
+                if (operations.length) await modifierMaster(master.id, operations);
+            } else await creerMaster(dto);
             onFait();
         } catch (err) {
             setErreur(err instanceof MasterError && err.detail ? err.detail : "Impossible d'enregistrer le master.");

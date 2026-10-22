@@ -1,6 +1,7 @@
 package net.ent.etnc.orbit.controllers;
 
 import jakarta.validation.Valid;
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.commons.RsqlFilterUtils;
 import net.ent.etnc.orbit.dtos.requestDTO.MaterielRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.calendrier.CalendrierGarantiesDto;
@@ -28,6 +29,7 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/materiels")
@@ -44,12 +46,17 @@ public class MaterielController {
     private final MaterielService materielService;
     private final MaterielAssembler materielAssembler;
     private final RsqlFilterUtils rsqlFilterUtils;
+    private final JsonPatchUtils jsonPatchUtils;
+
+    static final Set<String> PATCHABLES = Set.of("modele", "dateAcquisition", "dateFinGarantie", "nomMachine", "adresseMac");
 
     @Autowired
-    public MaterielController(MaterielService materielService, MaterielAssembler materielAssembler, RsqlFilterUtils rsqlFilterUtils) {
+    public MaterielController(MaterielService materielService, MaterielAssembler materielAssembler,
+                              RsqlFilterUtils rsqlFilterUtils, JsonPatchUtils jsonPatchUtils) {
         this.materielService = materielService;
         this.materielAssembler = materielAssembler;
         this.rsqlFilterUtils = rsqlFilterUtils;
+        this.jsonPatchUtils = jsonPatchUtils;
     }
 
     private MaterielResponseDto dto(Materiel m) {
@@ -105,12 +112,18 @@ public class MaterielController {
         return ResponseEntity.ok(dto(materielService.creerEnStock(materielAssembler.toEntity(materielRequestDto), materielRequestDto.getIdStockage())));
     }
 
-    //TODO A CHANGER LORS QUE LA FICHE MODIFIER SERA FAITE EN FRONT
-    @PutMapping("/{id}/")
+    /**
+     * JSON Patch (RFC 6902, opérations « replace ») sur les seuls champs modifiables.
+     * Ex. [{"op":"replace","path":"/modele","value":"OptiPlex 7090"}]
+     */
+    @PatchMapping("/{id}/")
     @PreAuthorize("hasRole('GESTIONNAIRE')")
-    public ResponseEntity<MaterielResponseDto> put(@PathVariable Long id, @Valid @RequestBody MaterielRequestDto materielRequestDto) {
-        if (!materielService.existsById(id)) return ResponseEntity.notFound().build();
-        Materiel materiel = materielAssembler.toEntity(materielRequestDto);
+    public ResponseEntity<MaterielResponseDto> patch(@PathVariable Long id, @RequestBody String patch) {
+        Materiel existant = materielService.findById(id).orElse(null);
+        if (existant == null) return ResponseEntity.notFound().build();
+        MaterielRequestDto modifie = jsonPatchUtils.apply(patch, materielAssembler.toRequestDto(existant),
+                MaterielRequestDto.class, PATCHABLES);
+        Materiel materiel = materielAssembler.toEntity(modifie);
         materiel.setId(id);
         return ResponseEntity.ok(dto(materielService.update(materiel)));
     }

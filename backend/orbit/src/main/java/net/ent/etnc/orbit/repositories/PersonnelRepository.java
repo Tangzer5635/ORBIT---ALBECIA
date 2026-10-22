@@ -26,6 +26,8 @@ public interface PersonnelRepository extends BaseRepository<Personnel> {
 
     boolean existsByStage_Id(Long idStage);
 
+    List<Personnel> findByStage_Id(Long idStage);
+
     /** Stagiaires actifs du stage qui n'occupent aucun poste. */
     @Query("select p from Personnel p where p.stage.id = :idStage and p.active = true"
             + " and not exists (select po.id from Poste po where po.occupant = p) order by p.nom, p.prenom")

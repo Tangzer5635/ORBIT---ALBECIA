@@ -1,4 +1,5 @@
-import type {GelRequest, Page, Poste, Salle, SalleCarte, SalleModification, SalleRequest} from "../types/types.ts";
+import type {GelRequest, Page, Poste, Salle, SalleCarte, SalleRequest} from "../types/types.ts";
+import type {OperationPatch} from "../utils/patch.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/salles`;
@@ -172,9 +173,9 @@ async function requete<T>(url: string, init: RequestInit): Promise<T> {
     return await response.json();
 }
 
-// « Modifier la salle » : nombre de postes, de vidéoprojecteurs et de tableaux (manquants = pas assez en stock)
-export function modifierSalle(id: number, dto: SalleModification): Promise<SalleEquipeeResponse> {
-    return requete(`${URL}/${id}/`, {method: "PUT", body: JSON.stringify(dto)});
+// « Modifier la salle » : JSON Patch des nombres changés (postes, vidéoprojecteurs, tableaux) ; manquants = pas assez en stock
+export function modifierSalle(id: number, operations: OperationPatch[]): Promise<SalleEquipeeResponse> {
+    return requete(`${URL}/${id}/`, {method: "PATCH", body: JSON.stringify(operations)});
 }
 
 export function gelerSalle(id: number, gel: GelRequest): Promise<Salle> {

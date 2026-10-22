@@ -1,4 +1,5 @@
 import type {Page, Role, Utilisateur, UtilisateurRequest} from "../types/types.ts";
+import {versPatch} from "../utils/patch.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 
 const URL = `/api/v1/personnels`;
@@ -85,12 +86,15 @@ export async function ajouterUtilisateur(utilisateur: UtilisateurRequest): Promi
     return envoyer(`${URL}/`, "POST", utilisateur);
 }
 
-// Méthode pour modifier un utilisateur. Le PUT ne porte que l'identité et le mot de passe (vide = inchangé) :
-// le rôle et l'état actif ont leurs propres endpoints, appelés seulement s'ils ont changé.
+// Méthode pour modifier un utilisateur. Le PATCH ne porte que les champs d'identité changés et le mot de passe
+// s'il est saisi ; le rôle et l'état actif ont leurs propres endpoints, appelés seulement s'ils ont changé.
 export async function modifierUtilisateur(id: number, utilisateur: UtilisateurRequest, ancien: Utilisateur): Promise<Utilisateur> {
     const {role, active, ...identite} = utilisateur;
 
-    let modifie = await envoyer(`${URL}/${id}/`, "PUT", identite);
+    const operations = versPatch(
+        {nom: ancien.nom, prenom: ancien.prenom, login: ancien.login, motDePasse: undefined as string | undefined},
+        {nom: identite.nom, prenom: identite.prenom, login: identite.login, motDePasse: identite.motDePasse || undefined});
+    let modifie = operations.length ? await envoyer(`${URL}/${id}/`, "PATCH", operations) : ancien;
     if (role !== ancien.role) modifie = await envoyer(`${URL}/${id}/role/`, "PATCH", {role});
     if (active !== undefined && active !== ancien.active) modifie = await changerActif(id, active);
     return modifie;

@@ -1,6 +1,8 @@
 package net.ent.etnc.orbit.controllers;
 
+import net.ent.etnc.orbit.commons.JsonPatchUtils;
 import net.ent.etnc.orbit.dtos.assemblers.SalleAssembler;
+import net.ent.etnc.orbit.dtos.requestDTO.SalleModificationRequestDto;
 import net.ent.etnc.orbit.dtos.requestDTO.SalleRequestDto;
 import net.ent.etnc.orbit.dtos.responseDTO.AnneauDto;
 import net.ent.etnc.orbit.dtos.responseDTO.SalleCarteDto;
@@ -14,6 +16,7 @@ import net.ent.etnc.orbit.services.BatimentService;
 import net.ent.etnc.orbit.services.SalleService;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -34,13 +38,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SalleController.class)
-@Import(WebSecurityConfig.class)
+@Import({WebSecurityConfig.class, JsonPatchUtils.class}) // JsonPatchUtils : composant réel, utilisé par patch
 class SalleControllerTest extends ControllerTestSupport {
 
     private static final String JSON_VALIDE =
@@ -283,5 +288,56 @@ class SalleControllerTest extends ControllerTestSupport {
         mockMvc.perform(get("/api/v1/salles/{id}/", 1L).with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isForbidden());
         verify(salleService, never()).findByIdAvecDetails(any());
+    }
+
+    // ---------- patch (« Modifier la salle ») ----------
+
+    private static final String PATCH_POSTES = "[{\"op\":\"replace\",\"path\":\"/nbPostes\",\"value\":12}]";
+
+    @Test
+    void patch_doitRenvoyer200_etGarderLesAutresNombres() throws Exception {
+        when(salleService.findById(1L)).thenReturn(Optional.of(salle()));
+        when(salleAssembler.toModificationDto(any())).thenReturn(new SalleModificationRequestDto(10, 1, 0));
+        when(salleService.modifierComposition(eq(1L), any())).thenReturn(new SalleEquipeeResponseDto(1L, Map.of()));
+
+        mockMvc.perform(patch("/api/v1/salles/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json").content(PATCH_POSTES))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<SalleModificationRequestDto> captor = ArgumentCaptor.forClass(SalleModificationRequestDto.class);
+        verify(salleService).modifierComposition(eq(1L), captor.capture());
+        assertThat(captor.getValue().getNbPostes()).isEqualTo(12);
+        assertThat(captor.getValue().getNbVideoProjecteurs()).isEqualTo(1);
+    }
+
+    @Test
+    void patch_doitRenvoyer400_quandNombreHorsLimite() throws Exception {
+        when(salleService.findById(1L)).thenReturn(Optional.of(salle()));
+        when(salleAssembler.toModificationDto(any())).thenReturn(new SalleModificationRequestDto(10, 1, 0));
+
+        mockMvc.perform(patch("/api/v1/salles/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"replace\",\"path\":\"/nbTableaux\",\"value\":9}]"))
+                .andExpect(status().isBadRequest());
+        verify(salleService, never()).modifierComposition(any(), any());
+    }
+
+    @Test
+    void patch_doitRenvoyer400_quandNumeroDeSalle() throws Exception {
+        when(salleService.findById(1L)).thenReturn(Optional.of(salle()));
+        when(salleAssembler.toModificationDto(any())).thenReturn(new SalleModificationRequestDto(10, 1, 0));
+
+        mockMvc.perform(patch("/api/v1/salles/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
+                        .contentType("application/json-patch+json")
+                        .content("[{\"op\":\"replace\",\"path\":\"/numSalle\",\"value\":\"102\"}]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Champ non patchable : numSalle"));
+    }
+
+    @Test
+    void patch_doitRenvoyer403_quandFormateur() throws Exception {
+        mockMvc.perform(patch("/api/v1/salles/{id}/", 1L).with(connecte(Role.FORMATEUR))
+                        .contentType("application/json-patch+json").content(PATCH_POSTES))
+                .andExpect(status().isForbidden());
     }
 }

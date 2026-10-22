@@ -31,6 +31,8 @@ public interface SalleRepository extends BaseRepository<Salle> {
 
     List<Salle> findByMaster_Id(Long idMaster);
 
+    List<Salle> findByStage_Id(Long idStage);
+
     /** Le formateur est attribué à cette salle. */
     boolean existsByIdAndPersonnels_Id(Long idSalle, Long idPersonnel);
 
