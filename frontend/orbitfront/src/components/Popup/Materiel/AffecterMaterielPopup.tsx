@@ -2,12 +2,13 @@ import {Fragment, useEffect, useState} from "react";
 import Popup from "../Popup.tsx";
 import {LIBELLE_TYPE_MATERIEL, type MaterielStock, type TypeMateriel} from "../../../types/types.ts";
 import {affecterMaterielAPoste, getStock, MaterielError} from "../../../services/materielService.ts";
-import {ORDRE_TYPES} from "../../../utils/materiels.ts";
+import {MAX_PAR_POSTE, NOM_TYPE, ORDRE_TYPES, placeSurPoste} from "../../../utils/materiels.ts";
 
 interface Props {
     posteId: number;
     titrePoste: string; // "Poste 04", "Poste formateur"
     numBatiment?: string | null; // bâtiment de la salle : son stock est affiché en premier
+    materielsParType: Partial<Record<TypeMateriel, number>>; // ce que le poste a déjà (1 UC et 2 écrans au plus)
     onClose: () => void;
     onFait: () => void; // le poste a changé : la page se recharge
 }
@@ -22,7 +23,9 @@ function parBatiment(materiels: MaterielStock[], premier?: string | null): [stri
         Number(b === premier) - Number(a === premier) || a.localeCompare(b, "fr", {numeric: true}));
 }
 
-export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment, onClose, onFait}: Props) {
+export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment, materielsParType, onClose, onFait}: Props) {
+    // seuls les types que le poste peut encore recevoir (jamais de vidéoprojecteur ni de tableau)
+    const typesPossibles = ORDRE_TYPES.filter(t => placeSurPoste(materielsParType, t));
     const [stock, setStock] = useState<MaterielStock[] | null>(null);
     const [recherche, setRecherche] = useState("");
     const [type, setType] = useState<TypeMateriel | null>(null);
@@ -40,6 +43,7 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
     // chaque mot tapé doit se trouver dans le modèle, le n° de série ou le nom de machine
     const mots = recherche.toLowerCase().split(/\s+/).filter(Boolean);
     const visibles = (stock ?? [])
+        .filter(m => typesPossibles.includes(m.type))
         .filter(m => !type || m.type === type)
         .filter(m => {
             const texte = `${m.modele} ${m.numSerie} ${m.nomMachine ?? ""}`.toLowerCase();
@@ -74,6 +78,11 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
             loading={enCours}
             disabled={!choisi}
         >
+            {typesPossibles.length === 0 ? (
+                <p className="muted">
+                    Le poste est complet : {MAX_PAR_POSTE.UC} {NOM_TYPE.UC[0]} et {MAX_PAR_POSTE.Ecran} {NOM_TYPE.Ecran[1]} au maximum.
+                </p>
+            ) : <>
             {stock === null && !erreur && <p className="muted">Chargement du stock…</p>}
             {stock !== null && stock.length === 0 && <p className="muted">Aucun matériel en stock.</p>}
 
@@ -84,7 +93,7 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
                             <button type="button" aria-pressed={type === null} onClick={() => setType(null)}>
                                 Tous les types
                             </button>
-                            {ORDRE_TYPES.map(t => (
+                            {typesPossibles.map(t => (
                                 <button key={t} type="button" aria-pressed={type === t} onClick={() => setType(t)}>
                                     {LIBELLE_TYPE_MATERIEL[t]}
                                 </button>
@@ -130,6 +139,7 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
                     </div>
                 </>
             )}
+            </>}
             {erreur && <p className="error-message" role="alert">{erreur}</p>}
         </Popup>
     );

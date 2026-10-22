@@ -31,6 +31,20 @@ export const NOM_TYPE: Record<TypeMateriel, [string, string]> = {
     TableauInteractif: ["tableau interactif", "tableaux interactifs"],
 };
 
+// Composition d'un poste (règle du back) : 1 UC, 2 écrans au plus ; vidéoprojecteurs et tableaux = matériel de salle
+export const MAX_PAR_POSTE: Record<TypeMateriel, number> = {
+    UC: 1,
+    Ecran: 2,
+    VideoProjecteur: 0,
+    TableauInteractif: 0,
+};
+
+export const estMaterielDeSalle = (type: TypeMateriel) => MAX_PAR_POSTE[type] === 0;
+
+// le poste peut-il encore recevoir un matériel de ce type ?
+export const placeSurPoste = (parType: Partial<Record<TypeMateriel, number>>, type: TypeMateriel) =>
+    (parType[type] ?? 0) < MAX_PAR_POSTE[type];
+
 export const LIBELLE_LOCALISATION: Record<Localisation, string> = {
     PARTOUT: "Partout",
     SALLE: "En salle",

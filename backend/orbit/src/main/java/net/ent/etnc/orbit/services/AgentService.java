@@ -52,4 +52,10 @@ public interface AgentService {
 
     /** Ordonne à l'agent d'arrêter ce processus et attend sa réponse (5 s au plus). */
     ResultatArret tuer(String mac, long pid) throws ServiceException;
+
+    /**
+     * Ordonne à l'agent d'arrêter ce processus sans attendre sa réponse (arrêt automatique de la liste noire).
+     * Appelé depuis la connexion de l'agent : attendre bloquerait la lecture de sa réponse sur cette même connexion.
+     */
+    void ordonnerArret(String mac, long pid) throws ServiceException;
 }

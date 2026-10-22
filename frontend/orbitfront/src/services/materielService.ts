@@ -97,6 +97,11 @@ export function archiverMateriel(id: number): Promise<Materiel> {
     return requete(`${URL}/${id}/archiver/`, {method: "PATCH"});
 }
 
+// Archive un matériel depuis sa fiche garantie : s'il est encore affecté, le back le remet d'abord en stock
+export function retirerEtArchiverMateriel(id: number): Promise<Materiel> {
+    return requete(`${URL}/${id}/archiver/?retirer=true`, {method: "PATCH"});
+}
+
 // Remet en stock un matériel posé dans une salle ou sur un poste
 export function remettreEnStock(id: number, depuis: Emplacement): Promise<Materiel> {
     return requete(`${URL}/${id}/?${param(depuis)}`, {method: "DELETE"});

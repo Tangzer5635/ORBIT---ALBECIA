@@ -26,6 +26,10 @@ public interface MaterielRepository extends BaseRepository<Materiel> {
             + "(select m.id from Salle s join s.postes p join p.materiels m where s.id = :idSalle)")
     List<UC> findUcDeLaSalle(@Param("idSalle") Long idSalle);
 
+    /** UC en service portant cette adresse MAC (normalisée, ex. 00:0C:29:AB:CD:EF). */
+    @Query("select u from UC u where u.adresseMac = :mac and u.archive = false")
+    List<UC> findUcParAdresseMac(@Param("mac") String mac);
+
     /** UC posées sur ce poste. */
     @Query("select u from UC u where u.id in "
             + "(select m.id from Poste p join p.materiels m where p.id = :idPoste)")

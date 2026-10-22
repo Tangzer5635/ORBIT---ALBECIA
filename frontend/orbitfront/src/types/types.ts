@@ -224,6 +224,7 @@ export interface Poste {
     materielsId: number[];
     materielsParType: Partial<Record<TypeMateriel, number>>;
     etat?: EtatPoste;
+    anomalies?: string[]; // composition hors règle (ex. 2 unités centrales), vide si tout va bien
 }
 
 
@@ -331,6 +332,16 @@ export interface Processus {
     id: number;
     nom: string;
     liste: ListeProcessus;
+}
+
+// ProcessusSalleResponseDto (GET /surcharges-processus/?salleId=) : un processus vu depuis une salle
+export interface ProcessusSalle {
+    id: number;
+    nom: string;
+    listeGlobale: ListeProcessus;
+    liste: ListeProcessus;              // celle qui s'applique dans la salle
+    surchargePar: string | null;        // "Prénom Nom" du formateur dont la surcharge s'applique, null = liste globale
+    maSurcharge: ListeProcessus | null; // surcharge du formateur connecté (pour toutes ses salles)
 }
 
 // ProcessusRequestDto

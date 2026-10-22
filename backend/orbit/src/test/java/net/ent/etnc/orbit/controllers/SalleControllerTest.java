@@ -121,7 +121,7 @@ class SalleControllerTest extends ControllerTestSupport {
         when(salleService.create(eq(1L), any(Salle.class))).thenReturn(salle());
         reponse();
 
-        mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/salles/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.numSalle").value("101"));
@@ -133,7 +133,7 @@ class SalleControllerTest extends ControllerTestSupport {
         when(salleService.create(eq(1L), any(Salle.class)))
                 .thenThrow(new ServiceException("Une salle 101 existe déjà dans ce bâtiment"));
 
-        mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/salles/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Une salle 101 existe déjà dans ce bâtiment"));
@@ -144,14 +144,14 @@ class SalleControllerTest extends ControllerTestSupport {
         when(salleAssembler.toEntity(any(SalleRequestDto.class))).thenReturn(salle());
         when(salleService.create(eq(1L), any(Salle.class))).thenThrow(new ServiceException("Bâtiment 1 introuvable"));
 
-        mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/salles/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void post_doitRenvoyer400_quandChampsManquants() throws Exception {
-        mockMvc.perform(post("/api/v1/salles").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/salles/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"numSalle\":\"101\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.idBatiment").exists());
@@ -184,7 +184,7 @@ class SalleControllerTest extends ControllerTestSupport {
 
     @Test
     void post_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(post("/api/v1/salles").with(connecte(Role.FORMATEUR))
+        mockMvc.perform(post("/api/v1/salles/").with(connecte(Role.FORMATEUR))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isForbidden());
     }

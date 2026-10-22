@@ -5,6 +5,7 @@ import {signalerDefaillance} from "../../services/defaillanceService.ts";
 import {getUtilisateur} from "../../services/authService.ts";
 import MaterielCard from "../Materiel/MaterielCard.tsx";
 import ProcessusLances from "./ProcessusLances.tsx";
+import Repliable from "../Utils/Repliable.tsx";
 import Popup from "../Popup/Popup.tsx";
 import {estFormateur, etatPoste, nomPoste, pluriel} from "../../utils/postes.ts";
 import {NOM_TYPE, ORDRE_TYPES} from "../../utils/materiels.ts";
@@ -33,6 +34,10 @@ export default function PanneauPoste({
     // le formateur remonte une défaillance uniquement sur le poste formateur de ses salles
     const peutSignaler = formateur && getUtilisateur()?.role === "FORMATEUR";
     const voitMateriel = peutGerer || peutSignaler;
+    // un stagiaire ne s'assoit que sur un poste libre : ni défectueux, ni à compléter (au moins une UC et un écran)
+    const posteLibre = poste.etat !== "DEFECTUEUX" && poste.etat !== "A_COMPLETER";
+    const peutAffecterStagiaire = !formateur && !poste.occupant && posteLibre && !!onAffecterStagiaire;
+    const anomalies = poste.anomalies ?? [];
 
     const [signalementOuvert, setSignalementOuvert] = useState(false);
     const [materielSignale, setMaterielSignale] = useState<number | "">("");
@@ -41,6 +46,7 @@ export default function PanneauPoste({
     const [erreurSignalement, setErreurSignalement] = useState("");
 
     // le détail du matériel : gestionnaire, ou formateur sur le poste formateur (sinon seulement les types)
+    // chargé tout de suite : le bouton « Remonter une défaillance » en a besoin, même catégorie repliée
     useEffect(() => {
         if (!voitMateriel) return;
         Promise.all(poste.materielsId.map(getMaterielById))
@@ -89,9 +95,18 @@ export default function PanneauPoste({
                 <p className="muted small">Salle {salle.numSalle}{salle.stageNom && `, ${salle.stageNom}`}</p>
             </div>
 
-            {(peutGerer || peutSignaler || (!formateur && !poste.occupant && onAffecterStagiaire)) && (
+            {anomalies.length > 0 && (
+                <div className="error-message" role="alert">
+                    <b>Composition du poste hors règle</b> (1 unité centrale et 2 écrans au maximum, pas de matériel de salle) :
+                    <ul className="poste-anomalies">
+                        {anomalies.map(a => <li key={a}>{a}</li>)}
+                    </ul>
+                </div>
+            )}
+
+            {(peutGerer || peutSignaler || peutAffecterStagiaire) && (
                 <div className="poste-actions">
-                    {!formateur && !poste.occupant && onAffecterStagiaire && (
+                    {peutAffecterStagiaire && (
                         <button type="button" className="btn primary" onClick={onAffecterStagiaire}>
                             Affecter un stagiaire
                         </button>
@@ -130,14 +145,20 @@ export default function PanneauPoste({
                                 </button>
                             </li>
                         </ul>
-                    ) : (
+                    ) : posteLibre ? (
                         <p className="muted">Aucun stagiaire : poste disponible</p>
+                    ) : (
+                        <p className="muted">
+                            Aucun stagiaire : {poste.etat === "DEFECTUEUX"
+                                ? "le poste est défectueux, on ne peut pas y affecter de stagiaire"
+                                : "le poste est à compléter (il faut au moins une unité centrale et un écran)"}
+                        </p>
                     )}
                 </section>
             )}
 
-            <section className="panneau-section">
-                <h3>Matériel du poste</h3>
+            {/* catégories repliées à l'ouverture : un clic sur le titre les déplie */}
+            <Repliable titre="Matériel du poste" compte={poste.materielsId.length}>
                 {poste.materielsId.length === 0 ? (
                     <p className="muted">Aucun matériel sur ce poste.</p>
                 ) : !voitMateriel ? (
@@ -151,10 +172,14 @@ export default function PanneauPoste({
                                       onChange={onChange} lecture={!peutGerer}/>
                     ))
                 )}
-            </section>
+            </Repliable>
 
-            {/* processus de la machine du poste, lus sur l'UC par l'Agent ORBIT */}
-            {(poste.materielsParType?.UC ?? 0) > 0 && <ProcessusLances posteId={poste.id}/>}
+            {/* processus de la machine du poste, lus sur l'UC par l'Agent ORBIT : interrogé seulement une fois déplié */}
+            {(poste.materielsParType?.UC ?? 0) > 0 && (
+                <Repliable titre="Processus lancés">
+                    <ProcessusLances posteId={poste.id}/>
+                </Repliable>
+            )}
 
             {peutSignaler && (
                 <Popup open={signalementOuvert} onClose={() => !envoi && setSignalementOuvert(false)}

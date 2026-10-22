@@ -134,6 +134,14 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<UC> ucParAdresseMac(String mac) throws ServiceException {
+        String normalisee = UC.normaliserMac(mac);
+        if (normalisee == null) return Optional.empty();
+        return repository.findUcParAdresseMac(normalisee).stream().findFirst();
+    }
+
+    @Override
     @Transactional
     public int installerImage(Long idSalle, List<Processus> processus) throws ServiceException {
         List<UC> ucs = repository.findUcDeLaSalle(idSalle);

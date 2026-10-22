@@ -13,16 +13,23 @@ import net.ent.etnc.orbit.services.AgentService.ResultatArret;
 import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.ProcessusLanceService;
+import net.ent.etnc.orbit.services.SurchargeProcessusService;
+import net.ent.etnc.orbit.services.SurchargeProcessusService.ListeNoireMachine;
 import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lit et arrête les processus d'un poste en passant par l'Agent ORBIT de son UC.
@@ -34,16 +41,24 @@ import java.util.TreeMap;
 @Service
 public class ProcessusLanceServiceImpl implements ProcessusLanceService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProcessusLanceServiceImpl.class);
+
     private final PosteService posteService;
     private final AgentService agentService;
     private final JournalisationService journalisationService;
+    private final SurchargeProcessusService surchargeProcessusService;
+
+    /** Par machine (MAC), PID déjà visés par un arrêt automatique : on ne renvoie pas l'ordre à chaque liste reçue. */
+    private final Map<String, Set<Long>> arretsOrdonnes = new ConcurrentHashMap<>();
 
     @Autowired
     public ProcessusLanceServiceImpl(PosteService posteService, AgentService agentService,
-                                     JournalisationService journalisationService) {
+                                     JournalisationService journalisationService,
+                                     SurchargeProcessusService surchargeProcessusService) {
         this.posteService = posteService;
         this.agentService = agentService;
         this.journalisationService = journalisationService;
+        this.surchargeProcessusService = surchargeProcessusService;
     }
 
     @Override
@@ -98,6 +113,37 @@ public class ProcessusLanceServiceImpl implements ProcessusLanceService {
             throw new ServiceException(arretes + " instance(s) de " + nom.trim() + " sur " + pids.size()
                     + " arrêtée(s). Échecs : " + String.join(" ; ", echecs));
         return arretes;
+    }
+
+    @Override
+    public void appliquerListeNoire(String mac) {
+        try {
+            ListeNoireMachine regle = surchargeProcessusService.listeNoireDeLaMachine(mac).orElse(null);
+            if (regle == null || regle.nomsInterdits().isEmpty()) return;
+            ReponseAgentDto reponse = agentService.etat(mac);
+            // même contrôle que pour l'affichage : on n'arrête rien sur une machine qui n'est pas l'UC du poste
+            boolean memeNom = regle.nomMachine() != null && regle.nomMachine().trim().equalsIgnoreCase(reponse.host());
+            if (!memeNom) return;
+
+            Set<Long> lances = new HashSet<>();
+            processusDe(reponse).forEach(p -> lances.add(p.pid()));
+            Set<Long> dejaOrdonnes = arretsOrdonnes.computeIfAbsent(reponse.mac(), m -> ConcurrentHashMap.newKeySet());
+            dejaOrdonnes.retainAll(lances); // les processus arrêtés depuis ne sont plus suivis
+
+            Map<String, Integer> arretes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            for (ProcessusAgent p : processusDe(reponse)) {
+                String nom = p.name() == null ? "" : p.name();
+                if (!regle.nomsInterdits().contains(nom.toLowerCase()) || !dejaOrdonnes.add(p.pid())) continue;
+                agentService.ordonnerArret(mac, p.pid());
+                arretes.merge(nom, 1, Integer::sum);
+            }
+            // pas d'utilisateur connecté ici : ligne du journal sans auteur
+            arretes.forEach((nom, n) -> journalisationService.journaliser(null, TypeAction.SUPPRESSION,
+                    "Processus " + nom + " (liste noire) arrêté automatiquement sur le poste " + regle.numPoste()
+                            + " (" + regle.nomMachine() + ", " + n + " instance(s))"));
+        } catch (RuntimeException e) {
+            log.warn("Arrêt automatique de la liste noire impossible pour {} : {}", mac, e.getMessage());
+        }
     }
 
     private Poste trouverPoste(Long idPoste) throws ServiceException {

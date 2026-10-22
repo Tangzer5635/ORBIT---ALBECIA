@@ -5,6 +5,7 @@ import {affecterMateriel, deplacerMateriel, type Emplacement, MaterielError} fro
 import {getPostesBySalle, getSallesDuBatiment} from "../../../services/salleService.ts";
 import {useBatiments} from "../../../context/BatimentsContext.tsx";
 import {estFormateur, nomPoste, numeroPoste} from "../../../utils/postes.ts";
+import {estMaterielDeSalle, placeSurPoste} from "../../../utils/materiels.ts";
 
 interface Props {
     materiel: Materiel;
@@ -62,6 +63,10 @@ export default function DeplacerMaterielPopup({materiel, depuis, enStock = false
         ? "salleId" in depuis && depuis.salleId === Number(salleId)
         : "posteId" in depuis && depuis.posteId === Number(d));
 
+    // vidéoprojecteur et tableau : seulement dans la salle ; UC et écran : seulement sur un poste qui a encore la place
+    const deSalle = estMaterielDeSalle(materiel.type);
+    const postePlein = (p: Poste) => !placeSurPoste(p.materielsParType ?? {}, materiel.type);
+
     async function valider() {
         if (!destination) return;
         setEnCours(true);
@@ -106,11 +111,13 @@ export default function DeplacerMaterielPopup({materiel, depuis, enStock = false
             <select id="destination" value={destination} onChange={e => setDestination(e.target.value)}
                     disabled={!salleId}>
                 <option value="" disabled>Choisir un emplacement…</option>
-                <option value={DANS_LA_SALLE} disabled={dejaLa(DANS_LA_SALLE)}>Matériel de salle (posé dans la salle)
-                </option>
-                {postes.map(p => (
-                    <option key={p.id} value={p.id} disabled={dejaLa(String(p.id))}>
-                        {nomPoste(p)}{p.occupant ? `, ${p.occupant}` : ""}
+                {deSalle && (
+                    <option value={DANS_LA_SALLE} disabled={dejaLa(DANS_LA_SALLE)}>Matériel de salle (posé dans la salle)
+                    </option>
+                )}
+                {!deSalle && postes.map(p => (
+                    <option key={p.id} value={p.id} disabled={dejaLa(String(p.id)) || postePlein(p)}>
+                        {nomPoste(p)}{p.occupant ? `, ${p.occupant}` : ""}{!dejaLa(String(p.id)) && postePlein(p) ? " (complet)" : ""}
                     </option>
                 ))}
             </select>

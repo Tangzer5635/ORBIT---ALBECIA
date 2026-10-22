@@ -64,7 +64,7 @@ class MasterControllerTest extends ControllerTestSupport {
         when(masterService.findAll(any())).thenReturn(new PageImpl<>(List.of(master()), PageRequest.of(0, 20), 1));
         reponse();
 
-        mockMvc.perform(get("/api/v1/masters").with(connecte(Role.FORMATEUR)))
+        mockMvc.perform(get("/api/v1/masters/").with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].nom").value("Master Dev"));
     }
@@ -73,19 +73,19 @@ class MasterControllerTest extends ControllerTestSupport {
     void getAll_doitRenvoyer200_quandGestionnaire() throws Exception {
         when(masterService.findAll(any())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        mockMvc.perform(get("/api/v1/masters").with(connecte(Role.GESTIONNAIRE)))
+        mockMvc.perform(get("/api/v1/masters/").with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isOk());
     }
 
     @Test
     void getAll_doitRenvoyer403_quandStagiaire() throws Exception {
-        mockMvc.perform(get("/api/v1/masters").with(connecte(Role.STAGIAIRE)))
+        mockMvc.perform(get("/api/v1/masters/").with(connecte(Role.STAGIAIRE)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void getAll_doitRenvoyer401_quandNonAuthentifie() throws Exception {
-        mockMvc.perform(get("/api/v1/masters"))
+        mockMvc.perform(get("/api/v1/masters/"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -96,7 +96,7 @@ class MasterControllerTest extends ControllerTestSupport {
         when(masterService.findById(1L)).thenReturn(Optional.of(master()));
         reponse();
 
-        mockMvc.perform(get("/api/v1/masters/{id}", 1L).with(connecte(Role.FORMATEUR)))
+        mockMvc.perform(get("/api/v1/masters/{id}/", 1L).with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.versionMaster").value("1.0"));
     }
@@ -105,7 +105,7 @@ class MasterControllerTest extends ControllerTestSupport {
     void getById_doitRenvoyer404_quandIntrouvable() throws Exception {
         when(masterService.findById(1L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE)))
+        mockMvc.perform(get("/api/v1/masters/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());
     }
 
@@ -117,7 +117,7 @@ class MasterControllerTest extends ControllerTestSupport {
         when(masterService.creer(any(), any())).thenReturn(master());
         reponse();
 
-        mockMvc.perform(post("/api/v1/masters").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/masters/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nom").value("Master Dev"));
@@ -128,7 +128,7 @@ class MasterControllerTest extends ControllerTestSupport {
         when(masterAssembler.toEntity(any(MasterDto.class))).thenReturn(master());
         when(masterService.creer(any(), any())).thenThrow(new ServiceException("Erreur lors de la sauvegarde"));
 
-        mockMvc.perform(post("/api/v1/masters").with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(post("/api/v1/masters/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Erreur lors de la sauvegarde"));
@@ -136,7 +136,7 @@ class MasterControllerTest extends ControllerTestSupport {
 
     @Test
     void post_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(post("/api/v1/masters").with(connecte(Role.FORMATEUR))
+        mockMvc.perform(post("/api/v1/masters/").with(connecte(Role.FORMATEUR))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isForbidden());
         verify(masterService, never()).creer(any(), any());
@@ -151,7 +151,7 @@ class MasterControllerTest extends ControllerTestSupport {
         when(masterService.modifier(any(), any(), any())).thenReturn(master());
         reponse();
 
-        mockMvc.perform(put("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(put("/api/v1/masters/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isOk());
     }
@@ -160,7 +160,7 @@ class MasterControllerTest extends ControllerTestSupport {
     void put_doitRenvoyer404_quandIntrouvable() throws Exception {
         when(masterService.existsById(1L)).thenReturn(false);
 
-        mockMvc.perform(put("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE))
+        mockMvc.perform(put("/api/v1/masters/{id}/", 1L).with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isNotFound());
         verify(masterService, never()).modifier(any(), any(), any());
@@ -168,7 +168,7 @@ class MasterControllerTest extends ControllerTestSupport {
 
     @Test
     void put_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(put("/api/v1/masters/{id}", 1L).with(connecte(Role.FORMATEUR))
+        mockMvc.perform(put("/api/v1/masters/{id}/", 1L).with(connecte(Role.FORMATEUR))
                         .contentType(MediaType.APPLICATION_JSON).content(JSON_VALIDE))
                 .andExpect(status().isForbidden());
     }
@@ -179,7 +179,7 @@ class MasterControllerTest extends ControllerTestSupport {
     void delete_doitRenvoyer204_quandTrouve() throws Exception {
         when(masterService.existsById(1L)).thenReturn(true);
 
-        mockMvc.perform(delete("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE)))
+        mockMvc.perform(delete("/api/v1/masters/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNoContent());
         verify(masterService).deleteById(1L);
     }
@@ -188,13 +188,13 @@ class MasterControllerTest extends ControllerTestSupport {
     void delete_doitRenvoyer404_quandIntrouvable() throws Exception {
         when(masterService.existsById(1L)).thenReturn(false);
 
-        mockMvc.perform(delete("/api/v1/masters/{id}", 1L).with(connecte(Role.GESTIONNAIRE)))
+        mockMvc.perform(delete("/api/v1/masters/{id}/", 1L).with(connecte(Role.GESTIONNAIRE)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void delete_doitRenvoyer403_quandFormateur() throws Exception {
-        mockMvc.perform(delete("/api/v1/masters/{id}", 1L).with(connecte(Role.FORMATEUR)))
+        mockMvc.perform(delete("/api/v1/masters/{id}/", 1L).with(connecte(Role.FORMATEUR)))
                 .andExpect(status().isForbidden());
     }
 }

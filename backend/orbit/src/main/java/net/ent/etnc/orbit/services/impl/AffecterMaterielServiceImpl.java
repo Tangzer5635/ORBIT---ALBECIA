@@ -7,6 +7,8 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
+import net.ent.etnc.orbit.models.entities.TableauInteractif;
+import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.AffecterMaterielService;
@@ -74,6 +76,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     public Materiel affecterASalle(Long idSalle, Long idMateriel) throws ServiceException {
         Salle salle = salleDeCours(idSalle);
         Materiel materiel = trouverMateriel(idMateriel);
+        verifierMaterielDeSalle(materiel);
         sortirDuStock(materiel);
         salle.addMateriel(materiel);
         journalisationService.journaliser(TypeAction.AFFECTATION,
@@ -86,6 +89,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     public Materiel affecterAPoste(Long idPoste, Long idMateriel) throws ServiceException {
         Poste poste = trouverPoste(idPoste);
         Materiel materiel = trouverMateriel(idMateriel);
+        verifierComposition(poste, materiel);
         sortirDuStock(materiel);
         poste.addMateriel(materiel);
         journalisationService.journaliser(TypeAction.AFFECTATION,
@@ -117,9 +121,10 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel deplacerVersSalle(Long idSalle, Long idMateriel) throws ServiceException {
-        String origine = remettreEnStock(idMateriel);
         Salle salle = salleDeCours(idSalle);
         Materiel materiel = trouverMateriel(idMateriel);
+        verifierMaterielDeSalle(materiel);
+        String origine = remettreEnStock(idMateriel);
         sortirDuStock(materiel);
         salle.addMateriel(materiel);
         journalisationService.journaliser(TypeAction.AFFECTATION,
@@ -130,14 +135,63 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
     @Override
     @Transactional
     public Materiel deplacerVersPoste(Long idPoste, Long idMateriel) throws ServiceException {
-        String origine = remettreEnStock(idMateriel);
         Poste poste = trouverPoste(idPoste);
         Materiel materiel = trouverMateriel(idMateriel);
+        if (chercher(poste.getMateriels(), idMateriel) != null)
+            throw new ServiceException("Ce matériel est déjà sur le " + Libelles.poste(poste));
+        verifierComposition(poste, materiel);
+        String origine = remettreEnStock(idMateriel);
         sortirDuStock(materiel);
         poste.addMateriel(materiel);
         journalisationService.journaliser(TypeAction.AFFECTATION,
                 Libelles.materiel(materiel) + " déplacé " + origine + " vers le " + Libelles.poste(poste));
         return materiel;
+    }
+
+    /**
+     * Archive un matériel depuis sa fiche garantie : s'il est encore sur un poste ou dans une salle de cours,
+     * il est d'abord remis en stock (même transaction), puis archivé.
+     */
+    @Override
+    @Transactional
+    public Materiel retirerEtArchiver(Long idMateriel) throws ServiceException {
+        Materiel materiel = trouverMateriel(idMateriel);
+        if (!materiel.isArchive() && !salleService.estEnStock(idMateriel)) {
+            String origine = remettreEnStock(idMateriel);
+            journalisationService.journaliser(TypeAction.RETRAIT,
+                    Libelles.materiel(materiel) + " retiré " + origine + " et remis en stock pour être archivé");
+        }
+        return materielService.archiver(idMateriel);
+    }
+
+    /** Un poste reçoit au plus 1 UC et 2 écrans, jamais de vidéoprojecteur ni de tableau (matériel de salle). */
+    private void verifierComposition(Poste poste, Materiel materiel) throws ServiceException {
+        String type = materiel.getType();
+        int maximum = Poste.maximum(type);
+        if (maximum == 0)
+            throw new ServiceException("Un " + nomType(type) + " s'affecte à la salle, pas à un poste");
+        long deja = poste.nombre(type);
+        if (deja >= maximum)
+            throw new ServiceException("Le " + Libelles.poste(poste) + " a déjà " + deja + " " + nomType(type)
+                    + (deja > 1 ? "s" : "") + " : " + maximum + " au maximum");
+    }
+
+    /** Le matériel de salle, ce sont les vidéoprojecteurs et les tableaux interactifs ; UC et écrans vont sur un poste. */
+    private void verifierMaterielDeSalle(Materiel materiel) throws ServiceException {
+        String type = materiel.getType();
+        if (!VideoProjecteur.TYPE.equals(type) && !TableauInteractif.TYPE.equals(type))
+            throw new ServiceException("Seuls les vidéoprojecteurs et les tableaux interactifs s'affectent à une salle : un "
+                    + nomType(type) + " va sur un poste");
+    }
+
+    private static String nomType(String type) {
+        return switch (type) {
+            case "UC" -> "unité centrale";
+            case "Ecran" -> "écran";
+            case "VideoProjecteur" -> "vidéoprojecteur";
+            case "TableauInteractif" -> "tableau interactif";
+            default -> type;
+        };
     }
 
     /** Salle qui peut recevoir du matériel : pas une salle de stockage. */

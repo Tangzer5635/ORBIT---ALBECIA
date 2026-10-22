@@ -13,7 +13,8 @@ type Props = {
 const messageErreur = (e: unknown, defaut: string) =>
     e instanceof ProcessusLanceError && e.detail ? e.detail : defaut;
 
-// « Processus lancés » du panneau d'un poste : la liste vient de l'Agent ORBIT de l'UC, rafraîchie toutes les 5 s.
+// Contenu de la catégorie « Processus lancés » du panneau d'un poste : la liste vient de l'Agent ORBIT de l'UC,
+// rafraîchie toutes les 5 s tant que la catégorie est dépliée (le composant n'est monté qu'à ce moment-là).
 // « Tuer » arrête toutes les instances du processus sur la machine.
 export default function ProcessusLances({posteId}: Props) {
     const [etat, setEtat] = useState<ProcessusPoste | null>(null);
@@ -67,9 +68,7 @@ export default function ProcessusLances({posteId}: Props) {
     }
 
     return (
-        <section className="panneau-section">
-            <h3>Processus lancés</h3>
-
+        <>
             {erreur ? (
                 <p className="error-message" role="alert">{erreur}</p>
             ) : etat === null ? (
@@ -109,6 +108,6 @@ export default function ProcessusLances({posteId}: Props) {
                    loading={enCours} onConfirm={() => void confirmerArret()}>
                 {erreurArret && <p className="error-message" role="alert">{erreurArret}</p>}
             </Popup>
-        </section>
+        </>
     );
 }

@@ -36,6 +36,7 @@ public class PosteAssembler {
                 .materielsId(poste.getMateriels().stream().map(Materiel::getId).toList())
                 .materielsParType(poste.getMateriels().stream()
                         .collect(Collectors.groupingBy(Materiel::getType, Collectors.counting())))
+                .anomalies(poste.anomalies())
                 .build();
     }
 

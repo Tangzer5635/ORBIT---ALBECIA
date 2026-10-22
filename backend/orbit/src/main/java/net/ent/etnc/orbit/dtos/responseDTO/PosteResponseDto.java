@@ -20,4 +20,5 @@ public class PosteResponseDto {
     private List<Long> materielsId;
     private Map<String, Long> materielsParType; // ex. {"UC": 1, "Ecran": 2}
     private EtatPoste etat;
+    private List<String> anomalies; // composition hors règle (ex. 2 UC) : vide si tout va bien
 }

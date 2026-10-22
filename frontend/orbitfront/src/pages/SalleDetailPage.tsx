@@ -28,6 +28,7 @@ import {
 } from "../utils/postes.ts";
 import {CLASSE_ETAT_MATERIEL, NOM_TYPE} from "../utils/materiels.ts";
 import PanneauSalle from "../components/Salle/PanneauSalle.tsx";
+import ProcessusSalle from "../components/Salle/ProcessusSalle.tsx";
 import PanneauPoste from "../components/Poste/PanneauPoste.tsx";
 import PanneauMateriel from "../components/Materiel/PanneauMateriel.tsx";
 import AffecterStagiairePopup from "../components/Popup/Stage/AffecterStagiairePopup.tsx";
@@ -52,6 +53,10 @@ const COURT: Record<TypeMateriel, string> = {
 };
 
 const classeEtat = (e?: EtatPoste) => etatPoste(e)?.classe ?? "";
+
+// poste sans stagiaire : « Libre » seulement s'il peut en recevoir un (ni défectueux, ni à compléter)
+const libreOuEtat = (p: Poste) =>
+    p.etat === "DEFECTUEUX" || p.etat === "A_COMPLETER" ? etatPoste(p.etat)?.libelle ?? "" : "Libre";
 
 // regroupe les postes 2 par 2 (une table = 2 postes côte à côte)
 function parTables(postes: Poste[]): Poste[][] {
@@ -301,7 +306,7 @@ function SalleDetail({salleId}: { salleId: string }) {
                                                         aria-pressed={p.id === posteId}
                                                         onClick={() => choisirPoste(p.id)}>
                                                     <b>{numeroPoste(p)}</b>
-                                                    <span>{p.occupant ? nomCourt(p.occupant) : "Libre"}</span>
+                                                    <span>{p.occupant ? nomCourt(p.occupant) : libreOuEtat(p)}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -323,6 +328,9 @@ function SalleDetail({salleId}: { salleId: string }) {
                     {panneau}
                 </div>
             </section>
+
+            {/* liste blanche / noire qui s'applique dans la salle ; un formateur de la salle peut la surcharger */}
+            {salleDeCours && <ProcessusSalle salle={salle}/>}
 
             {popup === "formateur" &&
                 <AffecterFormateurPopup salle={salle} onClose={fermerPopup} onFait={apresAction}/>}
@@ -438,6 +446,7 @@ function SalleDetail({salleId}: { salleId: string }) {
                     posteId={posteSelectionne.id}
                     titrePoste={nomPoste(posteSelectionne)}
                     numBatiment={salle.numBatiment}
+                    materielsParType={posteSelectionne.materielsParType ?? {}}
                     onClose={fermerPopup}
                     onFait={apresAction}/>
             )}

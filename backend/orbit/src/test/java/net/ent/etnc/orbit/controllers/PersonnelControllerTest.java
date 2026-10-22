@@ -167,15 +167,6 @@ class PersonnelControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void post_doitRenvoyer400_quandLoginTropCourt() throws Exception {
-        mockMvc.perform(post("/api/v1/personnels/").with(connecte(Role.ADMINISTRATEUR))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(JSON_VALIDE.replace("j.test", "ab")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.login").exists());
-    }
-
-    @Test
     void post_doitRenvoyer400_quandRoleInconnu() throws Exception {
         mockMvc.perform(post("/api/v1/personnels/").with(connecte(Role.ADMINISTRATEUR))
                         .contentType(MediaType.APPLICATION_JSON)

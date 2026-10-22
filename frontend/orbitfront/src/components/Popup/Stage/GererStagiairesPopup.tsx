@@ -13,10 +13,12 @@ interface Props {
 const date = (iso: string) => new Date(iso).toLocaleDateString("fr-FR");
 
 export default function GererStagiairesPopup({stage, stagiaires, onClose, onMaj}: Props) {
-    // Un stagiaire d'un autre stage n'apparaît pas : on ne change pas un stagiaire de stage
+    // Un stagiaire d'un autre stage n'apparaît pas : on ne change pas un stagiaire de stage.
+    // Ceux déjà dans le stage d'abord, puis par nom ; l'ordre ne bouge pas quand on coche ou décoche.
     const visibles = useMemo(
         () => stagiaires.filter(s => s.stageId === stage.id || s.stageId == null)
-            .sort((a, b) => a.nom.localeCompare(b.nom, "fr") || a.prenom.localeCompare(b.prenom, "fr")),
+            .sort((a, b) => Number(b.stageId === stage.id) - Number(a.stageId === stage.id)
+                || a.nom.localeCompare(b.nom, "fr") || a.prenom.localeCompare(b.prenom, "fr")),
         [stagiaires, stage.id]);
     const dansLeStage = useMemo(() => new Set(visibles.filter(s => s.stageId === stage.id).map(s => s.id)), [visibles, stage.id]);
 

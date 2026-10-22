@@ -3,6 +3,7 @@ import {useLocation, useNavigate, useSearchParams} from "react-router-dom";
 import {getUtilisateur} from "../../services/authService.ts";
 import {useBatiments} from "../../context/BatimentsContext.tsx";
 import {batimentsParDisponibilite, niveau, pourcentageUtilisable} from "../../utils/postes.ts";
+import {getSalleById} from "../../services/salleService.ts";
 import type {Batiment} from "../../types/types.ts";
 
 function IconeBatiment() {
@@ -38,6 +39,20 @@ export default function BatimentBar() {
     const [mode, setMode] = useState<"survol" | "clic" | null>(null);
     const ouvert = mode !== null;
     const barRef = useRef<HTMLDivElement>(null);
+    const role = utilisateur?.role;
+    const cache = role === "STAGIAIRE" || role === "FORMATEUR";
+
+    // page d'une salle (/salles/12) : on affiche son bâtiment, comme sur la liste des salles d'un bâtiment
+    const idSalle = pathname.match(/^\/salles\/(\d+)/)?.[1] ?? null;
+    const [salleBatiment, setSalleBatiment] = useState<{ idSalle: string; numBatiment: string | null } | null>(null);
+    useEffect(() => {
+        if (!idSalle || cache) return;
+        let actif = true;
+        getSalleById(idSalle)
+            .then(s => { if (actif) setSalleBatiment({idSalle, numBatiment: s.numBatiment ?? null}); })
+            .catch(() => { /* la barre reste sur « Bâtiments » */ });
+        return () => { actif = false; };
+    }, [idSalle, cache]);
 
     // menu ouvert : un clic en dehors de la barre ou Échap le ferme
     useEffect(() => {
@@ -56,10 +71,12 @@ export default function BatimentBar() {
         };
     }, [ouvert]);
 
-    if (utilisateur?.role === "STAGIAIRE" || utilisateur?.role === "FORMATEUR") return null;
+    if (cache) return null;
 
-    // le bâtiment sélectionné vient de l'URL : /salles?batiment=2
-    const selection = pathname === "/salles" ? Number(params.get("batiment")) : null;
+    // le bâtiment sélectionné vient de l'URL : /salles?batiment=2, ou de la salle affichée : /salles/12
+    const numSalleBatiment = idSalle && salleBatiment?.idSalle === idSalle ? salleBatiment.numBatiment : null;
+    const selection = pathname === "/salles" ? Number(params.get("batiment"))
+        : batiments.find((b) => b.numBatiment === numSalleBatiment)?.id ?? null;
     const courant = batiments.find((b) => b.id === selection);
     const tries = [...batiments].sort(batimentsParDisponibilite);
 

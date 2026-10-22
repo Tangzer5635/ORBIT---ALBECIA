@@ -71,6 +71,16 @@ public class AffecterMaterielController {
         return ResponseEntity.ok(dto(affecterMaterielService.deplacerVersPoste(posteId, idMateriel)));
     }
 
+    /**
+     * Archiver depuis la fiche garantie (?retirer=true) : un matériel encore affecté est d'abord remis en stock.
+     * Sans ce paramètre, PATCH /materiels/{id}/archiver/ (MaterielController) n'archive qu'un matériel en stock.
+     */
+    @PatchMapping(value = "/archiver/", params = "retirer=true")
+    @PreAuthorize("hasRole('GESTIONNAIRE')")
+    public ResponseEntity<MaterielResponseDto> retirerEtArchiver(@PathVariable Long idMateriel) {
+        return ResponseEntity.ok(dto(affecterMaterielService.retirerEtArchiver(idMateriel)));
+    }
+
     private MaterielResponseDto dto(Materiel m) {
         return materielAssembler.toDto(m, materielService.etatDe(m));
     }

@@ -4,6 +4,7 @@ import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
+import net.ent.etnc.orbit.models.enums.EtatPoste;
 import net.ent.etnc.orbit.models.enums.Role;
 import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.services.AffecterStagiaireService;
@@ -15,6 +16,8 @@ import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
@@ -32,7 +35,10 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
         this.journalisationService = journalisationService;
     }
 
-    /** Un poste stagiaire libre reçoit un stagiaire du stage de la salle, qui n'a pas encore de poste. */
+    /**
+     * Un poste stagiaire libre (ni défectueux, ni à compléter) reçoit un stagiaire du stage de la salle,
+     * qui n'a pas encore de poste. Un stagiaire déjà assis reste sur son poste s'il devient défectueux.
+     */
     @Override
     @Transactional
     public Poste affecterAPoste(Long idPoste, Long idStagiaire) throws ServiceException {
@@ -48,6 +54,13 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
             throw new ServiceException("Le poste formateur ne reçoit pas de stagiaire");
         if (poste.getOccupant() != null)
             throw new ServiceException("Le poste " + poste.getNumPoste() + " est déjà occupé par " + nom(poste.getOccupant()));
+        // seul un poste « libre » reçoit un stagiaire : pas défectueux, et complet (au moins une UC et un écran)
+        EtatPoste etat = posteService.etats(List.of(poste)).get(poste.getId());
+        if (etat == EtatPoste.DEFECTUEUX)
+            throw new ServiceException("Le poste " + poste.getNumPoste() + " est défectueux : on n'y affecte pas de stagiaire");
+        if (etat == EtatPoste.A_COMPLETER)
+            throw new ServiceException("Le poste " + poste.getNumPoste()
+                    + " est à compléter (il faut au moins une unité centrale et un écran) : on n'y affecte pas de stagiaire");
 
         Salle salle = salleService.salleDuPoste(idPoste)
                 .orElseThrow(() -> new ServiceException("Le poste " + poste.getNumPoste() + " n'est dans aucune salle"));

@@ -2,6 +2,8 @@ package net.ent.etnc.orbit.dtos.services.impl;
 
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
+import net.ent.etnc.orbit.models.entities.Ecran;
+import net.ent.etnc.orbit.models.entities.VideoProjecteur;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
@@ -64,6 +66,20 @@ class AffecterMaterielServiceImplTest {
         return m;
     }
 
+    private Materiel videoprojecteur(Long id) {
+        Materiel m = new VideoProjecteur();
+        m.setId(id);
+        m.setNumSerie("VP-" + id);
+        return m;
+    }
+
+    private Materiel ecran(Long id) {
+        Materiel m = new Ecran();
+        m.setId(id);
+        m.setNumSerie("EC-" + id);
+        return m;
+    }
+
     private Poste poste(Long id) {
         Poste p = new Poste();
         p.setId(id);
@@ -84,7 +100,7 @@ class AffecterMaterielServiceImplTest {
     @Test
     void affecterASalle_doitSortirLeMaterielDuStockEtLePlacerDansLaSalle() {
         Salle salle = salle(2L, TypeSalle.SalleDeCours);
-        Materiel m = materiel(11L);
+        Materiel m = videoprojecteur(11L);
         Salle reserve = reserveAvec(m);
         when(salleService.findById(2L)).thenReturn(Optional.of(salle));
         when(materielService.findById(11L)).thenReturn(Optional.of(m));
@@ -126,7 +142,7 @@ class AffecterMaterielServiceImplTest {
 
     @Test
     void affecterASalle_doitLeverServiceException_quandMaterielArchive() {
-        Materiel m = materiel(12L);
+        Materiel m = videoprojecteur(12L);
         m.setArchive(true);
         when(salleService.findById(2L)).thenReturn(Optional.of(salle(2L, TypeSalle.SalleDeCours)));
         when(materielService.findById(12L)).thenReturn(Optional.of(m));
@@ -138,7 +154,7 @@ class AffecterMaterielServiceImplTest {
 
     @Test
     void affecterASalle_doitLeverServiceException_quandMaterielDejaAffecte() {
-        Materiel m = materiel(11L);
+        Materiel m = videoprojecteur(11L);
         Salle autreSalle = salle(1L, TypeSalle.SalleDeCours);
         autreSalle.addMateriel(m);
         when(salleService.findById(2L)).thenReturn(Optional.of(salle(2L, TypeSalle.SalleDeCours)));
@@ -153,7 +169,7 @@ class AffecterMaterielServiceImplTest {
 
     @Test
     void affecterASalle_doitLeverServiceException_quandMaterielSurUnPoste() {
-        Materiel m = materiel(11L);
+        Materiel m = videoprojecteur(11L);
         when(salleService.findById(2L)).thenReturn(Optional.of(salle(2L, TypeSalle.SalleDeCours)));
         when(materielService.findById(11L)).thenReturn(Optional.of(m));
         when(salleService.salleDuMateriel(11L)).thenReturn(Optional.empty());
@@ -161,6 +177,16 @@ class AffecterMaterielServiceImplTest {
         assertThatThrownBy(() -> service.affecterASalle(2L, 11L))
                 .isInstanceOf(ServiceException.class)
                 .hasMessage("Seul un matériel en stock peut être affecté");
+    }
+
+    @Test
+    void affecterASalle_doitLeverServiceException_quandUniteCentrale() {
+        when(salleService.findById(2L)).thenReturn(Optional.of(salle(2L, TypeSalle.SalleDeCours)));
+        when(materielService.findById(11L)).thenReturn(Optional.of(materiel(11L)));
+
+        assertThatThrownBy(() -> service.affecterASalle(2L, 11L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessageStartingWith("Seuls les vidéoprojecteurs et les tableaux interactifs s'affectent à une salle");
     }
 
     // ---------- affecterAPoste ----------
@@ -199,6 +225,55 @@ class AffecterMaterielServiceImplTest {
 
         assertThatThrownBy(() -> service.affecterAPoste(1L, 12L))
                 .isInstanceOf(ServiceException.class);
+    }
+
+    @Test
+    void affecterAPoste_doitLeverServiceException_quandPosteADejaUneUniteCentrale() {
+        Poste poste = poste(1L);
+        poste.addMateriel(materiel(7L));
+        when(posteService.findById(1L)).thenReturn(Optional.of(poste));
+        when(materielService.findById(8L)).thenReturn(Optional.of(materiel(8L)));
+
+        assertThatThrownBy(() -> service.affecterAPoste(1L, 8L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Le poste P-1 a déjà 1 unité centrale : 1 au maximum");
+    }
+
+    @Test
+    void affecterAPoste_doitLeverServiceException_quandPosteADejaDeuxEcrans() {
+        Poste poste = poste(1L);
+        poste.addMateriel(ecran(5L));
+        poste.addMateriel(ecran(6L));
+        when(posteService.findById(1L)).thenReturn(Optional.of(poste));
+        when(materielService.findById(8L)).thenReturn(Optional.of(ecran(8L)));
+
+        assertThatThrownBy(() -> service.affecterAPoste(1L, 8L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Le poste P-1 a déjà 2 écrans : 2 au maximum");
+    }
+
+    @Test
+    void affecterAPoste_doitLeverServiceException_quandVideoprojecteur() {
+        when(posteService.findById(1L)).thenReturn(Optional.of(poste(1L)));
+        when(materielService.findById(8L)).thenReturn(Optional.of(videoprojecteur(8L)));
+
+        assertThatThrownBy(() -> service.affecterAPoste(1L, 8L))
+                .isInstanceOf(ServiceException.class)
+                .hasMessage("Un vidéoprojecteur s'affecte à la salle, pas à un poste");
+    }
+
+    @Test
+    void affecterAPoste_doitAccepterUnDeuxiemeEcran() {
+        Poste poste = poste(1L);
+        poste.addMateriel(ecran(5L));
+        Materiel m = ecran(8L);
+        reserveAvec(m);
+        when(posteService.findById(1L)).thenReturn(Optional.of(poste));
+        when(materielService.findById(8L)).thenReturn(Optional.of(m));
+
+        service.affecterAPoste(1L, 8L);
+
+        assertThat(poste.nombre(Ecran.TYPE)).isEqualTo(2);
     }
 
     // ---------- retirerDeSalle ----------

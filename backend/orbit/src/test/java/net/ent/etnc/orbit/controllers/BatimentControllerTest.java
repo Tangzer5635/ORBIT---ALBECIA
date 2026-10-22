@@ -112,7 +112,7 @@ class BatimentControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer201_quandValide() throws Exception {
         when(batimentAssembler.toEntity(any(BatimentRequestDto.class))).thenReturn(batiment());
-        when(batimentService.create(any(Batiment.class), any(), any()));
+        when(batimentService.create(any(Batiment.class), any(), any())).thenReturn(batiment());
         when(batimentAssembler.toDto(any())).thenReturn(dto());
 
         mockMvc.perform(post("/api/v1/batiments/").with(connecte(Role.ADMINISTRATEUR))
@@ -125,7 +125,8 @@ class BatimentControllerTest extends ControllerTestSupport {
     @Test
     void post_doitRenvoyer400_quandRegleDeGestionViolee() throws Exception {
         when(batimentAssembler.toEntity(any(BatimentRequestDto.class))).thenReturn(batiment());
-        when(batimentService.create(any(Batiment.class), any(), any()));
+        when(batimentService.create(any(Batiment.class), any(), any()))
+                .thenThrow(new ServiceException("Erreur lors de la sauvegarde"));
 
         mockMvc.perform(post("/api/v1/batiments/").with(connecte(Role.ADMINISTRATEUR))
                         .contentType(MediaType.APPLICATION_JSON)

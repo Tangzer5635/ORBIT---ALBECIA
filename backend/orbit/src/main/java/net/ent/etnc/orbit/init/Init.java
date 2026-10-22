@@ -168,6 +168,15 @@ public class Init implements CommandLineRunner {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Poste introuvable : " + numeroPoste));
         affecterMaterielService.affecterAPoste(poste.getId(), cree.getId());
+
+        // un poste n'est libre qu'avec au moins une UC et un écran
+        Ecran ecran = new Ecran();
+        ecran.setNumSerie(numeroSerie.replace("VM-WIN", "EC-VM"));
+        ecran.setModele("Écran de la VM");
+        ecran.setDateAcquisition(aujourdhui);
+        ecran.setDateFinGarantie(aujourdhui.plusYears(1));
+        Materiel ecranCree = materielService.creerEnStock(ecran, stockage.getId());
+        affecterMaterielService.affecterAPoste(poste.getId(), ecranCree.getId());
     }
 
     /**
