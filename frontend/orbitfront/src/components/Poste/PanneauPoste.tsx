@@ -4,6 +4,7 @@ import {getMaterielById} from "../../services/materielService.ts";
 import {signalerDefaillance} from "../../services/defaillanceService.ts";
 import {getUtilisateur} from "../../services/authService.ts";
 import MaterielCard from "../Materiel/MaterielCard.tsx";
+import ProcessusLances from "./ProcessusLances.tsx";
 import Popup from "../Popup/Popup.tsx";
 import {estFormateur, etatPoste, nomPoste, pluriel} from "../../utils/postes.ts";
 import {NOM_TYPE, ORDRE_TYPES} from "../../utils/materiels.ts";
@@ -151,6 +152,9 @@ export default function PanneauPoste({
                     ))
                 )}
             </section>
+
+            {/* processus de la machine du poste, lus sur l'UC par l'Agent ORBIT */}
+            {(poste.materielsParType?.UC ?? 0) > 0 && <ProcessusLances posteId={poste.id}/>}
 
             {peutSignaler && (
                 <Popup open={signalementOuvert} onClose={() => !envoi && setSignalementOuvert(false)}

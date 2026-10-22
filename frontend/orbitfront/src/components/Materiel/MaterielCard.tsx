@@ -84,6 +84,12 @@ export default function MaterielCard({materiel: m, depuis, onChange = () => {}, 
                         <dd className="mono">{m.nomMachine}</dd>
                     </>
                 )}
+                {m.adresseMac && (
+                    <>
+                        <dt>Adresse MAC</dt>
+                        <dd className="mono">{m.adresseMac}</dd>
+                    </>
+                )}
                 <dt>Acquis le</dt>
                 <dd>{dateFr(m.dateAcquisition)}</dd>
                 <dt>Garantie</dt>
