@@ -117,71 +117,119 @@ public class Init implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        // Le jeu de test minimal est initialisé uniquement sur une base vide.
+        // Évite de recréer toutes les données à chaque démarrage.
         if (personnelService.count() > 0) return;
 
-        // Un seul compte administrateur : identifiants de test admin / 1234.
+        // ---------- Personnel ----------
         personnelService.create(buildUser("1000000001", "Admin", "Orbit",
                 "admin", "1234", Role.ADMINISTRATEUR));
+        Personnel gestionnaire = personnelService.create(buildUser("3000000001", "Besnard", "Romain",
+                "r.besnard", "1234", Role.GESTIONNAIRE));
+        personnelService.create(buildUser("3000000002", "Martin", "Alice",
+                "a.martin", "1234", Role.GESTIONNAIRE));
 
-        // Référentiel de processus conservé pour les fonctionnalités ORBIT existantes.
-        for (String nom : PROCESSUS_AUTORISES) {
-            image.add(processusService.create(buildProcessus(nom, ListeProcessus.BLANCHE)));
+        List<Personnel> formateurs = new ArrayList<>();
+        formateurs.add(personnelService.create(buildUser("2000000001", "Ledeme",
+                "Kevin", "k.ledeme", "1234", Role.FORMATEUR)));
+        formateurs.add(personnelService.create(buildUser("2000000002", "Durand",
+                "Sophie", "s.durand", "1234", Role.FORMATEUR)));
+        for (int i = 0; i < 6; i++) {
+            formateurs.add(personnelService.create(personneGeneree("2", 10 + i, Role.FORMATEUR)));
         }
-        for (String nom : PROCESSUS_INTERDITS) {
-            processusService.create(buildProcessus(nom, ListeProcessus.NOIRE));
+
+        // Les 3 stagiaires fixes passent en premier : ils ont toujours un poste (page « Mon poste »).
+        List<Personnel> stagiairesFixes = List.of(
+                personnelService.create(buildUser("4000000001", "Le Buhé", "Tanguy", "t.lebuhe", "1234", Role.STAGIAIRE)),
+                personnelService.create(buildUser("4000000002", "Bernard", "Marc", "m.bernard", "1234", Role.STAGIAIRE)),
+                personnelService.create(buildUser("4000000003", "Petit", "Julie", "j.petit", "1234", Role.STAGIAIRE)));
+        List<Personnel> stagiairesGeneres = new ArrayList<>();
+        for (int i = 0; i < NB_STAGIAIRES_GENERES; i++) {
+            stagiairesGeneres.add(personnelService.create(personneGeneree("4", 10 + i, Role.STAGIAIRE)));
+        }
+        Personnel inactif = personnelService.create(buildUser("4000000004", "Inactif",
+                "Paul", "p.inactif", "1234", Role.STAGIAIRE));
+        Personnel verrouille = personnelService.create(buildUser("4000000005", "Verrouille",
+                "Paul", "p.verrouille", "1234", Role.STAGIAIRE));
+        personnelService.desactiver(inactif.getId());
+        verrouille.setVerrouille(true);
+
+        // ---------- Stages (resources/init/stages.csv) ----------
+        // les 3 stagiaires fixes sont dans WB47 ; les générés remplissent les stages dans l'ordre du fichier,
+        // ceux qui restent n'ont pas de stage (pour tester l'ajout)
+        List<Stage> stages = creerStages(formateurs, stagiairesFixes, stagiairesGeneres);
+
+        // ---------- Processus ----------
+        for (String nom : PROCESSUS_AUTORISES) image.add(processusService.create(buildProcessus(nom, ListeProcessus.BLANCHE)));
+        for (String nom : PROCESSUS_INTERDITS) processusService.create(buildProcessus(nom, ListeProcessus.NOIRE));
+
+        // Postes à occuper de chaque salle (clé : id de la salle), remplis par les stagiaires du stage de la salle
+        Map<Long, List<Poste>> aOccuper = new HashMap<>();
+        // Salles de cours équipées, dans l'ordre de création : elles accueilleront les premiers stages en cours
+        List<Salle> sallesDeCours = new ArrayList<>();
+
+        // ---------- Bâtiments, salles, postes, matériel ----------
+        for (String numBatiment : NUMEROS_BATIMENTS) {
+            Batiment batiment = batimentService.create(buildBatiment(numBatiment));
+            Salle stockage = stockageDe(batiment);
+
+            // de 2 à 4 niveaux (rez-de-chaussée au 3e), 1 à 3 salles par niveau
+            int nbNiveaux = 2 + random.nextInt(3);
+            for (int etage = 0; etage < nbNiveaux; etage++) {
+                int nbSallesEtage = 1 + random.nextInt(3);
+                for (int n = 1; n <= nbSallesEtage; n++) {
+                    String numSalle = String.format("%d%02d", etage, n); // 001, 002, 101, 102...
+                    creerSalleEquipee(batiment, numSalle, etage, stockage, formateurs, gestionnaire, aOccuper, sallesDeCours);
+                }
+            }
+
+            // stock de rechange : de quoi équiper 3 ou 4 salles, plutôt récent
+            remplirStock(stockage, MODELES_UC, 40 + random.nextInt(21));               // 40 à 60 UC
+            remplirStock(stockage, ECRANS, 60 + random.nextInt(41));           // 60 à 100 écrans
+            remplirStock(stockage, VIDEOPROJECTEURS, 3 + random.nextInt(4));   // 3 à 6 vidéoprojecteurs
+            remplirStock(stockage, TABLEAUX, 2 + random.nextInt(3));           // 2 à 4 tableaux
+
+            // un vieux matériel archivé dans 1 bâtiment sur 3 (ne doit pas compter dans l'anneau)
+            if (random.nextInt(3) == 0) {
+                Materiel vieux = creerMateriel(choisir(MODELES_UC), aujourdhui.minusYears(6), stockage);
+                materielService.archiver(vieux.getId());
+            }
         }
 
-        // Jeu de test ciblé : un bâtiment, une salle et deux postes Windows réels.
-        Batiment batiment = batimentService.create(buildBatiment("TEST"));
-        Salle salle = salleService.create(batiment.getId(),
-                buildSalle("101", "0", TypeSalle.SalleDeCours));
-        salle.setCreePar("Admin Orbit");
+        // ---------- Stages en cours dans les premières salles de cours, et leurs stagiaires assis ----------
+        // un stagiaire n'est assis que dans la salle de son stage ; 2 par stage restent sans poste
+        // (pour tester l'affectation depuis la page de la salle). Les 3 stagiaires fixes passent en premier.
+        List<Stage> enCours = stages.stream()
+                .filter(s -> !s.getDateDebut().isAfter(aujourdhui) && !s.getDateFin().isBefore(aujourdhui))
+                .limit(5)
+                .toList();
+        List<Personnel> stagiaires = new ArrayList<>(stagiairesFixes);
+        stagiaires.addAll(stagiairesGeneres);
+        for (int i = 0; i < Math.min(enCours.size(), sallesDeCours.size()); i++) {
+            Stage stage = enCours.get(i);
+            Salle salle = sallesDeCours.get(i);
+            affecterStageService.affecterASalle(salle.getId(), stage.getId());
 
-        creerPoste("TEST-S101-P01", salle);
-        creerPoste("TEST-S101-P02", salle);
+            List<Personnel> duStage = stagiaires.stream()
+                    .filter(p -> p.getStage() != null && p.getStage().getId().equals(stage.getId()))
+                    .toList();
+            List<Poste> postes = new ArrayList<>(aOccuper.getOrDefault(salle.getId(), List.of()));
+            Collections.shuffle(postes, random);
+            for (int j = 0; j < Math.min(postes.size(), duStage.size() - 2); j++) {
+                postes.get(j).setOccupant(duStage.get(j));
+            }
+        }
 
-        Salle stockage = salleService.create(batiment.getId(),
-                buildSalle("STOCK", "0", TypeSalle.SalleStockage));
-
-        affecterVmWindows(salle, stockage, "TEST-S101-P01",
-                "VM-WIN-HOTE2", "DESKTOP-Q1H6USK",
-                "Windows 10 Enterprise LTSC 21H2 VM - 2 Go RAM");
-        affecterVmWindows(salle, stockage, "TEST-S101-P02",
-                "VM-WIN-HOTE3", "DESKTOP-47OOO4U",
-                "Windows 10 Enterprise LTSC 21H2 VM - 2 Go RAM");
-    }
-
-    private void affecterVmWindows(Salle salle, Salle stockage, String numeroPoste,
-                                  String numeroSerie, String nomMachine, String modele)
-            throws ServiceException {
-        UC uc = new UC();
-        uc.setNumSerie(numeroSerie);
-        uc.setModele(modele);
-        uc.setNomMachine(nomMachine);
-        uc.setDateAcquisition(aujourdhui);
-        uc.setDateFinGarantie(aujourdhui.plusYears(1));
-        image.forEach(uc::addProcessus);
-        Materiel cree = materielService.creerEnStock(uc, stockage.getId());
-        Poste poste = salle.getPostes().stream()
-                .filter(p -> numeroPoste.equals(p.getNumPoste()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Poste introuvable : " + numeroPoste));
-        affecterMaterielService.affecterAPoste(poste.getId(), cree.getId());
-
-        // un poste n'est libre qu'avec au moins une UC et un écran
-        Ecran ecran = new Ecran();
-        ecran.setNumSerie(numeroSerie.replace("VM-WIN", "EC-VM"));
-        ecran.setModele("Écran de la VM");
-        ecran.setDateAcquisition(aujourdhui);
-        ecran.setDateFinGarantie(aujourdhui.plusYears(1));
-        Materiel ecranCree = materielService.creerEnStock(ecran, stockage.getId());
-        affecterMaterielService.affecterAPoste(poste.getId(), ecranCree.getId());
+        // Réserve hors bâtiment, conservée comme avant.
+        Salle stockagePrincipal = salleService.create(
+                buildSalle("999", "0", TypeSalle.SalleStockage));
+        creerMateriel(MODELES_UC.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
+        creerMateriel(ECRANS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
+        creerMateriel(VIDEOPROJECTEURS.get(0), aujourdhui.minusMonths(2), stockagePrincipal);
     }
 
     /**
      * Crée les stages du CSV puis y ajoute des stagiaires. Colonnes :
-     * nom;type;dateDebut;dateFin;nidCDSF;nbStagiaires (nbStagiaires ne sert qu'au jeu de données).
+     * nom;type;dateDebut;dateFin;nidFormateur;nbStagiaires (nbStagiaires ne sert qu'au jeu de données).
      */
     private List<Stage> creerStages(List<Personnel> formateurs, List<Personnel> stagiairesFixes,
                                     List<Personnel> stagiairesGeneres) throws IOException, ServiceException {
@@ -234,7 +282,6 @@ public class Init implements CommandLineRunner {
                                    Map<Long, List<Poste>> aOccuper, List<Salle> sallesDeCours) throws ServiceException {
         Salle salle = salleService.create(batiment.getId(),
                 buildSalle(numSalle, Integer.toString(etage), TypeSalle.SalleDeCours));
-        salle.setCreePar(gestionnaire.getPrenom() + " " + gestionnaire.getNom());
         Personnel formateur = choisir(formateurs);
         salle.addPersonnel(formateur);
 

@@ -161,7 +161,7 @@ export default function JournalPage() {
 
             {/* boutons de changement de page (même principe que UtilisateurPage) */}
             {resultat && <Pagination page={resultat.page} totalPages={resultat.totalPages} onChange={setPage}
-                                     info={`(${resultat.totalElements} matériels)`}/>}
+                                     info={`(${resultat.totalElements} logs)`}/>}
 
             {exportPret && <ExporterJournalPopup {...exportPret} onClose={() => setExportPret(null)}/>}
         </>

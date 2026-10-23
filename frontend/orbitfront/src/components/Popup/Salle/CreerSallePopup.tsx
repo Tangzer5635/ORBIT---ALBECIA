@@ -148,9 +148,9 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                 <>
                     <p>Bâtiment {batiment.numBatiment}, salle {numSalle.trim()}, {ETAGES[Number(etage)].toLowerCase()} :</p>
                     <ul className="popup-recap">
-                        <li>{nbPostes} {pluriel(nbPostes, "poste")} stagiaire + 1 poste formateur</li>
-                        <li>{ecransParPoste} {pluriel(ecransParPoste, "écran")} par poste</li>
-                        <li>{nbVideoProjecteurs} {pluriel(nbVideoProjecteurs, "vidéo-projecteur")}</li>
+                        <li>{pluriel(nbPostes, "poste")} stagiaire + 1 poste formateur</li>
+                        <li>{pluriel(ecransParPoste, "écran")} par poste</li>
+                        <li>{pluriel(nbVideoProjecteurs, "vidéo-projecteur")}</li>
                         <li>{nbTableaux} tableau{nbTableaux > 1 ? "x" : ""} interactif{nbTableaux > 1 ? "s" : ""}</li>
                     </ul>
                     <p className="muted small">

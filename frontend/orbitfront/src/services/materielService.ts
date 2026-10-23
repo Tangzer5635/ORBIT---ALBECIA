@@ -118,7 +118,7 @@ export async function getCalendrierGaranties(annee: number): Promise<CalendrierG
     let response: Response;
     try {
         //on aura toujorus une année
-        response = await fetch(`${URL}/garanties/?annee=${annee}`, { headers: authHeaders() });
+        response = await apiFetch(`${URL}/garanties/?annee=${annee}`, { headers: authHeaders() });
     } catch {
         throw new MaterielError(0); // serveur injoignable
     }
