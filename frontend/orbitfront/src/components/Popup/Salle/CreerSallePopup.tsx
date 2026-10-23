@@ -88,8 +88,8 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
 
             {etape === 1 && (
                 <>
-                    <label>Type de salle</label>
-                    <div className="seg">
+                    <span id="type-salle-label" className="label">Type de salle</span>
+                    <div className="seg" role="group" aria-labelledby="type-salle-label">
                         <button type="button" aria-pressed={!stockage} onClick={() => setType("SalleDeCours")}>
                             Salle de cours
                         </button>
@@ -105,7 +105,6 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                         maxLength={10}
                         value={numSalle}
                         onChange={(e) => { setNumSalle(e.target.value); setErreur(""); }}
-                        autoFocus
                     />
                     <label htmlFor="etage">Étage</label>
                     <select id="etage" value={etage} onChange={(e) => setEtage(e.target.value)}>
@@ -129,8 +128,10 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                     />
                     <p className="muted small">Un poste formateur est toujours ajouté et équipé en priorité.</p>
 
-                    <label>Écrans par poste</label>
-                    <div className="seg">
+
+
+                    <span id="ecrans-par-poste-label" className="label">Écrans par poste</span>
+                    <div className="seg" role="group" aria-labelledby="ecrans-par-poste-label">
                         {([1, 2] as const).map((n) => (
                             <button key={n} type="button" aria-pressed={ecransParPoste === n} onClick={() => setEcransParPoste(n)}>
                                 {n}
@@ -148,10 +149,10 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                 <>
                     <p>Bâtiment {batiment.numBatiment}, salle {numSalle.trim()}, {ETAGES[Number(etage)].toLowerCase()} :</p>
                     <ul className="popup-recap">
-                        <li>{nbPostes} {pluriel(nbPostes, "poste")} stagiaire + 1 poste formateur</li>
-                        <li>{ecransParPoste} {pluriel(ecransParPoste, "écran")} par poste</li>
-                        <li>{nbVideoProjecteurs} {pluriel(nbVideoProjecteurs, "vidéo-projecteur")}</li>
-                        <li>{nbTableaux} tableau{nbTableaux > 1 ? "x" : ""} interactif{nbTableaux > 1 ? "s" : ""}</li>
+                        <li>{pluriel(nbPostes, "poste")} stagiaire{nbPostes > 1 ? "s" : ""} + 1 poste formateur</li>
+                        <li>{pluriel(ecransParPoste, "écran")} par poste</li>
+                        <li>{pluriel(nbVideoProjecteurs, "vidéo-projecteur")}</li>
+                        <li>{pluriel(nbTableaux, "tableau interactif", "tableaux interactifs")}</li>
                     </ul>
                     <p className="muted small">
                         Soit {nbPostesTotal} unités centrales et {nbPostesTotal * ecransParPoste} écrans pris dans le stock du bâtiment.

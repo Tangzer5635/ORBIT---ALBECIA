@@ -96,7 +96,7 @@ export default function DeplacerMaterielPopup({materiel, depuis, enStock = false
             disabled={!destination}
         >
             <label htmlFor="batiment">Bâtiment</label>
-            <select id="batiment" value={batimentId} onChange={e => choisirBatiment(e.target.value)} autoFocus>
+            <select id="batiment" value={batimentId} onChange={e => choisirBatiment(e.target.value)}>
                 <option value="" disabled>Choisir un bâtiment…</option>
                 {batiments.map(b => <option key={b.id} value={b.id}>Bâtiment {b.numBatiment}</option>)}
             </select>
