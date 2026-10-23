@@ -93,7 +93,7 @@ export default function DefaillancePage() {
         if (!filtresActifs) { setResultatsRecherche(null); return; }
         let actif = true;
         setResultatsRecherche([]);
-        (async () => {
+        void (async () => {
             try {
                 const premiere = await getDefaillances(statut, 0, 100);
                 const tout = [...premiere.content];

@@ -78,7 +78,6 @@ export default function GererStagiairesPopup({stage, stagiaires, onClose, onMaj}
                 value={recherche}
                 onChange={(e) => setRecherche(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} // Entrée ne doit pas enregistrer
-                autoFocus
             />
 
             <div className="stagiaires-liste">

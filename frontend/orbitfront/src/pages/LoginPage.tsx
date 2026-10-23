@@ -37,7 +37,7 @@ export function LoginPage() {
         try {
             //Redirection sur les differentes pages en fonction du role du personnel
             const utilisateur = await login(identifiant.trim(), motDePasse);
-            navigate(PAGE_ACCUEIL[utilisateur.role], { replace: true });
+            void navigate(PAGE_ACCUEIL[utilisateur.role], { replace: true });
         } catch (err) {
             setError(messageErreur(err));
             setMotDePasse("");

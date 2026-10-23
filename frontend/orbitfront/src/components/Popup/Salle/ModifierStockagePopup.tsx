@@ -45,7 +45,7 @@ export default function ModifierStockagePopup({salle, onClose, onFait}: Props) {
         >
             <label htmlFor="numStockage">Numéro de la salle</label>
             <input id="numStockage" maxLength={10} value={numSalle}
-                   onChange={(e) => { setNumSalle(e.target.value); setErreur(""); }} autoFocus/>
+                   onChange={(e) => { setNumSalle(e.target.value); setErreur(""); }}/>
 
             <label htmlFor="etageStockage">Étage</label>
             <select id="etageStockage" value={etage} onChange={(e) => setEtage(e.target.value)}>

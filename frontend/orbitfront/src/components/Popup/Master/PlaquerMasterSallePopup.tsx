@@ -57,7 +57,7 @@ export default function PlaquerMasterSallePopup({salle, poste, onClose, onFait}:
             {masters !== null && masters.length > 0 && (
                 <>
                     <label htmlFor="plaquerMaster">Master</label>
-                    <select id="plaquerMaster" value={masterId} autoFocus onChange={e => setMasterId(e.target.value)}>
+                    <select id="plaquerMaster" value={masterId} onChange={e => setMasterId(e.target.value)}>
                         <option value="" disabled>Choisir un master…</option>
                         {masters.map(m => (
                             <option key={m.id} value={m.id}>

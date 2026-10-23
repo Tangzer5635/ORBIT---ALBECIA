@@ -40,7 +40,7 @@ export default function Navbar() {
         } catch {
             // s'il y a une erreur serveur la session locale est déjà vidée, on redirige quand même
         } finally {
-            navigate("/connexion", { replace: true });
+            void navigate("/connexion", { replace: true });
         }
     }
 

@@ -68,7 +68,7 @@ export default function MasterPopup({master, nbSalles, onClose, onFait}: Props) 
         >
             <label htmlFor="masterNom">Nom</label>
             <input id="masterNom" value={nom} onChange={e => setNom(e.target.value)} maxLength={50}
-                   placeholder="Ex. Dev 2026" autoFocus/>
+                   placeholder="Ex. Dev 2026"/>
 
             <label htmlFor="masterVersion">Version</label>
             <input id="masterVersion" value={version} onChange={e => setVersion(e.target.value)} maxLength={50}/>

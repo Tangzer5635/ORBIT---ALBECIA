@@ -100,7 +100,6 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
                         value={recherche}
                         onChange={(e) => setRecherche(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} // Entrée ne doit pas affecter
-                        autoFocus
                     />
 
                     {/* même liste que « Gérer les stagiaires », un titre par bâtiment */}
