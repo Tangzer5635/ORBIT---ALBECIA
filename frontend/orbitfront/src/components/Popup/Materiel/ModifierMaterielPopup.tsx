@@ -63,7 +63,7 @@ export default function ModifierMaterielPopup({materiel, onClose, onFait}: Props
             disabled={!complet}
         >
             <label htmlFor="modele">Modèle</label>
-            <input id="modele" value={modele} onChange={e => setModele(e.target.value)} maxLength={50} autoFocus/>
+            <input id="modele" value={modele} onChange={e => setModele(e.target.value)} maxLength={50}/>
 
             <label htmlFor="numSerie">N° de série</label>
             <input id="numSerie" value={materiel.numSerie} readOnly disabled

@@ -72,7 +72,7 @@ export default function AjouterMaterielPopup({onClose, onFait}: Props) {
             disabled={!complet}
         >
             <label htmlFor="type">Type</label>
-            <select id="type" value={type} onChange={e => setType(e.target.value as TypeMateriel)} autoFocus>
+            <select id="type" value={type} onChange={e => setType(e.target.value as TypeMateriel)}>
                 {ORDRE_TYPES.map(t => <option key={t} value={t}>{LIBELLE_TYPE_MATERIEL[t]}</option>)}
             </select>
 

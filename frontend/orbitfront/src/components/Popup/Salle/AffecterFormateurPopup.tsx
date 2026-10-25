@@ -52,7 +52,7 @@ export default function AffecterFormateurPopup({salle, onClose, onFait}: Props) 
             ) : (
                 <>
                     <label htmlFor="formateur">Formateur</label>
-                    <select id="formateur" value={choix} onChange={(e) => setChoix(e.target.value)} autoFocus>
+                    <select id="formateur" value={choix} onChange={(e) => setChoix(e.target.value)}>
                         <option value="" disabled>Choisir un formateur…</option>
                         {(formateurs ?? []).map(f => (
                             <option key={f.id} value={f.id}>{f.prenom} {f.nom}</option>
