@@ -1,6 +1,0 @@
-projectKey=orbit-front
-serverUrl=http://localhost:9000
-serverVersion=26.10.0.133078
-dashboardUrl=http://localhost:9000/dashboard?id=orbit-front
-ceTaskId=dc7f6cc4-4478-487d-8582-db9706a12439
-ceTaskUrl=http://localhost:9000/api/ce/task?id=dc7f6cc4-4478-487d-8582-db9706a12439

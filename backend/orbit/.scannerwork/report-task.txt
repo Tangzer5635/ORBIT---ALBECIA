@@ -1,6 +1,0 @@
-projectKey=orbit-back
-serverUrl=http://localhost:9000
-serverVersion=26.10.0.133078
-dashboardUrl=http://localhost:9000/dashboard?id=orbit-back
-ceTaskId=214e5093-9aac-454c-a2f0-ae2a9c7cc2d0
-ceTaskUrl=http://localhost:9000/api/ce/task?id=214e5093-9aac-454c-a2f0-ae2a9c7cc2d0

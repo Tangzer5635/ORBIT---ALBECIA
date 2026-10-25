@@ -1,11 +1,5 @@
 import {useEffect, useState} from "react";
-import {
-    type Defaillance,
-    type EtatPoste,
-    LIBELLE_STATUT_DEFAILLANCE,
-    LIBELLE_TYPE_MATERIEL,
-    type MonPoste,
-} from "../types/types.ts";
+import {type Defaillance, type EtatPoste, LIBELLE_STATUT_DEFAILLANCE, LIBELLE_TYPE_MATERIEL, type MonPoste,} from "../types/types.ts";
 import {getMyPoste} from "../services/posteService.ts";
 import {getUtilisateur} from "../services/authService.ts";
 import {getMesDefaillances, signalerDefaillance} from "../services/defaillanceService.ts";
@@ -13,10 +7,8 @@ import Popup from "../components/Popup/Popup.tsx";
 import MaterielCard from "../components/Materiel/MaterielCard.tsx";
 import {dateFr, etatPoste} from "../utils/postes.ts";
 
-// "B2-S105-P04" -> "04"
 const numeroCourt = (numPoste: string) => numPoste.match(/P(\d+)$/)?.[1] ?? numPoste;
 
-// titre et explication du bandeau selon l'état du poste
 const MESSAGES: Record<EtatPoste, [string, string]> = {
     UTILISE: ["Tout fonctionne", "Votre matériel fonctionne normalement."],
     DISPONIBLE: ["Tout fonctionne", "Votre matériel fonctionne normalement."],
@@ -69,7 +61,7 @@ export default function PostePage() {
     const etat = poste.etat ?? "UTILISE";
     const [titre, explication] = MESSAGES[etat];
     const numero = numeroCourt(poste.numPoste);
-    const verrouille = getUtilisateur()?.verrouille ?? false; // stagiaire verrouillé : plus de signalement
+    const verrouille = getUtilisateur()?.verrouille ?? false;
     const ouvrirSignalement = () => {
         setMaterielSignale(poste.materiels[0]?.id ?? "");
         setDescription("");
@@ -83,7 +75,6 @@ export default function PostePage() {
         setErreurSignalement("");
         try {
             await signalerDefaillance(materielSignale, description);
-            // le poste aussi : son état (et la couleur du plan) change avec la défaillance
             const [mes, posteAJour] = await Promise.all([getMesDefaillances(), getMyPoste()]);
             setDefaillances(mes);
             setPoste(posteAJour);
@@ -108,9 +99,7 @@ export default function PostePage() {
                         {poste.stageNom && `, stage ${poste.stageNom}`}. {explication}
                     </p>
                     {verrouille ? (
-                        <p className="error-message" role="alert">
-                            Votre compte a été verrouillé, vous ne pouvez plus remonter de défaillance.
-                        </p>
+                        <p className="error-message-verrouille" role="alert">Votre compte a été verrouillé, vous ne pouvez plus remonter de défaillance.</p>
                     ) : (
                         <button type="button" className="btn primary" onClick={ouvrirSignalement}
                                 disabled={poste.materiels.length === 0}>
