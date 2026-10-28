@@ -148,12 +148,16 @@ class MaterielControllerTest extends ControllerTestSupport {
 
     @Test
     void post_doitRenvoyer400_quandTypeInconnu() throws Exception {
+        when(materielAssembler.toEntity(any(MaterielRequestDto.class))).thenReturn(materiel());
+        when(materielService.creerEnStock(any(), eq(3L)))
+                .thenThrow(new ServiceException("Type de matériel inconnu : GRILLE_PAIN"));
+
         mockMvc.perform(post("/api/v1/materiels/").with(connecte(Role.GESTIONNAIRE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(JSON_VALIDE.replace("\"UC\"", "\"GRILLE_PAIN\"")))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Type de matériel inconnu : GRILLE_PAIN"));
     }
-
     @Test
     void post_doitRenvoyer400_quandNumeroDeSerieDejaPris() throws Exception {
         when(materielAssembler.toEntity(any(MaterielRequestDto.class))).thenReturn(materiel());

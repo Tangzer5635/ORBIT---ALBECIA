@@ -186,8 +186,7 @@ class AffecterMaterielServiceImplTest {
 
         assertThatThrownBy(() -> service.affecterASalle(2L, 11L))
                 .isInstanceOf(ServiceException.class)
-                .hasMessageStartingWith("Seuls les vidéoprojecteurs et les tableaux interactifs s'affectent à une salle");
-    }
+                .hasMessage("Les unités centrales et les écrans s'affectent à un poste, pas directement à la salle");    }
 
     // ---------- affecterAPoste ----------
 

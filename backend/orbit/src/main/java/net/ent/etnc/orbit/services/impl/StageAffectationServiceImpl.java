@@ -14,6 +14,8 @@ import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
 public class StageAffectationServiceImpl implements StageAffectationService {
 
@@ -39,7 +41,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
         Personnel stagiaire = stagiaire(idStagiaire);
 
         Stage actuel = stagiaire.getStage();
-        if (actuel != null && actuel.getId().equals(idStage))
+        if (actuel != null && Objects.equals(actuel.getId(), idStage))
             throw new ServiceException(nom(stagiaire) + " est déjà dans le stage " + stage.getNom());
         if (actuel != null)
             throw new ServiceException(nom(stagiaire) + " est déjà dans le stage " + actuel.getNom() + " : on ne change pas de stage");
@@ -55,7 +57,7 @@ public class StageAffectationServiceImpl implements StageAffectationService {
     @Transactional
     public Personnel supprimerAStage(Long idStage, Long idStagiaire) throws ServiceException {
         Personnel stagiaire = stagiaire(idStagiaire);
-        if (stagiaire.getStage() == null || !stagiaire.getStage().getId().equals(idStage))
+        if (stagiaire.getStage() == null || !Objects.equals(stagiaire.getStage().getId(), idStage))
             throw new ServiceException(nom(stagiaire) + " n'est pas dans ce stage");
         Stage stage = stagiaire.getStage();
         stagiaire.setStage(null);

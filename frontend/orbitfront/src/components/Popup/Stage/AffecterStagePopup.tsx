@@ -51,7 +51,7 @@ export default function AffecterStagePopup({salle, onClose, onFait}: Props) {
             ) : (
                 <>
                     <label htmlFor="stage">Stage</label>
-                    <select id="stage" value={choix} onChange={(e) => setChoix(e.target.value)}>
+                    <select id="stage" value={choix} onChange={(e) => setChoix(e.target.value)} autoFocus>
                         <option value="" disabled>Choisir un stage…</option>
                         {(stages ?? []).map(s => (
                             <option key={s.id} value={s.id}>{s.nom} ({LIBELLE_TYPE_FORMATION[s.type]})</option>

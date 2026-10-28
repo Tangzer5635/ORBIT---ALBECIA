@@ -173,6 +173,45 @@ class PersonnelServiceImplTest {
                 .isInstanceOf(ServiceException.class);
     }
 
+    // ---------- modifier ----------
+
+    @Test
+    void modifier_doitHacherLeNouveauMotDePasse() {
+        Personnel existant = personnel(7L, Role.STAGIAIRE);
+        existant.setMotDePasse("ancien-hash");
+        Personnel donnees = personnel(7L, Role.STAGIAIRE);
+        donnees.setMotDePasse("nouveau");
+        when(repository.findById(7L)).thenReturn(Optional.of(existant));
+        when(passwordEncoder.encode("nouveau")).thenReturn("nouveau-hash");
+        sauvegardeRenvoieLArgument();
+
+        assertThat(service.modifier(7L, donnees).getPassword()).isEqualTo("nouveau-hash");
+    }
+
+    @Test
+    void modifier_doitConserverLeMotDePasse_quandNonFourni() {
+        Personnel existant = personnel(7L, Role.STAGIAIRE);
+        existant.setMotDePasse("ancien-hash");
+        when(repository.findById(7L)).thenReturn(Optional.of(existant));
+        sauvegardeRenvoieLArgument();
+
+        assertThat(service.modifier(7L, personnel(7L, Role.STAGIAIRE)).getPassword()).isEqualTo("ancien-hash");
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    void modifier_doitConserverLeMotDePasse_quandVide() {
+        Personnel existant = personnel(7L, Role.STAGIAIRE);
+        existant.setMotDePasse("ancien-hash");
+        Personnel donnees = personnel(7L, Role.STAGIAIRE);
+        donnees.setMotDePasse("   ");
+        when(repository.findById(7L)).thenReturn(Optional.of(existant));
+        sauvegardeRenvoieLArgument();
+
+        assertThat(service.modifier(7L, donnees).getPassword()).isEqualTo("ancien-hash");
+        verify(passwordEncoder, never()).encode(any());
+    }
+
     // ---------- deleteById ----------
 
     @Test

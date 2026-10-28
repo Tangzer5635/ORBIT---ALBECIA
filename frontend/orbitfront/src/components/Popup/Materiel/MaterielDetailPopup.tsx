@@ -3,17 +3,12 @@ import {Link} from "react-router-dom";
 import Popup from "../Popup.tsx";
 import ModifierMaterielPopup from "./ModifierMaterielPopup.tsx";
 import DeplacerMaterielPopup from "./DeplacerMaterielPopup.tsx";
-import {
-    type Defaillance,
-    LIBELLE_ETAT_MATERIEL,
-    LIBELLE_STATUT_DEFAILLANCE,
-    LIBELLE_TYPE_MATERIEL,
-    type Materiel,
-} from "../../../types/types.ts";
+import {type Defaillance, LIBELLE_STATUT_DEFAILLANCE, LIBELLE_TYPE_MATERIEL, type Materiel} from "../../../types/types.ts";
 import {archiverMateriel, MaterielError, supprimerMateriel} from "../../../services/materielService.ts";
 import {getDefaillancesDuMateriel} from "../../../services/defaillanceService.ts";
-import {CLASSE_ETAT_MATERIEL, localisationDe} from "../../../utils/materiels.ts";
+import {localisationDe} from "../../../utils/materiels.ts";
 import {dateFr} from "../../../utils/postes.ts";
+import InfosMateriel from "../../Materiel/InfosMateriel.tsx";
 
 interface Props {
     materiel: Materiel;
@@ -34,7 +29,6 @@ export default function MaterielDetailPopup({materiel: m, onClose, onChange}: Pr
     const localisation = localisationDe(m);
     const archive = localisation === "ARCHIVE";
     const enStock = localisation === "STOCK";
-    const aujourdhui = new Date().toLocaleDateString("sv-SE"); // "2026-10-15"
 
     // défaillances encore ouvertes, la plus récente d'abord
     useEffect(() => {
@@ -131,28 +125,7 @@ export default function MaterielDetailPopup({materiel: m, onClose, onChange}: Pr
                                 </dl>
                             </section>
 
-                            <article className={`carte-mat ${archive ? "dispo" : CLASSE_ETAT_MATERIEL[m.etat]}`}>
-                                <header>
-                                    <b>{LIBELLE_TYPE_MATERIEL[m.type]}</b>
-                                    <span className="pastille">{LIBELLE_ETAT_MATERIEL[m.etat]}</span>
-                                </header>
-                                <dl>
-                                    <dt>Modèle</dt>
-                                    <dd>{m.modele}</dd>
-                                    <dt>N° de série</dt>
-                                    <dd className="mono">{m.numSerie}</dd>
-                                    {m.nomMachine && (
-                                        <>
-                                            <dt>Nom machine</dt>
-                                            <dd className="mono">{m.nomMachine}</dd>
-                                        </>
-                                    )}
-                                    <dt>Acquis le</dt>
-                                    <dd>{dateFr(m.dateAcquisition)}</dd>
-                                    <dt>Garantie</dt>
-                                    <dd>{m.dateFinGarantie < aujourdhui ? "Terminée le " : "Jusqu'au "}{dateFr(m.dateFinGarantie)}</dd>
-                                </dl>
-                            </article>
+                            <InfosMateriel materiel={m}/>
 
                             <section className="detail-section">
                                 <h3>Défaillances en cours</h3>
@@ -170,7 +143,7 @@ export default function MaterielDetailPopup({materiel: m, onClose, onChange}: Pr
                                                 {LIBELLE_STATUT_DEFAILLANCE[d.statut]}
                                             </span>
                                         </div>
-                                        <Link to="/defaillances" className="btn sm">Voir la fiche</Link>
+                                        <Link to={`/defaillances?ouvrir=${d.id}`} className="btn sm">Voir la fiche</Link>
                                     </div>
                                 ))}
                             </section>

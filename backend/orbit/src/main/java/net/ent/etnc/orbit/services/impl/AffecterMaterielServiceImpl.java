@@ -2,13 +2,13 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.dtos.responseDTO.AffectationMaterielDto;
 import net.ent.etnc.orbit.models.entities.Batiment;
+import net.ent.etnc.orbit.models.entities.Ecran;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Poste;
 import net.ent.etnc.orbit.models.entities.Salle;
 import net.ent.etnc.orbit.models.entities.Stage;
-import net.ent.etnc.orbit.models.entities.TableauInteractif;
-import net.ent.etnc.orbit.models.entities.VideoProjecteur;
+import net.ent.etnc.orbit.models.entities.UC;
 import net.ent.etnc.orbit.models.enums.TypeAction;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import net.ent.etnc.orbit.services.AffecterMaterielService;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Affectations du matériel. Chaque méthode publique écrit une seule ligne dans le journal :
@@ -164,7 +165,10 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
         return materielService.archiver(idMateriel);
     }
 
-    /** Un poste reçoit au plus 1 UC et 2 écrans, jamais de vidéoprojecteur ni de tableau (matériel de salle). */
+    /**
+     * Un poste reçoit au plus 1 UC et 2 écrans, jamais de vidéoprojecteur ni de tableau (matériel de salle) ;
+     * un type ajouté par l'admin n'a pas de limite.
+     */
     private void verifierComposition(Poste poste, Materiel materiel) throws ServiceException {
         String type = materiel.getType();
         int maximum = Poste.maximum(type);
@@ -176,12 +180,11 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
                     + (deja > 1 ? "s" : "") + " : " + maximum + " au maximum");
     }
 
-    /** Le matériel de salle, ce sont les vidéoprojecteurs et les tableaux interactifs ; UC et écrans vont sur un poste. */
+    /** UC et écrans vont sur un poste ; vidéoprojecteurs, tableaux et types ajoutés par l'admin s'affectent à la salle. */
     private void verifierMaterielDeSalle(Materiel materiel) throws ServiceException {
         String type = materiel.getType();
-        if (!VideoProjecteur.TYPE.equals(type) && !TableauInteractif.TYPE.equals(type))
-            throw new ServiceException("Seuls les vidéoprojecteurs et les tableaux interactifs s'affectent à une salle : un "
-                    + nomType(type) + " va sur un poste");
+        if (UC.TYPE.equals(type) || Ecran.TYPE.equals(type))
+            throw new ServiceException("Les unités centrales et les écrans s'affectent à un poste, pas directement à la salle");
     }
 
     private static String nomType(String type) {
@@ -261,8 +264,7 @@ public class AffecterMaterielServiceImpl implements AffecterMaterielService {
 
     private Materiel chercher(List<Materiel> materiels, Long idMateriel) throws ServiceException {
         for (Materiel m : materiels) {
-            if (m.getId().equals(idMateriel)) {
-                return m;
+            if (Objects.equals(m.getId(), idMateriel)) {                return m;
             }
         }
         return null;

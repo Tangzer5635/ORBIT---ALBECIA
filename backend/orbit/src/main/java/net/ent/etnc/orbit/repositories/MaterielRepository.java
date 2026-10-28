@@ -47,6 +47,10 @@ public interface MaterielRepository extends BaseRepository<Materiel> {
     /** Matériel en service dont la garantie est déjà terminée avant cette date. */
     long countByArchiveFalseAndDateFinGarantieBefore(LocalDate date);
 
+    /** Nombre de matériels (archivés compris) d'un type ajouté par l'admin. */
+    @Query("select count(a) from AutreMateriel a where a.typeMateriel.id = :idType")
+    long countDeType(@Param("idType") Long idType);
+
     /** Tout le stock (rangé dans une salle de stockage) avec sa réserve et son bâtiment : une seule requête. */
     @Query("select " + MaterielStock.NEW + "(m, s.numSalle, b.numBatiment)"
             + " from Batiment b join b.salles s join s.materiels m"

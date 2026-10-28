@@ -64,7 +64,6 @@ public class MaterielAssembler {
                 .build();
     }
 
-    /** Le type est déjà validé par @Pattern sur le DTO. */
     /** État actuel du matériel sous forme de DTO de requête : base d'un PATCH (le type et le n° de série ne changent pas). */
     public MaterielRequestDto toRequestDto(Materiel materiel) {
         MaterielRequestDto dto = MaterielRequestDto.builder()
@@ -93,7 +92,14 @@ public class MaterielAssembler {
             case Ecran.TYPE -> new Ecran();
             case VideoProjecteur.TYPE -> new VideoProjecteur();
             case TableauInteractif.TYPE -> new TableauInteractif();
-            default -> throw new IllegalArgumentException("Type de matériel inconnu : " + dto.getType());
+            default -> {
+                // type ajouté par l'admin : le service le remplace par le vrai TypeMateriel (ou refuse s'il n'existe pas)
+                TypeMateriel type = new TypeMateriel();
+                type.setLibelle(dto.getType());
+                AutreMateriel autre = new AutreMateriel();
+                autre.setTypeMateriel(type);
+                yield autre;
+            }
         };
         materiel.setNumSerie(dto.getNumSerie());
         materiel.setModele(dto.getModele());

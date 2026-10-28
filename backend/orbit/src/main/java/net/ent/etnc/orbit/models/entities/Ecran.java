@@ -10,7 +10,7 @@ import lombok.ToString;
 @Entity
 @Table(name = "ecran")
 @PrimaryKeyJoinColumn(name = "id", foreignKey = @ForeignKey(name = "fk_ecran_materiel"))
-@ToString(callSuper = true, of = "TYPE")
+@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Ecran extends Materiel {
 

@@ -9,7 +9,7 @@ const ETAPES = ["Identité", "Composition", "Récapitulatif"];
 interface Props {
     batiment: Batiment;
     onClose: () => void;
-    onCree: () => void;
+    onCree: (numSalle: string, manquants: Partial<Record<string, number>>) => void; // manquants : ce qui n'était pas en stock
 }
 
 export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
@@ -42,6 +42,7 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
         try {
             if (stockage) {
                 await creerSalleStockage(batiment.id, numSalle.trim(), etage);
+                onCree(numSalle.trim(), {});
             } else {
                 const {manquants} = await creerSalleEquipee({
                     idBatiment: batiment.id,
@@ -52,10 +53,8 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                     nbVideoProjecteurs,
                     nbTableaux,
                 });
-                const manque = Object.entries(manquants).map(([t, nb]) => `${nb} ${t}`);
-                if (manque.length > 0) console.log(`Salle ${numSalle} créée incomplète, plus assez en stock : il manque ${manque.join(", ")}`);
+                onCree(numSalle.trim(), manquants);
             }
-            onCree();
         } catch (err) {
             if (err instanceof SalleError && err.status === 403) setErreur("Vous n'avez pas le droit de créer une salle.");
             else if (err instanceof SalleError && err.status === 400) setErreur(err.detail || "Données invalides : ce numéro de salle existe peut-être déjà.");
@@ -88,8 +87,8 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
 
             {etape === 1 && (
                 <>
-                    <span id="type-salle-label" className="label">Type de salle</span>
-                    <div className="seg" role="group" aria-labelledby="type-salle-label">
+                    <label>Type de salle</label>
+                    <div className="seg">
                         <button type="button" aria-pressed={!stockage} onClick={() => setType("SalleDeCours")}>
                             Salle de cours
                         </button>
@@ -105,6 +104,7 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                         maxLength={10}
                         value={numSalle}
                         onChange={(e) => { setNumSalle(e.target.value); setErreur(""); }}
+                        autoFocus
                     />
                     <label htmlFor="etage">Étage</label>
                     <select id="etage" value={etage} onChange={(e) => setEtage(e.target.value)}>
@@ -128,10 +128,8 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                     />
                     <p className="muted small">Un poste formateur est toujours ajouté et équipé en priorité.</p>
 
-
-
-                    <span id="ecrans-par-poste-label" className="label">Écrans par poste</span>
-                    <div className="seg" role="group" aria-labelledby="ecrans-par-poste-label">
+                    <label>Écrans par poste</label>
+                    <div className="seg">
                         {([1, 2] as const).map((n) => (
                             <button key={n} type="button" aria-pressed={ecransParPoste === n} onClick={() => setEcransParPoste(n)}>
                                 {n}
@@ -149,10 +147,10 @@ export default function CreerSallePopup({batiment, onClose, onCree}: Props) {
                 <>
                     <p>Bâtiment {batiment.numBatiment}, salle {numSalle.trim()}, {ETAGES[Number(etage)].toLowerCase()} :</p>
                     <ul className="popup-recap">
-                        <li>{pluriel(nbPostes, "poste")} stagiaire{nbPostes > 1 ? "s" : ""} + 1 poste formateur</li>
+                        <li>{pluriel(nbPostes, "poste")} stagiaire + 1 poste formateur</li>
                         <li>{pluriel(ecransParPoste, "écran")} par poste</li>
                         <li>{pluriel(nbVideoProjecteurs, "vidéo-projecteur")}</li>
-                        <li>{pluriel(nbTableaux, "tableau interactif", "tableaux interactifs")}</li>
+                        <li>{nbTableaux} tableau{nbTableaux > 1 ? "x" : ""} interactif{nbTableaux > 1 ? "s" : ""}</li>
                     </ul>
                     <p className="muted small">
                         Soit {nbPostesTotal} unités centrales et {nbPostesTotal * ecransParPoste} écrans pris dans le stock du bâtiment.
@@ -175,4 +173,4 @@ function Compteur({label, valeur, onChange}: { label: string; valeur: number; on
             <button type="button" onClick={() => onChange(valeur + 1)} aria-label={`Ajouter : ${label}`}>+</button>
         </div>
     );
-}
+}

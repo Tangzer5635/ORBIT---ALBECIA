@@ -19,7 +19,7 @@ import java.util.List;
 @Entity
 @Table(name = "uc")
 @PrimaryKeyJoinColumn(name = "id", foreignKey = @ForeignKey(name = "fk_uc_materiel"))
-@ToString(callSuper = true, of = {"TYPE", "nomMachine", "adresseMac"})
+@ToString(callSuper = true, of = {"nomMachine", "adresseMac"})
 @EqualsAndHashCode(callSuper = true)
 public class UC extends Materiel {
 

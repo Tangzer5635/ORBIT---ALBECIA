@@ -158,6 +158,7 @@ export function BatimentsPage() {
                                 setNumBatiment(e.target.value);
                                 setErreur("");
                             }}
+                            autoFocus
                         />
                         <label htmlFor="numStockage">Salle de stockage</label>
                         <input

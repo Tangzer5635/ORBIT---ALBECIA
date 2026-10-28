@@ -38,4 +38,7 @@ public interface MaterielService extends Service<Materiel, Long> {
     int installerImageSurPoste(Long idPoste, List<Processus> processus);
     @Transactional
     CalendrierGarantiesDto calendrierGaranties(int annee);
+
+    /** Nombre de matériels (archivés compris) d'un type ajouté par l'admin. */
+    long nombreDeType(Long idTypeMateriel);
 }

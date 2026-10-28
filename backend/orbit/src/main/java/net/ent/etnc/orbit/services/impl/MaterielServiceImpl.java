@@ -2,6 +2,7 @@ package net.ent.etnc.orbit.services.impl;
 
 import net.ent.etnc.orbit.dtos.responseDTO.calendrier.CalendrierGarantiesDto;
 import net.ent.etnc.orbit.dtos.responseDTO.calendrier.MoisGarantieDto;
+import net.ent.etnc.orbit.models.entities.AutreMateriel;
 import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.Personnel;
 import net.ent.etnc.orbit.models.entities.Processus;
@@ -18,6 +19,7 @@ import net.ent.etnc.orbit.services.JournalisationService;
 import net.ent.etnc.orbit.services.MaterielService;
 import net.ent.etnc.orbit.services.PosteService;
 import net.ent.etnc.orbit.services.SalleService;
+import net.ent.etnc.orbit.services.TypeMaterielService;
 import net.ent.etnc.orbit.services.commons.AbstractService;
 import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
@@ -44,16 +46,18 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
     /** @Lazy : DefaillanceService dépend déjà de MaterielService (dépendance circulaire sinon). */
     private final DefaillanceService defaillanceService;
     private final JournalisationService journalisationService;
+    private final TypeMaterielService typeMaterielService;
 
     @Autowired
     public MaterielServiceImpl(MaterielRepository materielRepository, SalleService salleService,
                                PosteService posteService, @Lazy DefaillanceService defaillanceService,
-                               JournalisationService journalisationService) {
+                               JournalisationService journalisationService, TypeMaterielService typeMaterielService) {
         super(materielRepository);
         this.salleService = salleService;
         this.posteService = posteService;
         this.defaillanceService = defaillanceService;
         this.journalisationService = journalisationService;
+        this.typeMaterielService = typeMaterielService;
     }
 
     @Override
@@ -66,6 +70,9 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         Salle stockage = salleService.findById(idStockage).orElseThrow(() -> new ServiceException("Salle " + idStockage + " introuvable"));
         if (stockage.getType() != TypeSalle.SalleStockage)
             throw new ServiceException("Un matériel se crée dans une salle de stockage");
+        // type ajouté par l'admin : on rattache le vrai type (ServiceException s'il n'existe pas)
+        if (materiel instanceof AutreMateriel autre)
+            autre.setTypeMateriel(typeMaterielService.trouverParLibelle(autre.getType()));
         materiel.setArchive(false);
         Materiel cree = repository.save(materiel);
         stockage.addMateriel(cree);
@@ -221,6 +228,12 @@ public class MaterielServiceImpl extends AbstractService<Materiel, MaterielRepos
         // ce qui est hors garantie à ce jour
         long expirees = repository.countByArchiveFalseAndDateFinGarantieBefore(LocalDate.now());
         return new CalendrierGarantiesDto(annee, expirees, mois);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long nombreDeType(Long idTypeMateriel) throws ServiceException {
+        return repository.countDeType(idTypeMateriel);
     }
 
     private Materiel trouver(Long id) throws ServiceException {

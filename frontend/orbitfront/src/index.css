@@ -341,29 +341,6 @@ h3 {
     padding: 10px 24px;
 }
 
-/* Liste des pastilles : autant que la largeur le permet, le reste défile */
-.batimentBar-liste {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scroll-behavior: smooth; /* glissement au clic sur une flèche */
-    scrollbar-width: none;
-    cursor: grab;
-}
-
-/* Pendant le glisser à la souris : pas d'animation, curseur "main fermée" */
-.batimentBar-liste.drag {
-    cursor: grabbing;
-    scroll-behavior: auto;
-    user-select: none;
-}
-
-.batimentBar-liste::-webkit-scrollbar {
-    display: none;
-}
-
 /* Pastille d'un bâtiment */
 .batiment {
     flex: none;
@@ -404,34 +381,6 @@ h3 {
 .batiment.active .pp {
     color: inherit;
     opacity: 0.8;
-}
-
-/* Flèches gauche / droite */
-.batimentBar-fleche {
-    flex: none;
-    width: 36px;
-    height: 36px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: var(--card2);
-    transition: background 0.15s, opacity 0.15s;
-}
-
-.batimentBar-fleche svg {
-    width: 19px;
-    height: 19px;
-}
-
-.batimentBar-fleche:hover:not(:disabled) {
-    background: var(--accent-soft);
-}
-
-.batimentBar-fleche:disabled {
-    opacity: 0.35;
-    cursor: default;
 }
 
 @media (max-width: 900px) {
@@ -632,42 +581,6 @@ h3 {
     letter-spacing: -0.03em;
 }
 
-.bat-note {
-    margin: 14px 0 16px;
-    font-size: 14px;
-}
-
-/* Formulaire de création */
-.bat-form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 10px;
-}
-
-.bat-form label {
-    font-weight: 600;
-}
-
-.bat-form input {
-    border: 2px solid transparent;
-    background: var(--card2);
-    border-radius: var(--radius-field);
-    padding: 8px 14px;
-    outline: none;
-    transition: border-color 0.15s, background 0.15s;
-}
-
-.bat-form input:focus {
-    border-color: var(--accent);
-    background: var(--card);
-}
-
-.bat-form-erreur {
-    flex-basis: 100%;
-    margin: 0;
-}
-
 .bat-grid {
     padding-top: 16px;
     display: grid;
@@ -728,11 +641,6 @@ h3 {
 
 .bat-label {
     margin: 0 0 8px 6px;
-    font-size: 14px;
-}
-
-.bat-vide {
-    margin: 0 6px 14px;
     font-size: 14px;
 }
 
@@ -985,7 +893,9 @@ h3 {
 }
 
 /* Carte d'une salle : anneau + infos */
+/* toute la carte est cliquable : le lien du titre s'étend dessus (maquette) */
 .room {
+    position: relative;
     display: grid;
     grid-template-columns: 84px 1fr;
     gap: 16px;
@@ -1001,11 +911,6 @@ h3 {
     font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.02em;
-}
-
-/* Carte d'une salle : titre sans style de lien, toute la carte est cliquable (maquette) */
-.room {
-    position: relative;
 }
 
 .room h3 a {
@@ -1458,22 +1363,6 @@ h3 {
     cursor: not-allowed;
 }
 
-/* Case "Compte actif" (les champs de .popup-body ne s'appliquent pas à la case) */
-.popup-body .user-check {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 16px 0 0;
-    font-weight: 400;
-    cursor: pointer;
-}
-
-.popup-body .user-check input {
-    width: auto;
-    margin-top: 4px;
-    accent-color: var(--accent);
-}
-
 @media (max-width: 720px) {
     .li {
         grid-template-columns: 1fr;
@@ -1596,7 +1485,7 @@ h3 {
 
 .plan-poste {
     justify-content: space-between;
-    width: 62px;
+    width: 76px;
     height: 62px;
     padding: 6px 8px;
 }
@@ -1651,7 +1540,7 @@ button.plan-poste {
 
 .plan-corps.ouvert {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-columns: minmax(0, 1fr) 330px;
     gap: 18px;
     align-items: start;
 }
@@ -1730,16 +1619,7 @@ button.plan-poste {
    10. DÉTAIL D'UNE SALLE : panneau de droite (vue de la salle, poste, matériel)
    ========================================================= */
 
-/* Le panneau est toujours affiché à droite du plan */
-.plan-corps.ouvert {
-    grid-template-columns: minmax(0, 1fr) 330px;
-}
-
 /* Poste : le nom du stagiaire est coupé s'il est trop long (nom complet au survol) */
-.plan-poste {
-    width: 76px;
-}
-
 .plan-poste span {
     overflow: hidden;
     white-space: nowrap;
@@ -2620,11 +2500,16 @@ button.plan-mat {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    width: 100%;
     min-height: 96px;
     padding: 14px 16px 16px;
+    border: 0;
     border-radius: 22px;
     background: var(--card);
     box-shadow: var(--shadow);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
 }
 
 .month .month-nom {
@@ -2839,20 +2724,6 @@ button.plan-mat {
     display: flex;
 }
 
-.month {
-    width: 100%;
-    border: 0;
-    color: var(--ink);
-    text-align: left;
-    cursor: pointer;
-}
-
-.month .month-nom {
-    margin: 0 0 8px;
-    font-size: 17px;
-    font-weight: 800;
-}
-
 .month:disabled {
     cursor: default;
 }
@@ -3035,4 +2906,196 @@ button.cal-hors[aria-pressed="true"] {
 
 .processus-noir {
     color: var(--def);
+}
+/* =========================================================
+   11. DÉTAIL D'UNE SALLE : poste ou matériel de salle choisi
+   centre = détail (matériel en haut, processus lancés en bas)
+   droite = « Vue de la salle », actions sur le poste, occupant, puis liste des postes
+   ========================================================= */
+
+.poste-centre {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.poste-centre h2,
+.poste-centre h3,
+.poste-centre p {
+    margin: 0;
+}
+
+.centre-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.centre-section h3 {
+    font-size: 15px;
+}
+
+/* Fiches du matériel en grille (fond plus clair que le bloc .plan) */
+.centre-mats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* auto-fit : les fiches prennent toute la largeur */
+    gap: 10px;
+}
+
+.poste-centre .carte-mat {
+    background: var(--card2);
+}
+
+/* Titre de section avec une info à droite (ex. fréquence de mise à jour des processus) */
+.centre-titre {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+}
+
+/* Processus lancés : nom, CPU, mémoire, bouton Tuer
+   colonnes de largeur fixe (sauf le nom) pour que l'en-tête reste aligné avec les lignes */
+.proc-table {
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px;
+    background: var(--card2);
+    overflow: hidden;
+}
+
+.proc-ligne {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 80px 100px 76px;
+    gap: 12px;
+    align-items: center;
+    min-height: 46px;
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.proc-ligne:last-child {
+    border-bottom: 0;
+}
+
+.proc-ligne:not(.entete):hover {
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.proc-ligne.entete {
+    min-height: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.proc-ligne .mono {
+    min-width: 0; /* sans ça, un long nom pousse le bouton hors du bloc */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13.5px;
+}
+
+.proc-ligne .opt {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.proc-ligne > button {
+    justify-self: end;
+}
+
+.proc-message {
+    margin: 0;
+    color: var(--use);
+}
+
+/* Colonne de droite : liste des postes */
+.poste-panneau .vue-salle {
+    align-self: stretch;
+}
+
+.liste-postes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-height: 520px; /* grande salle : la liste défile au lieu d'allonger la page */
+    padding: 3px;      /* place pour le contour du poste sélectionné */
+    overflow-y: auto;
+}
+
+.liste-poste {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-left: 4px solid var(--c);
+    border-radius: 10px;
+    background: var(--card);
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.liste-poste.dispo {
+    --c: var(--use);
+    background: var(--hachure);
+}
+
+.liste-poste.def {
+    background: var(--def-bg);
+}
+
+.liste-poste.chg {
+    background: var(--chg-bg);
+}
+
+.liste-poste.select {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.liste-poste-ligne {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.liste-poste strong {
+    font-size: 14px;
+}
+
+.liste-poste small {
+    overflow: hidden;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Écran étroit : le centre puis la colonne de droite, l'un sous l'autre */
+@media (max-width: 900px) {
+    .plan-corps.ouvert {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .proc-ligne {
+        grid-template-columns: minmax(0, 1fr) 76px;
+    }
+
+    .proc-ligne .opt {
+        display: none;
+    }
 }

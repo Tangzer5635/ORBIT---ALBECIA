@@ -13,8 +13,12 @@ type Props = {
 const messageErreur = (e: unknown, defaut: string) =>
     e instanceof ProcessusLanceError && e.detail ? e.detail : defaut;
 
-// Contenu de la catégorie « Processus lancés » du panneau d'un poste : la liste vient de l'Agent ORBIT de l'UC,
-// rafraîchie toutes les 5 s tant que la catégorie est dépliée (le composant n'est monté qu'à ce moment-là).
+// l'agent donne la mémoire en % de la RAM : convertie en Mo quand on connaît la RAM de la machine
+const memoire = (pct: number, ramGo?: number) =>
+    ramGo ? `${Math.round(pct / 100 * ramGo * 1024)} Mo` : `${pct.toFixed(1)} %`;
+
+// Bloc « Processus lancés » d'un poste (centre de la page salle) : la liste vient de l'Agent ORBIT de l'UC,
+// rafraîchie toutes les 5 s tant que le poste est affiché.
 // « Tuer » arrête toutes les instances du processus sur la machine.
 export default function ProcessusLances({posteId}: Props) {
     const [etat, setEtat] = useState<ProcessusPoste | null>(null);
@@ -84,22 +88,26 @@ export default function ProcessusLances({posteId}: Props) {
                     {etat.processus.length === 0 ? (
                         <p className="muted">Aucune application ouverte sur ce poste.</p>
                     ) : (
-                        <ul className="proc-liste">
+                        <div className="proc-table">
+                            <div className="proc-ligne entete">
+                                <span>Processus</span><span className="opt">CPU</span><span className="opt">Mémoire</span><span/>
+                            </div>
                             {etat.processus.map(p => (
-                                <li key={p.nom}>
+                                <div key={p.nom} className="proc-ligne">
                                     <span className="mono" title={p.nom}>{p.nom}</span>
+                                    <span className="opt">{Math.round(p.cpu)} %</span>
+                                    <span className="opt">{memoire(p.memoire, etat.ramGo)}</span>
                                     <button type="button" className="btn sm danger" onClick={() => ouvrirArret(p)}>
                                         Tuer
                                     </button>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     )}
-                    <p className="muted small">Liste mise à jour toutes les 5 secondes.</p>
                 </>
             )}
 
-            {message && <p className="muted small" role="status">{message}</p>}
+            {message && <p className="proc-message small" role="status">{message}</p>}
 
             <Popup open={aTuer !== null} onClose={() => !enCours && setATuer(null)}
                    title={`Tuer ${aTuer?.nom ?? ""}`}

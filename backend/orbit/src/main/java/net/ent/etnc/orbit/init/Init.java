@@ -115,7 +115,7 @@ public class Init implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void run(String... args) throws Exception {
         // Évite de recréer toutes les données à chaque démarrage.
         if (personnelService.count() > 0) return;

@@ -82,7 +82,7 @@ export default function BatimentBar() {
 
     function choisir(id: number) {
         setMode(null);
-        void navigate(`/salles?batiment=${id}`);
+        navigate(`/salles?batiment=${id}`);
     }
 
     return (

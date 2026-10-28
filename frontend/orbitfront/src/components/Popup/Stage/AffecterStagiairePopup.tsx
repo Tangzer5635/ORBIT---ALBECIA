@@ -56,7 +56,7 @@ export default function AffecterStagiairePopup({posteId, numPoste, stageId, onCl
             ) : (
                 <>
                     <label htmlFor="stagiaire">Stagiaire</label>
-                    <select id="stagiaire" value={choix} onChange={(e) => setChoix(e.target.value)}>
+                    <select id="stagiaire" value={choix} onChange={(e) => setChoix(e.target.value)} autoFocus>
                         <option value="" disabled>Choisir un stagiaire…</option>
                         {(stagiaires ?? []).map(s => <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>)}
                     </select>

@@ -16,7 +16,8 @@ import net.ent.etnc.orbit.services.RefreshTokenService;
 import net.ent.etnc.orbit.services.commons.Libelles;
 import net.ent.etnc.orbit.services.commons.ServiceException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
@@ -26,6 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.Arrays;
 
 /**
@@ -36,7 +38,8 @@ import java.util.Arrays;
  *   <li><strong>Access token</strong> — JWT renvoyé en JSON, à envoyer dans {@code Authorization: Bearer}.
  *       Durée configurée par {@code app.jwt.expiration-ms}.</li>
  *   <li><strong>Refresh token</strong> — valeur brute (SHA-256 stocké en base) transmise
- *       via un cookie HttpOnly ({@code orbit_refresh}), jamais exposée en JSON.</li>
+ *       via un cookie HttpOnly, Secure, SameSite=Strict ({@code orbit_refresh}), jamais exposée en JSON.
+ *       SameSite=Strict protège ce cookie du CSRF (la protection CSRF de Spring est désactivée : API stateless).</li>
  * </ul>
  *
  * <p>Endpoints :
@@ -51,8 +54,11 @@ import java.util.Arrays;
 public class AuthController {
 
     private static final String COOKIE_NAME = "orbit_refresh";
+    private static final String COOKIE_PATH = "/api/v1/auth";
     private final long refreshExpirationMs;
     private final long jwtExpirationMs;
+    /** true par défaut ; false seulement si l'appli est servie en HTTP hors localhost. */
+    private final boolean cookieSecure;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final RefreshTokenService refreshTokenService;
@@ -63,6 +69,7 @@ public class AuthController {
     public AuthController(
             @Value("${app.jwt.refresh-expiration-ms}") long refreshExpirationMs,
             @Value("${app.jwt.expiration-ms}") long jwtExpirationMs,
+            @Value("${app.cookie.secure:true}") boolean cookieSecure,
             AuthenticationManager authenticationManager,
             JwtUtils jwtUtils,
             RefreshTokenService refreshTokenService,
@@ -71,6 +78,7 @@ public class AuthController {
             JournalisationService journalisationService) {
         this.refreshExpirationMs = refreshExpirationMs;
         this.jwtExpirationMs = jwtExpirationMs;
+        this.cookieSecure = cookieSecure;
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
         this.refreshTokenService = refreshTokenService;
@@ -94,7 +102,8 @@ public class AuthController {
             throw e; // toujours traité par le GlobalExceptionHandler
         }
 
-        Personnel user = (Personnel) authentication.getPrincipal();
+        if (!(authentication.getPrincipal() instanceof Personnel user))
+            throw new ServiceException("Utilisateur authentifié invalide");
         journalisationService.journaliser(user.getId(), TypeAction.CONNEXION, "Connexion de " + Libelles.personne(user));
         String accessToken = jwtUtils.generateJwtToken(user);
         String rawRefreshToken = refreshTokenService.createRefreshToken(user.getUsername());
@@ -145,20 +154,23 @@ public class AuthController {
     }
 
     private void addRefreshCookie(HttpServletResponse response, String rawToken) {
-        Cookie cookie = new Cookie(COOKIE_NAME, rawToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false); // true en production HTTPS
-        cookie.setPath("/api/v1/auth");
-        cookie.setMaxAge((int) (refreshExpirationMs / 1000));
-        response.addCookie(cookie);
+        response.addHeader(HttpHeaders.SET_COOKIE,
+                refreshCookie(rawToken, Duration.ofMillis(refreshExpirationMs)).toString());
     }
 
+    /** Mêmes attributs que le cookie posé, sinon le navigateur ne le supprime pas. */
     private void clearRefreshCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(COOKIE_NAME, "");
-        cookie.setHttpOnly(true);
-        cookie.setPath("/api/v1/auth");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie("", Duration.ZERO).toString());
+    }
+
+    private ResponseCookie refreshCookie(String valeur, Duration duree) {
+        return ResponseCookie.from(COOKIE_NAME, valeur)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Strict")
+                .path(COOKIE_PATH)
+                .maxAge(duree)
+                .build();
     }
 
     private String extractRefreshCookie(HttpServletRequest request) {

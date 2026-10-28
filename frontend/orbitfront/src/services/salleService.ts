@@ -1,4 +1,4 @@
-import type {GelRequest, Page, Poste, Salle, SalleCarte, SalleRequest} from "../types/types.ts";
+import type {GelRequest, Page, Poste, Salle, SalleCarte} from "../types/types.ts";
 import type {OperationPatch} from "../utils/patch.ts";
 import {apiFetch, authHeaders} from "./api.ts";
 
@@ -88,19 +88,6 @@ export async function getSalleById(id: string): Promise<Salle> {
     return await response.json();
 }
 
-export async function getMaterielByNumSalle(numSalle: string): Promise<Salle> {
-    let response: Response;
-    try {
-        response = await apiFetch(`${URL}/?numSalle=${numSalle}`, {headers: authHeaders()});
-    } catch {
-        throw new SalleError(0);
-    }
-
-    if (!response.ok) throw new SalleError(response.status);
-
-    return await response.json();
-}
-
 // Méthode pour récupérer les salles d'un bâtiment (cours et stockage, pas de pagination)
 export async function getSallesDuBatiment(idBatiment: number): Promise<SalleCarte[]> {
     let response: Response;
@@ -126,25 +113,6 @@ export async function getPostesBySalle(idSalle: string): Promise<Poste[]> {
     if (!response.ok) throw new SalleError(response.status);
     return await response.json();
 }
-
-//(idBatiment est dans la requête)
-export async function ajouterSalle(salle: SalleRequest): Promise<Salle> {
-    let response: Response;
-    try {
-        response = await apiFetch(URL, {
-            method: "POST",
-            headers: authHeaders(),
-            body: JSON.stringify(salle),
-        });
-    } catch {
-        throw new SalleError(0);
-    }
-
-    if (!response.ok) throw new SalleError(response.status);
-
-    return await response.json();
-}
-
 
 export async function supprimerSalle(id: number): Promise<void> {
     let response: Response;
