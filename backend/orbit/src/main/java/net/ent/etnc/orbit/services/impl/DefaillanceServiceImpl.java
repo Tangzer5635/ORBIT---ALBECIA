@@ -169,7 +169,9 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
                 .orElse(false);
     }
 
-    /** Pour le journal : ", poste B2-S105-P07" ou ", salle 105" selon où est le matériel. */
+    /**
+     * Pour le journal : ", poste B2-S105-P07" ou ", salle 105" selon où est le matériel.
+     */
     private String ou(Long idMateriel) throws ServiceException {
         return posteService.posteDuMateriel(idMateriel).map(p -> ", " + Libelles.poste(p))
                 .or(() -> salleService.salleDuMateriel(idMateriel).map(s -> ", " + Libelles.salle(s)))
@@ -177,6 +179,6 @@ public class DefaillanceServiceImpl extends AbstractService<Defaillance, Defaill
     }
 
     private static boolean memePersonne(Personnel a, Personnel b) throws ServiceException {
-        return a != null && b != null && Objects.equals(a.getId(), b.getId());
+        return a != null && Objects.equals(a.getId(), b.getId());
     }
 }

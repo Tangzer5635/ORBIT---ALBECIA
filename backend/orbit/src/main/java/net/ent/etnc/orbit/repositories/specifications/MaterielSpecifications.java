@@ -11,6 +11,8 @@ import net.ent.etnc.orbit.models.enums.StatutDefaillance;
 import net.ent.etnc.orbit.models.enums.TypeSalle;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Locale;
+
 /**
  * Filtre pour l'état et la localisation du matériel.
  *
@@ -48,16 +50,27 @@ public final class MaterielSpecifications {
         return cb.exists(sousRequete);
     }
 
-    /** Filtre sur la classe du matériel (UC, Ecran, VideoProjecteur, TableauInteractif). */
+    /**
+     * Filtre sur le type : la classe pour un type de base (UC, Ecran, VideoProjecteur, TableauInteractif),
+     * le libellé pour un type ajouté par l'admin (type inconnu = aucun résultat).
+     */
     public static Specification<Materiel> type(String type) {
         Class<? extends Materiel> classe = switch (type) {
             case UC.TYPE -> UC.class;
             case Ecran.TYPE -> Ecran.class;
             case VideoProjecteur.TYPE -> VideoProjecteur.class;
             case TableauInteractif.TYPE -> TableauInteractif.class;
-            default -> throw new IllegalArgumentException("Type de matériel inconnu : " + type);
+            default -> null;
         };
-        return (materiel, query, cb) -> cb.equal(materiel.type(), classe);
+        if (classe != null)
+            return (materiel, query, cb) -> cb.equal(materiel.type(), classe);
+        return (materiel, query, cb) -> {
+            Subquery<Long> sousRequete = query.subquery(Long.class);
+            Root<AutreMateriel> autre = sousRequete.from(AutreMateriel.class);
+            sousRequete.select(autre.get("id")).where(cb.equal(
+                    cb.lower(autre.get("typeMateriel").<String>get("libelle")), type.trim().toLowerCase(Locale.ROOT)));
+            return materiel.get("id").in(sousRequete);
+        };
     }
 
     public static Specification<Materiel> localisation(LocalisationMateriel localisation) {

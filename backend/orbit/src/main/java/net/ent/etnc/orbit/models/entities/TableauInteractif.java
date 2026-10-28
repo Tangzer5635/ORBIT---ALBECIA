@@ -10,7 +10,7 @@ import lombok.ToString;
 @Entity
 @Table(name = "tableau_interactif")
 @PrimaryKeyJoinColumn(name = "id", foreignKey = @ForeignKey(name = "fk_tableau_interactif_materiel"))
-@ToString(callSuper = true, of = {"TYPE"})
+@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class TableauInteractif extends Materiel {
 

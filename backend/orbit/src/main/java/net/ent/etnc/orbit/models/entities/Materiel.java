@@ -61,11 +61,8 @@ public abstract class Materiel extends AbstractPersistableWithIdSetter<Long> {
     @Column(name = "date_archivage")
     private LocalDate dateArchivage;
 
-    /** Types acceptés par l'API (champ « type » du JSON), pour la validation du DTO. */
-    public static final String TYPES = UC.TYPE + "|" + Ecran.TYPE + "|" + VideoProjecteur.TYPE + "|" + TableauInteractif.TYPE;
-
     /**
-     * Type du matériel tel qu'il est exposé au front ("UC", "Ecran"...).
+     * Type du matériel tel qu'il est exposé au front ("UC", "Ecran"... ou le libellé d'un type ajouté).
      * Méthode et pas getClass() : un matériel chargé en LAZY est un proxy Hibernate.
      */
     public abstract String getType();

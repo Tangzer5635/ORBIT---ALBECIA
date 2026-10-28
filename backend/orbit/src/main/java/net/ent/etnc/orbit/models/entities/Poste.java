@@ -57,12 +57,16 @@ public class Poste extends AbstractPersistableWithIdSetter<Long> {
         materiels.remove(materiel);
     }
 
-    /** Nombre maximum de matériels d'un type sur un poste : 1 UC, 2 écrans, ni vidéoprojecteur ni tableau (matériel de salle). */
+    /**
+     * Nombre maximum de matériels d'un type sur un poste : 1 UC, 2 écrans, ni vidéoprojecteur ni tableau
+     * (matériel de salle), sans limite pour un type ajouté par l'admin.
+     */
     public static int maximum(String type) {
         return switch (type) {
             case UC.TYPE -> 1;
             case Ecran.TYPE -> 2;
-            default -> 0;
+            case VideoProjecteur.TYPE, TableauInteractif.TYPE -> 0;
+            default -> Integer.MAX_VALUE;
         };
     }
 

@@ -105,10 +105,11 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         entity.setRole(existant.getRole());
         entity.setActive(existant.isActive());
         entity.setVerrouille(existant.isVerrouille());
-        if (entity.getPassword() == null || entity.getPassword().isBlank()) {
+        String motDePasse = entity.getPassword();
+        if (motDePasse == null || motDePasse.isBlank()) {
             entity.setMotDePasse(existant.getPassword());
         } else {
-            entity.setMotDePasse(passwordEncoder.encode(entity.getPassword()));
+            entity.setMotDePasse(passwordEncoder.encode(motDePasse));
         }
         return super.update(entity);
     }
@@ -127,8 +128,9 @@ public class PersonnelServiceImpl extends AbstractService<Personnel, PersonnelRe
         user.setNom(donnees.getNom());
         user.setPrenom(donnees.getPrenom());
         user.setLogin(donnees.getLogin());
-        if (donnees.getPassword() != null && !donnees.getPassword().isBlank()) {
-            user.setMotDePasse(passwordEncoder.encode(donnees.getPassword()));
+        String motDePasse = donnees.getPassword();
+        if (motDePasse != null && !motDePasse.isBlank()) {
+            user.setMotDePasse(passwordEncoder.encode(motDePasse));
         }
         Personnel modifie;
         try {

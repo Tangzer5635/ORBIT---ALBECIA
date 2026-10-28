@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
-import net.ent.etnc.orbit.models.entities.Materiel;
 import net.ent.etnc.orbit.models.entities.UC;
 import org.hibernate.validator.constraints.Length;
 
@@ -30,8 +29,9 @@ public class MaterielRequestDto {
     @NotNull(message = "dateAcquisition ne doit pas être null")
     private LocalDate dateAcquisition;
 
-    @NotNull(message = "type ne doit pas être null")
-    @Pattern(regexp = Materiel.TYPES, message = "type inconnu")
+    /** Type de base ("UC", "Ecran", "VideoProjecteur", "TableauInteractif") ou libellé d'un type ajouté (vérifié par le service). */
+    @NotBlank(message = "type doit contenir des caractères lisibles")
+    @Length(max = 50, message = "type doit avoir au plus 50 caractères")
     private String type;
 
 

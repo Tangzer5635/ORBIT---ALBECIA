@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
@@ -84,7 +85,7 @@ public class AffecterStagiaireServiceImpl implements AffecterStagiaireService {
     @Transactional
     public Poste retirerDePoste(Long idPoste, Long idStagiaire) throws ServiceException {
         Poste poste = poste(idPoste);
-        if (poste.getOccupant() == null || !poste.getOccupant().getId().equals(idStagiaire))
+        if (poste.getOccupant() == null || !Objects.equals(poste.getOccupant().getId(), idStagiaire))
             throw new ServiceException("Ce stagiaire n'est pas sur le poste " + poste.getNumPoste());
         Personnel stagiaire = poste.getOccupant();
         poste.setOccupant(null);

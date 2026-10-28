@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Service
 public class AffecterStageServiceImpl implements AffecterStageService {
@@ -61,7 +62,7 @@ public class AffecterStageServiceImpl implements AffecterStageService {
     public Salle retirerDeSalle(Long idSalle, Long idStage) throws ServiceException {
         Salle salle = salleService.findById(idSalle)
                 .orElseThrow(() -> new ServiceException("Salle " + idSalle + " introuvable"));
-        if (salle.getStage() == null || !salle.getStage().getId().equals(idStage))
+        if (salle.getStage() == null || !Objects.equals(salle.getStage().getId(), idStage))
             throw new ServiceException("Ce stage n'est pas dans cette salle");
 
         Stage stage = salle.getStage();

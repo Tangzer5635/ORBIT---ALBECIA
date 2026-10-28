@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import tools.jackson.databind.ObjectMapper;
 
@@ -35,6 +36,10 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
 
     /** Une liste de processus dépasse vite les 8 Ko par défaut de Tomcat. */
     private static final int TAILLE_MAX_MESSAGE = 1024 * 1024;
+
+    /** Envois vers l'agent : délai max d'un envoi et taille max des ordres en attente avant de couper la session. */
+    private static final int DELAI_ENVOI_MS = 5_000;
+    private static final int TAILLE_MAX_EN_ATTENTE = 64 * 1024;
 
     private final AgentService agentService;
     private final ProcessusLanceService processusLanceService;
@@ -77,7 +82,9 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
         String type = message.type() == null ? "" : message.type();
         switch (type) {
             case "hello" -> {
-                Consumer<MessageAgentDto> envoi = ordre -> envoyer(session, ordre);
+                // le décorateur de Spring envoie les ordres un par un, même si plusieurs requêtes écrivent en même temps
+                WebSocketSession sortie = new ConcurrentWebSocketSessionDecorator(session, DELAI_ENVOI_MS, TAILLE_MAX_EN_ATTENTE);
+                Consumer<MessageAgentDto> envoi = ordre -> envoyer(sortie, ordre);
                 agentService.connecter(message.mac(), message.nomMachine(), message.ip(), message.os(),
                         message.ramGo(), envoi);
                 session.getAttributes().put(ATTRIBUT_MAC, message.mac());
@@ -103,13 +110,10 @@ public class AgentWebSocketHandler extends TextWebSocketHandler {
         return (String) mac;
     }
 
-    /** Écrit à l'agent. Plusieurs requêtes peuvent écrire en même temps : une session n'accepte qu'un envoi à la fois. */
-    private void envoyer(WebSocketSession session, MessageAgentDto ordre) {
+    /** Écrit à l'agent, via la session décorée (envois concurrents sérialisés par Spring). */
+    private void envoyer(WebSocketSession sortie, MessageAgentDto ordre) {
         try {
-            String json = objectMapper.writeValueAsString(ordre);
-            synchronized (session) {
-                session.sendMessage(new TextMessage(json));
-            }
+            sortie.sendMessage(new TextMessage(objectMapper.writeValueAsString(ordre)));
         } catch (IOException e) {
             throw new ServiceException("Agent injoignable : la connexion est fermée", e);
         }
