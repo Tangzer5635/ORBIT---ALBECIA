@@ -94,7 +94,7 @@ export default function DeplacerSallePopup({salle, postes, onClose, onFait}: Pro
             disabled={!cible || cible.suspendu}
         >
             <label htmlFor="batimentCible">Bâtiment</label>
-            <select id="batimentCible" value={batimentId}
+            <select id="batimentCible" value={batimentId} autoFocus
                     onChange={e => {
                         setBatimentId(e.target.value);
                         setCibleId("");

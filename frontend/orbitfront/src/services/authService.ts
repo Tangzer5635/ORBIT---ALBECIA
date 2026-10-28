@@ -90,7 +90,3 @@ export function getUtilisateur(): Utilisateur | null {
   const json = sessionStorage.getItem(USER_KEY);
   return json ? JSON.parse(json) : null;
 }
-
-export function isConnecte(): boolean {
-  return getToken() !== null;
-}

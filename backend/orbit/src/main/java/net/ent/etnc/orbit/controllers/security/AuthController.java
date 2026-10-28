@@ -80,25 +80,18 @@ public class AuthController {
     }
 
     @PostMapping("/login/")
-    public ResponseEntity<TokenResponse> login(
-            @Valid @RequestBody LoginRequest request,
-            HttpServletResponse response) {
-
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         Authentication authentication;
         try {
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+            authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
         } catch (AuthenticationException e) {
-            journalisationService.journaliser(null, TypeAction.ECHEC_CONNEXION,
-                    "Échec de connexion pour l'identifiant « " + request.getUsername() + " » : " + motif(e));
+            journalisationService.journaliser(null, TypeAction.ECHEC_CONNEXION, "Échec de connexion pour l'identifiant « " + request.getUsername() + " » : " + motif(e));
             throw e; // toujours traité par le GlobalExceptionHandler
         }
-
         Personnel user = (Personnel) authentication.getPrincipal();
         journalisationService.journaliser(user.getId(), TypeAction.CONNEXION, "Connexion de " + Libelles.personne(user));
         String accessToken = jwtUtils.generateJwtToken(user);
         String rawRefreshToken = refreshTokenService.createRefreshToken(user.getUsername());
-
         addRefreshCookie(response, rawRefreshToken);
         TokenResponse body = new TokenResponse(accessToken, jwtExpirationMs / 1000);
         body.setUtilisateur(userAssembler.toDto(user));

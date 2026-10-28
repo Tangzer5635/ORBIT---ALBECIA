@@ -84,11 +84,6 @@ export function supprimerMateriel(id: number): Promise<void> {
     return requete(`${URL}/${id}/`, {method: "DELETE"});
 }
 
-// Affecte un matériel du stock à un poste
-export function affecterMaterielAPoste(id: number, posteId: number): Promise<Materiel> {
-    return requete(`${URL}/${id}/?posteId=${posteId}`, {method: "POST"});
-}
-
 // Affecte un matériel du stock à une salle de cours ou à un poste
 export function affecterMateriel(id: number, vers: Emplacement): Promise<Materiel> {
     return requete(`${URL}/${id}/?${param(vers)}`, {method: "POST"});

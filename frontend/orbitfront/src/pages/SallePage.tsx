@@ -13,6 +13,7 @@ import CreerSallePopup from "../components/Popup/Salle/CreerSallePopup.tsx";
 import ModifierStockagePopup from "../components/Popup/Salle/ModifierStockagePopup.tsx";
 import ConvertirStockagePopup from "../components/Popup/Salle/ConvertirStockagePopup.tsx";
 import {getBatiments} from "../services/batimentService.ts";
+import {texteManquants} from "../utils/materiels.ts";
 
 // résultat du dernier chargement, mémorisé avec le bâtiment concerné
 interface Resultat {
@@ -38,6 +39,8 @@ export default function SallePage() {
     const [aModifier, setAModifier] = useState<SalleCarte | null>(null);
     const [aConvertir, setAConvertir] = useState<SalleCarte | null>(null);
     const [version, setVersion] = useState(0);
+    // salle créée sans assez de matériel en stock : message affiché sur la page du bâtiment
+    const [info, setInfo] = useState<{ idBatiment: number; texte: string } | null>(null);
     const idBatiment = Number(params.get("batiment"));
     const batiment = batiments.find((b) => b.id === idBatiment);
     const role = getUtilisateur()?.role;
@@ -56,6 +59,15 @@ export default function SallePage() {
             });
         return () => { actif = false; };
     }, [idBatiment, version]);
+
+    function creee(numSalle: string, manquants: Partial<Record<string, number>>) {
+        const manque = texteManquants(manquants);
+        setInfo(manque ? {
+            idBatiment,
+            texte: `Salle ${numSalle} créée, mais il manque dans le stock : ${manque}. Les postes concernés sont à compléter.`,
+        } : null);
+        salleCreee();
+    }
 
     function salleCreee() {
         setCreerOuvert(false);
@@ -108,6 +120,13 @@ export default function SallePage() {
                 </section>
             )}
 
+            {info?.idBatiment === idBatiment && (
+                <p className="note-chg" role="status">
+                    {info.texte}
+                    <button type="button" className="muted small lien" onClick={() => setInfo(null)}> Fermer</button>
+                </p>
+            )}
+
             <div className="sh">
                 <h2>Salles</h2>
             </div>
@@ -137,7 +156,8 @@ export default function SallePage() {
                 </section>
             )}
             {creerOuvert && batiment && (
-                <CreerSallePopup batiment={batiment} onClose={() => setCreerOuvert(false)} onCree={salleCreee}/>
+                <CreerSallePopup batiment={batiment} onClose={() => setCreerOuvert(false)}
+                                 onCree={creee}/>
             )}
             {aModifier && (
                 <ModifierStockagePopup salle={aModifier} onClose={() => setAModifier(null)} onFait={salleCreee}/>
@@ -149,4 +169,4 @@ export default function SallePage() {
             )}
         </>
     );
-}
+}

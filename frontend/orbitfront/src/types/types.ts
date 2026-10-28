@@ -61,12 +61,6 @@ export interface Page<T> {
 }
 
 
-// LoginRequest
-export interface LoginRequest {
-    username: string;
-    password: string;
-}
-
 // TokenResponse
 export interface TokenResponse {
     accessToken: string;
@@ -201,14 +195,6 @@ export interface SalleCarte {
     stageType?: TypeFormation | null;
 }
 
-// SalleRequestDto
-export interface SalleRequest {
-    numSalle: string;
-    etage: string;
-    type: TypeSalle;
-    idBatiment: number;
-}
-
 //==========================================
 //      POSTES
 //==========================================
@@ -250,11 +236,6 @@ export interface MonPoste {
     materiels: Materiel[];
 }
 
-// PosteRequestDto
-export interface PosteRequest {
-    numPoste: string;
-    idSalle?: number;
-}
 //==========================================
 //      MATÉRIELS
 //==========================================

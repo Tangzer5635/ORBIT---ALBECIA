@@ -57,7 +57,7 @@ export default function PlaquerMasterPopup({master, onClose, onFait}: Props) {
             disabled={!salleId}
         >
             <label htmlFor="plaquerBatiment">Bâtiment</label>
-            <select id="plaquerBatiment" value={batimentId}
+            <select id="plaquerBatiment" value={batimentId} autoFocus
                     onChange={e => {
                         setBatimentId(e.target.value);
                         setSalleId("");

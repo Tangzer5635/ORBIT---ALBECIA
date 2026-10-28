@@ -44,7 +44,7 @@ export default function AjouterProcessusPopup({onClose, onFait}: Props) {
         >
             <label htmlFor="procNom">Nom de l'exécutable</label>
             <input id="procNom" className="mono" value={nom} onChange={e => setNom(e.target.value)}
-                   maxLength={100} placeholder="Ex. eclipse.exe"/>
+                   maxLength={100} placeholder="Ex. eclipse.exe" autoFocus/>
 
             <span className="popup-lbl" style={{marginTop: 12}}>Liste</span>
             <div className="quick" role="group" aria-label="Liste">

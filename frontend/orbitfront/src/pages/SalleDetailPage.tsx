@@ -171,9 +171,14 @@ function SalleDetail({salleId}: { salleId: string }) {
         : `${formateurs[0].prenom} ${formateurs[0].nom}${formateurs.length > 1 ? ` +${formateurs.length - 1}` : ""}`;
     const salleDeCours = salle.type === "SalleDeCours";
 
-    // panneau de droite : le poste ou le matériel choisi, sinon la vue de la salle
+    // liste des postes de la colonne de droite (poste ou matériel choisi) : le poste formateur en premier
+    const postesOrdonnes = posteFormateur ? [posteFormateur, ...stagiaires] : stagiaires;
+
+    // poste ou matériel choisi : son détail au centre, la liste des postes à droite
+    // rien de choisi : le plan au centre, la vue de la salle à droite
     const panneau = posteSelectionne ? (
         <PanneauPoste key={posteSelectionne.id} poste={posteSelectionne} salle={salle} peutGerer={peutGerer}
+                      postes={postesOrdonnes} onChoisirPoste={choisirPoste}
                       onFermer={fermerPanneau}
                       onAffecterStagiaire={salle.suspendu ? undefined : () => setPopup("stagiaire")}
                       onRetirerStagiaire={() => setPopup("retirerStagiaire")}
@@ -182,15 +187,84 @@ function SalleDetail({salleId}: { salleId: string }) {
                       onChange={recharger}/>
     ) : materielSelectionne ? (
         <PanneauMateriel key={materielSelectionne.id} materiel={materielSelectionne} salle={salle}
+                         postes={postesOrdonnes} onChoisirPoste={choisirPoste}
                          onFermer={fermerPanneau} onChange={recharger}/>
     ) : (
-        <PanneauSalle salle={salle}
-                      onAffecterStage={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("stage") : undefined}
-                      onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
-                      onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
-                      onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}
-                      onPlaquerMaster={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("master") : undefined}
-        />
+        <>
+            <div>
+                <div className="plan-salle">
+                    {/* haut de la salle : matériel de salle à gauche, poste formateur à droite */}
+                    <div className="plan-haut">
+                        <div className="plan-materiels">
+                            {peutGerer
+                                ? materielsSalle.map(m => (
+                                    <button key={m.id} type="button"
+                                            className={`plan-mat ${CLASSE_ETAT_MATERIEL[m.etat]}${m.id === materielId ? " select" : ""}`}
+                                            aria-pressed={m.id === materielId}
+                                            onClick={() => choisirMateriel(m.id)}>
+                                        <b>{COURT[m.type]}</b>
+                                        <span>{LIBELLE_ETAT_MATERIEL[m.etat]}</span>
+                                    </button>
+                                ))
+                                // formateur : pas d'accès au détail du matériel, seulement le type
+                                : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
+                                    Array.from({length: n ?? 0}, (_, i) => (
+                                        <div key={`${type}-${i}`} className="plan-mat use">
+                                            <b>{COURT[type as TypeMateriel]}</b>
+                                        </div>
+                                    )))}
+                        </div>
+                        {posteFormateur && (
+                            <button type="button"
+                                    className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}${posteFormateur.id === posteId ? " select" : ""}`}
+                                    title="Poste formateur"
+                                    aria-pressed={posteFormateur.id === posteId}
+                                    onClick={() => choisirPoste(posteFormateur.id)}>
+                                <b>Formateur</b>
+                                <span>{nomFormateurs}</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* postes stagiaires : rangées de 2 tables de 2 postes */}
+                    {rangees.map((rangee, r) => (
+                        <div key={r} className="plan-rangee">
+                            {rangee.map((table, t) => (
+                                <div key={t} className="plan-table">
+                                    {table.map(p => (
+                                        <button key={p.id} type="button"
+                                                className={`plan-poste ${classeEtat(p.etat)}${estompe(p) ? " estompe" : ""}${p.id === posteId ? " select" : ""}`}
+                                                title={p.occupant ? `${nomPoste(p)} : ${p.occupant}` : nomPoste(p)}
+                                                aria-pressed={p.id === posteId}
+                                                onClick={() => choisirPoste(p.id)}>
+                                            <b>{numeroPoste(p)}</b>
+                                            <span>{p.occupant ? nomCourt(p.occupant) : libreOuEtat(p)}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+
+                    {stagiaires.length === 0 &&
+                        <p className="muted">Aucun poste stagiaire dans cette salle.</p>}
+                </div>
+
+                <ul className="rleg plan-legende">
+                    {ETATS_POSTE.map(({etat, libelle, classe}) => (
+                        <li key={etat} className={classe}><i
+                            className={`sw ${classe}`}/>{libelle} ({compte(etat)})</li>
+                    ))}
+                </ul>
+            </div>
+            <PanneauSalle salle={salle}
+                          onAffecterStage={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("stage") : undefined}
+                          onRetirerStage={peutGerer && salleDeCours ? () => setPopup("retirerStage") : undefined}
+                          onAffecterFormateur={peutGerer && salleDeCours ? () => setPopup("formateur") : undefined}
+                          onRetirerFormateur={peutGerer ? setFormateurARetirer : undefined}
+                          onPlaquerMaster={peutGerer && salleDeCours && !salle.suspendu ? () => setPopup("master") : undefined}
+            />
+        </>
     );
 
     return (
@@ -259,72 +333,6 @@ function SalleDetail({salleId}: { salleId: string }) {
 
             <section className="plan">
                 <div className="plan-corps ouvert">
-                    <div>
-                        <div className="plan-salle">
-                            {/* haut de la salle : matériel de salle à gauche, poste formateur à droite */}
-                            <div className="plan-haut">
-                                <div className="plan-materiels">
-                                    {peutGerer
-                                        ? materielsSalle.map(m => (
-                                            <button key={m.id} type="button"
-                                                    className={`plan-mat ${CLASSE_ETAT_MATERIEL[m.etat]}${m.id === materielId ? " select" : ""}`}
-                                                    aria-pressed={m.id === materielId}
-                                                    onClick={() => choisirMateriel(m.id)}>
-                                                <b>{COURT[m.type]}</b>
-                                                <span>{LIBELLE_ETAT_MATERIEL[m.etat]}</span>
-                                            </button>
-                                        ))
-                                        // formateur : pas d'accès au détail du matériel, seulement le type
-                                        : Object.entries(salle.materielsParType ?? {}).flatMap(([type, n]) =>
-                                            Array.from({length: n ?? 0}, (_, i) => (
-                                                <div key={`${type}-${i}`} className="plan-mat use">
-                                                    <b>{COURT[type as TypeMateriel]}</b>
-                                                </div>
-                                            )))}
-                                </div>
-                                {posteFormateur && (
-                                    <button type="button"
-                                            className={`plan-poste formateur ${classeEtat(posteFormateur.etat)}${estompe(posteFormateur) ? " estompe" : ""}${posteFormateur.id === posteId ? " select" : ""}`}
-                                            title="Poste formateur"
-                                            aria-pressed={posteFormateur.id === posteId}
-                                            onClick={() => choisirPoste(posteFormateur.id)}>
-                                        <b>Formateur</b>
-                                        <span>{nomFormateurs}</span>
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* postes stagiaires : rangées de 2 tables de 2 postes */}
-                            {rangees.map((rangee, r) => (
-                                <div key={r} className="plan-rangee">
-                                    {rangee.map((table, t) => (
-                                        <div key={t} className="plan-table">
-                                            {table.map(p => (
-                                                <button key={p.id} type="button"
-                                                        className={`plan-poste ${classeEtat(p.etat)}${estompe(p) ? " estompe" : ""}${p.id === posteId ? " select" : ""}`}
-                                                        title={p.occupant ? `${nomPoste(p)} : ${p.occupant}` : nomPoste(p)}
-                                                        aria-pressed={p.id === posteId}
-                                                        onClick={() => choisirPoste(p.id)}>
-                                                    <b>{numeroPoste(p)}</b>
-                                                    <span>{p.occupant ? nomCourt(p.occupant) : libreOuEtat(p)}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-
-                            {stagiaires.length === 0 &&
-                                <p className="muted">Aucun poste stagiaire dans cette salle.</p>}
-                        </div>
-
-                        <ul className="rleg plan-legende">
-                            {ETATS_POSTE.map(({etat, libelle, classe}) => (
-                                <li key={etat} className={classe}><i
-                                    className={`sw ${classe}`}/>{libelle} ({compte(etat)})</li>
-                            ))}
-                        </ul>
-                    </div>
                     {panneau}
                 </div>
             </section>

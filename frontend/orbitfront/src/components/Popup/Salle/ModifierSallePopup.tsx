@@ -61,7 +61,7 @@ export default function ModifierSallePopup({salle, postes, onClose, onFait}: Pro
         >
             <label htmlFor="nbPostes">Postes stagiaire</label>
             <input id="nbPostes" type="number" min={0} max={50} value={nbPostes}
-                   onChange={nombre(setNbPostes, 50)}/>
+                   onChange={nombre(setNbPostes, 50)} autoFocus/>
 
             <label htmlFor="nbVp">Vidéoprojecteurs</label>
             <input id="nbVp" type="number" min={0} max={5} value={nbVideoProjecteurs}

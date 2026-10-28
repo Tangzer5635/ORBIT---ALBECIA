@@ -1,7 +1,7 @@
 import {Fragment, useEffect, useState} from "react";
 import Popup from "../Popup.tsx";
 import {LIBELLE_TYPE_MATERIEL, type MaterielStock, type TypeMateriel} from "../../../types/types.ts";
-import {affecterMaterielAPoste, getStock, MaterielError} from "../../../services/materielService.ts";
+import {affecterMateriel, getStock, MaterielError} from "../../../services/materielService.ts";
 import {MAX_PAR_POSTE, NOM_TYPE, ORDRE_TYPES, placeSurPoste} from "../../../utils/materiels.ts";
 
 interface Props {
@@ -60,7 +60,7 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
         setEnCours(true);
         setErreur("");
         try {
-            await affecterMaterielAPoste(choisi, posteId);
+            await affecterMateriel(choisi, {posteId});
             onFait();
         } catch (err) {
             setErreur(err instanceof MaterielError && err.detail ? err.detail : "Affectation impossible.");
@@ -109,6 +109,7 @@ export default function AffecterMaterielPopup({posteId, titrePoste, numBatiment,
                         value={recherche}
                         onChange={(e) => setRecherche(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && e.preventDefault()} // Entrée ne doit pas affecter
+                        autoFocus
                     />
 
                     {/* même liste que « Gérer les stagiaires », un titre par bâtiment */}

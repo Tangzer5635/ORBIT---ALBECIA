@@ -3,17 +3,11 @@ import {Link} from "react-router-dom";
 import Popup from "../Popup/Popup.tsx";
 import ModifierMaterielPopup from "../Popup/Materiel/ModifierMaterielPopup.tsx";
 import DeplacerMaterielPopup from "../Popup/Materiel/DeplacerMaterielPopup.tsx";
-import {
-    type Defaillance,
-    LIBELLE_ETAT_MATERIEL,
-    LIBELLE_STATUT_DEFAILLANCE,
-    LIBELLE_TYPE_MATERIEL,
-    type Materiel,
-} from "../../types/types.ts";
+import {type Defaillance, LIBELLE_STATUT_DEFAILLANCE, LIBELLE_TYPE_MATERIEL, type Materiel} from "../../types/types.ts";
 import {type Emplacement, MaterielError, remettreEnStock, supprimerMateriel} from "../../services/materielService.ts";
 import {getDefaillancesDuMateriel} from "../../services/defaillanceService.ts";
 import {dateFr} from "../../utils/postes.ts";
-import {CLASSE_ETAT_MATERIEL} from "../../utils/materiels.ts";
+import InfosMateriel from "./InfosMateriel.tsx";
 
 interface Props {
     materiel: Materiel;
@@ -38,9 +32,6 @@ export default function MaterielCard({materiel: m, depuis, onChange = () => {}, 
                 .sort((a, b) => b.dateSignalement.localeCompare(a.dateSignalement))[0] ?? null))
             .catch(console.error);
     }, [m.id]);
-
-    const aujourdhui = new Date().toLocaleDateString("sv-SE"); // "2026-10-15"
-    const garantieFinie = m.dateFinGarantie < aujourdhui;
 
     function fermer() {
         setAction(null);
@@ -67,35 +58,7 @@ export default function MaterielCard({materiel: m, depuis, onChange = () => {}, 
     };
 
     return (
-        <article className={`carte-mat ${CLASSE_ETAT_MATERIEL[m.etat]}`}>
-            <header>
-                <b>{LIBELLE_TYPE_MATERIEL[m.type]}</b>
-                <span className="pastille">{LIBELLE_ETAT_MATERIEL[m.etat]}</span>
-            </header>
-
-            <dl>
-                <dt>Modèle</dt>
-                <dd>{m.modele}</dd>
-                <dt>N° de série</dt>
-                <dd className="mono">{m.numSerie}</dd>
-                {m.nomMachine && (
-                    <>
-                        <dt>Nom machine</dt>
-                        <dd className="mono">{m.nomMachine}</dd>
-                    </>
-                )}
-                {m.adresseMac && (
-                    <>
-                        <dt>Adresse MAC</dt>
-                        <dd className="mono">{m.adresseMac}</dd>
-                    </>
-                )}
-                <dt>Acquis le</dt>
-                <dd>{dateFr(m.dateAcquisition)}</dd>
-                <dt>Garantie</dt>
-                <dd>{garantieFinie ? "Terminée le " : "Jusqu'au "}{dateFr(m.dateFinGarantie)}</dd>
-            </dl>
-
+        <InfosMateriel materiel={m}>
             {defaillance && (
                 <div className="carte-defaillance">
                     <div>
@@ -145,6 +108,6 @@ export default function MaterielCard({materiel: m, depuis, onChange = () => {}, 
                     {erreur && <p className="error-message" role="alert">{erreur}</p>}
                 </Popup>
             )}
-        </article>
+        </InfosMateriel>
     );
-}
+}
