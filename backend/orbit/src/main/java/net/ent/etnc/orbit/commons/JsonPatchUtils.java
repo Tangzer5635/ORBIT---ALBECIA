@@ -108,9 +108,14 @@ public class JsonPatchUtils {
             try (var reader = Json.createReader(new StringReader(objectMapper.writeValueAsString(currentDto)))) {
                 target = reader.readObject();
             }
+            JsonObjectBuilder builder = Json.createObjectBuilder(target);
+            for (JsonValue op : operations) {
+                String field = topSegment(op.asJsonObject().getString("path", ""));
+                if (!field.isEmpty() && !target.containsKey(field)) builder.add(field, JsonValue.NULL);
+            }
+            target = builder.build();
             JsonObject patched = Json.createPatch(operations).apply(target);
-            return objectMapper.readValue(patched.toString(), dtoType);
-        } catch (JsonException e) {
+            return objectMapper.readValue(patched.toString(), dtoType);        } catch (JsonException e) {
             throw new ServiceException("Patch invalide : " + e.getMessage(), e);
         } catch (Exception e) {
             throw new ServiceException("Patch invalide : impossible d'appliquer le patch.", e);
