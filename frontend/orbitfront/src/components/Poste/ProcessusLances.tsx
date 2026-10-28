@@ -104,11 +104,10 @@ export default function ProcessusLances({posteId}: Props) {
                             ))}
                         </div>
                     )}
-                    <p className="muted small">Liste mise à jour toutes les 5 secondes.</p>
                 </>
             )}
 
-            {message && <p className="muted small" role="status">{message}</p>}
+            {message && <p className="proc-message small" role="status">{message}</p>}
 
             <Popup open={aTuer !== null} onClose={() => !enCours && setATuer(null)}
                    title={`Tuer ${aTuer?.nom ?? ""}`}

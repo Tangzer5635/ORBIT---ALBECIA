@@ -2907,7 +2907,6 @@ button.cal-hors[aria-pressed="true"] {
 .processus-noir {
     color: var(--def);
 }
-
 /* =========================================================
    11. DÉTAIL D'UNE SALLE : poste ou matériel de salle choisi
    centre = détail (matériel en haut, processus lancés en bas)
@@ -2948,7 +2947,16 @@ button.cal-hors[aria-pressed="true"] {
     background: var(--card2);
 }
 
-/* Processus lancés : nom, CPU, mémoire, bouton Tuer */
+/* Titre de section avec une info à droite (ex. fréquence de mise à jour des processus) */
+.centre-titre {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+}
+
+/* Processus lancés : nom, CPU, mémoire, bouton Tuer
+   colonnes de largeur fixe (sauf le nom) pour que l'en-tête reste aligné avec les lignes */
 .proc-table {
     display: flex;
     flex-direction: column;
@@ -2959,10 +2967,11 @@ button.cal-hors[aria-pressed="true"] {
 
 .proc-ligne {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 70px 90px auto;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) 80px 100px 76px;
+    gap: 12px;
     align-items: center;
-    padding: 8px 12px;
+    min-height: 46px;
+    padding: 6px 14px;
     border-bottom: 1px solid var(--line);
 }
 
@@ -2970,11 +2979,19 @@ button.cal-hors[aria-pressed="true"] {
     border-bottom: 0;
 }
 
+.proc-ligne:not(.entete):hover {
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
 .proc-ligne.entete {
-    padding-top: 6px;
-    padding-bottom: 6px;
-    font-size: 12.5px;
+    min-height: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .proc-ligne .mono {
@@ -2988,6 +3005,15 @@ button.cal-hors[aria-pressed="true"] {
 .proc-ligne .opt {
     text-align: right;
     font-variant-numeric: tabular-nums;
+}
+
+.proc-ligne > button {
+    justify-self: end;
+}
+
+.proc-message {
+    margin: 0;
+    color: var(--use);
 }
 
 /* Colonne de droite : liste des postes */
@@ -3066,7 +3092,7 @@ button.cal-hors[aria-pressed="true"] {
 
 @media (max-width: 600px) {
     .proc-ligne {
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) 76px;
     }
 
     .proc-ligne .opt {

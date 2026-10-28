@@ -134,7 +134,10 @@ export default function PanneauPoste({
 
                 {/* processus de la machine du poste, lus sur l'UC par l'Agent ORBIT (rafraîchis toutes les 5 s) */}
                 <section className="centre-section">
-                    <h3>Processus lancés</h3>
+                    <div className="centre-titre">
+                        <h3>Processus lancés</h3>
+                        {aUneUC && <span className="muted small">Mis à jour toutes les 5 s</span>}
+                    </div>
                     {aUneUC
                         ? <ProcessusLances posteId={poste.id}/>
                         : <p className="muted">Aucune unité centrale sur ce poste.</p>}
